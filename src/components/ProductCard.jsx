@@ -29,7 +29,7 @@ export default function ProductCard({ product }) {
   // Nota: si el backend devuelve un booleano o count exacto se puede afinar, usaremos isAvailable = true por ahora si no existe product.stock
 
   return (
-    <article className="w-full max-w-[342px] bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col group hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+    <article className="w-full max-w-[342px] mx-auto sm:mx-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col group hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
       {/* Sección de la Imagen con Altura Fija Uniforme */}
       <div className="relative h-[220px] w-full bg-white border-b border-slate-50 overflow-hidden">
         <Link to={`/product/${product.id}`} className="block w-full h-full p-6 flex items-center justify-center">

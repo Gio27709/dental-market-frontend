@@ -72,6 +72,11 @@ export const approvePaymentAPI = (id) =>
 export const rejectPaymentAPI = (id, reason) =>
   api.put(`/admin/orders/${id}/reject-payment`, { reason });
 
+// Admin Store Applications API
+export const getAdminStoreApplicationsAPI = () => api.get("/admin/store-applications");
+export const approveStoreApplicationAPI = (id) => api.post(`/admin/store-applications/${id}/approve`);
+export const rejectStoreApplicationAPI = (id) => api.post(`/admin/store-applications/${id}/reject`);
+
 // Buyer confirms delivery — Escrow release
 export const confirmDeliveryAPI = (itemId) =>
   api.put(`/orders/${itemId}/confirm-delivery`);
@@ -90,6 +95,8 @@ export const mergeCartAPI = (items) => api.post("/cart/merge", { items });
 // Store Profile API
 export const getStoreProfile = () => api.get("/store/profile");
 export const upsertStoreProfile = (data) => api.put("/store/profile", data);
+export const applyForStoreAPI = (data) => api.post("/store-applications", data);
+export const getMyStoreApplicationAPI = () => api.get("/store-applications/me");
 
 // Store Product Management API
 export const getMyProducts = () => api.get("/products/mine");

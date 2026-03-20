@@ -27,6 +27,7 @@ const AdminDashboard = lazy(() => import("./pages/Admin/AdminDashboard"));
 const PaymentApprovals = lazy(() => import("./pages/Admin/PaymentApprovals"));
 const AllOrders = lazy(() => import("./pages/Admin/AllOrders"));
 const ProductModeration = lazy(() => import("./pages/Admin/ProductModeration"));
+const StoreApplications = lazy(() => import("./pages/Admin/StoreApplications"));
 
 const Orders = lazy(() => import("./pages/Account/Orders"));
 const OrderDetail = lazy(() => import("./pages/Account/OrderDetail"));
@@ -37,6 +38,7 @@ const ProductForm = lazy(() => import("./pages/Store/ProductForm"));
 const StoreOrders = lazy(() => import("./pages/Store/StoreOrders"));
 const StoreProfile = lazy(() => import("./pages/Store/StoreProfile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const AffiliateLanding = lazy(() => import("./pages/Store/AffiliateLanding"));
 
 export default function App() {
   return (
@@ -55,6 +57,7 @@ export default function App() {
                         <Route path="/product/:id" element={<ProductDetail />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
+                        <Route path="/afiliate" element={<AffiliateLanding />} />
                         <Route path="/cart" element={<Cart />} />
                         {/* Account Routes (Nested Layout) */}
                         <Route
@@ -101,6 +104,7 @@ export default function App() {
                           <Route path="payment-approvals" element={<PaymentApprovals />} />
                           <Route path="orders" element={<AllOrders />} />
                           <Route path="product-moderation" element={<ProductModeration />} />
+                          <Route path="store-applications" element={<StoreApplications />} />
                         </Route>
 
                         {/* Store Dashboard Routes (Nested Layout) */}

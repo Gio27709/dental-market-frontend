@@ -190,7 +190,6 @@ export default function Register() {
               >
                 <option value="buyer">Usuario normal (Cliente)</option>
                 <option value="professional">Profesional Dental</option>
-                <option value="store">Tienda Odontológica</option>
               </select>
             </div>
 

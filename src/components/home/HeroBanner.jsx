@@ -4,7 +4,7 @@ export default function HeroBanner() {
   return (
     <div className="flex flex-col lg:flex-row gap-8 mb-12">
       {/* Sidebar de Categorías */}
-      <aside className="w-full lg:w-64 shrink-0">
+      <aside className="hidden lg:block w-full lg:w-64 shrink-0">
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
           <div className="p-4 border-b border-gray-100 bg-gray-50/50">
             <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500">
@@ -95,7 +95,7 @@ export default function HeroBanner() {
       {/* Main Banner y Minis */}
       <div className="flex-1 flex flex-col gap-6">
         {/* Banner Grande */}
-        <section className="relative h-[480px] w-full rounded-2xl overflow-hidden shadow-xl bg-gray-900 group">
+        <section className="relative h-[280px] sm:h-[380px] lg:h-[480px] w-full rounded-2xl overflow-hidden shadow-xl bg-gray-900 group">
           <div
             className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
             style={{
@@ -105,23 +105,23 @@ export default function HeroBanner() {
           ></div>
           <div className="absolute inset-0 bg-gradient-to-r from-gray-900/80 via-gray-900/40 to-transparent"></div>
           <div className="relative h-full flex flex-col justify-center px-8 lg:px-16 max-w-2xl text-white">
-            <span className="inline-block px-3 py-1 rounded-full bg-primary-500/20 border border-primary-500/30 text-primary-200 text-xs font-bold tracking-wider uppercase mb-6 backdrop-blur-md self-start">
+            <span className="inline-block px-3 py-1 rounded-full bg-primary-500/20 border border-primary-500/30 text-primary-200 text-[10px] sm:text-xs font-bold tracking-wider uppercase mb-4 sm:mb-6 backdrop-blur-md self-start">
               Nueva Colección 2024
             </span>
-            <h1 className="text-4xl lg:text-6xl font-black leading-[1.1] mb-6 tracking-tight">
+            <h1 className="text-2xl sm:text-4xl lg:text-6xl font-black leading-[1.1] mb-4 sm:mb-6 tracking-tight">
               Equipamiento Odontológico de{" "}
               <span className="text-[#c3ff00]">Vanguardia</span>
             </h1>
-            <p className="text-lg text-gray-200 mb-8 max-w-lg font-light leading-relaxed">
+            <p className="text-sm sm:text-lg text-gray-200 mb-5 sm:mb-8 max-w-lg font-light leading-relaxed hidden sm:block">
               Descubra la última tecnología para su clínica dental con el
               respaldo y la garantía de los mejores fabricantes globales.
             </p>
-            <div className="flex flex-wrap gap-4">
-              <button className="px-8 py-4 bg-[#c3ff00] hover:bg-[#aee600] text-[#531575] rounded-xl font-bold transition-all shadow-lg shadow-[#c3ff00]/20 flex items-center gap-2 focus:outline-none">
+            <div className="flex flex-wrap gap-3 sm:gap-4">
+              <button className="px-5 py-3 sm:px-8 sm:py-4 bg-[#c3ff00] hover:bg-[#aee600] text-[#531575] rounded-xl font-bold transition-all shadow-lg shadow-[#c3ff00]/20 flex items-center gap-2 focus:outline-none text-sm sm:text-base">
                 Ver Catálogo{" "}
                 <span className="material-symbols-outlined">arrow_forward</span>
               </button>
-              <button className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold backdrop-blur-md border border-white/20 transition-all focus:outline-none">
+              <button className="px-5 py-3 sm:px-8 sm:py-4 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold backdrop-blur-md border border-white/20 transition-all focus:outline-none text-sm sm:text-base hidden sm:block">
                 Ofertas Especiales
               </button>
             </div>
