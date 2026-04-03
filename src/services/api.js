@@ -17,14 +17,6 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${session.access_token}`;
     }
 
-    // Debugging interceptor
-    if (config.url?.includes("/orders") && config.method === "post") {
-      console.log(
-        "🔥 OUTGOING PAYLOAD TO /orders:",
-        JSON.stringify(config.data, null, 2),
-      );
-    }
-
     return config;
   },
   (error) => Promise.reject(error),
@@ -54,11 +46,13 @@ api.interceptors.response.use(
   },
 );
 
-export const getProducts = () => api.get("/products");
+export const getProducts = (buyerState = "") => 
+  api.get(`/products${buyerState ? `?buyer_state=${encodeURIComponent(buyerState)}` : ""}`);
 // Native login/register runs directly hitting Supabase. We only use api for business logic:
 export const createOrder = (orderData) => api.post("/orders", orderData);
 export const getMyOrders = (config = {}) => api.get("/orders", config);
 export const getOrderByIdAPI = (id) => api.get(`/orders/${id}`);
+export const cancelAbandonedOrderAPI = (id) => api.put(`/orders/${id}/cancel-abandoned`);
 export const uploadPaymentProofAPI = (id, formData) =>
   api.post(`/orders/${id}/payment-proof`, formData, {
     headers: {
@@ -119,6 +113,23 @@ export const moderateProductAPI = (id, action) =>
 
 // Categories API
 export const getCategoriesAPI = () => api.get("/categories");
+export const getCategoryByIdAPI = (id) => api.get(`/categories/${id}`);
+export const createCategoryAPI = (data) => api.post("/categories", data);
+export const updateCategoryAPI = (id, data) => api.put(`/categories/${id}`, data);
+export const deleteCategoryAPI = (id) => api.delete(`/categories/${id}`);
+export const reorderCategoriesAPI = (data) => api.put("/categories/reorder", data);
+
+// Brands API
+export const getBrandsAPI = () => api.get("/brands");
+export const createBrandAPI = (data) => api.post("/brands", data);
+export const updateBrandAPI = (id, data) => api.put(`/brands/${id}`, data);
+export const deleteBrandAPI = (id) => api.delete(`/brands/${id}`);
+
+// Wishlist / Favorites API
+export const getFavoritesAPI = () => api.get("/wishlist");
+export const addFavoriteAPI = (productId) => api.post(`/wishlist/${productId}`);
+export const removeFavoriteAPI = (productId) => api.delete(`/wishlist/${productId}`);
+export const checkFavoriteAPI = (productId) => api.get(`/wishlist/check/${productId}`);
 
 // Exporting standard API for frontend endpoints
 export default api;

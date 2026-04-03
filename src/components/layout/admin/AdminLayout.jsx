@@ -17,6 +17,7 @@ export default function AdminLayout() {
     { name: 'Todos los Pedidos', path: '/admin/orders', icon: 'shopping_bag' },
     { name: 'Moderar Productos', path: '/admin/product-moderation', icon: 'inventory_2' },
     { name: 'Solicitudes de Tienda', path: '/admin/store-applications', icon: 'add_business' },
+    { name: 'Configuración del Sitio', path: '/admin/settings', icon: 'settings' },
   ];
 
   return (

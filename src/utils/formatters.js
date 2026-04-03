@@ -40,3 +40,15 @@ export const formatOrderDate = (dateStr) => {
     year: "numeric",
   });
 };
+
+export const formatOrderDateTime = (dateStr) => {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("es-VE", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};

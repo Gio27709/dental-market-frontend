@@ -9,6 +9,7 @@ import {
 import PropTypes from "prop-types";
 import api, { getProducts } from "../services/api";
 import { BCV_RATE_KEY } from "../utils/constants";
+import { useLocationContext } from "../hooks/useLocationContext";
 
 const ProductContext = createContext();
 const CACHE_KEY = "dental_market_products_cache";
@@ -19,6 +20,7 @@ export const ProductProvider = ({ children }) => {
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { buyerState } = useLocationContext();
   const [bcvRate, setBcvRate] = useState(() => {
     return localStorage.getItem(BCV_RATE_KEY) || 1;
   });
@@ -28,9 +30,11 @@ export const ProductProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
+      const buyerState = localStorage.getItem("buyer_state") || "";
+
       // --- Cache Check ---
       if (!forceRefresh) {
-        const cachedStr = localStorage.getItem(CACHE_KEY);
+        const cachedStr = localStorage.getItem(CACHE_KEY + "_" + buyerState);
         if (cachedStr) {
           try {
             const cachedData = JSON.parse(cachedStr);
@@ -52,7 +56,7 @@ export const ProductProvider = ({ children }) => {
 
       // Fetch concurrently for performance
       const [productsRes, settingsRes] = await Promise.all([
-        getProducts(),
+        getProducts(buyerState),
         api.get("/admin/settings").catch(() => ({ data: { data: {} } })), // Fallback if settings fail
       ]);
 
@@ -62,6 +66,8 @@ export const ProductProvider = ({ children }) => {
       const productData = rawData.map((p) => ({
         ...p,
         variations: p.product_variations || [],
+        store: p.store_profiles || p.store || null,
+        brand: p.brands || null,
       }));
 
       setProducts(productData);
@@ -79,7 +85,7 @@ export const ProductProvider = ({ children }) => {
       // --- Save to Cache ---
       try {
         localStorage.setItem(
-          CACHE_KEY,
+          CACHE_KEY + "_" + buyerState,
           JSON.stringify({
             timestamp: Date.now(),
             products: productData,
@@ -107,7 +113,25 @@ export const ProductProvider = ({ children }) => {
     return {
       ...rawData,
       variations: rawData.product_variations || [],
+      store: rawData.store_profiles || rawData.store || null,
+      brand: rawData.brands || null,
     };
+  }, []);
+
+  const fetchSimilarProducts = useCallback(async (id) => {
+    try {
+      const res = await api.get(`/products/${id}/compare`);
+      const rawData = res.data.data || [];
+      return rawData.map(p => ({
+        ...p,
+        variations: p.product_variations || [],
+        store: p.store_profiles || p.store || null,
+        brand: p.brands || null,
+      }));
+    } catch (err) {
+      console.error("Failed to fetch similar products:", err);
+      return [];
+    }
   }, []);
 
   const applyFilters = useCallback(
@@ -140,7 +164,7 @@ export const ProductProvider = ({ children }) => {
   useEffect(() => {
     fetchProductsAndSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [buyerState]);
 
   return (
     <ProductContext.Provider
@@ -152,6 +176,7 @@ export const ProductProvider = ({ children }) => {
         bcvRate,
         fetchProducts: fetchProductsAndSettings,
         fetchProductById,
+        fetchSimilarProducts,
         applyFilters,
       }}
     >

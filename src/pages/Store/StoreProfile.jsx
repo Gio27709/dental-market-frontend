@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useStore } from "../../context/StoreContext";
 import toast from "react-hot-toast";
+import { VENEZUELA_STATES } from "../../utils/venezuelaStates";
 
 export default function StoreProfile() {
   const { loading, fetchProfile, updateProfile, uploadImage } = useStore();
   const [form, setForm] = useState({
     business_name: "",
+    state: "",
     description: "",
     logo_url: "",
   });
@@ -17,6 +19,7 @@ export default function StoreProfile() {
       if (result.success && result.data) {
         setForm({
           business_name: result.data.business_name || "",
+          state: result.data.state || "",
           description: result.data.description || "",
           logo_url: result.data.logo_url || "",
         });
@@ -78,6 +81,29 @@ export default function StoreProfile() {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm"
             placeholder="Ej: Dental Express Venezuela"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Ubicación (Estado) *
+          </label>
+          <select
+            name="state"
+            value={form.state}
+            onChange={handleChange}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm bg-white"
+          >
+            <option value="" disabled>Selecciona un estado...</option>
+            {VENEZUELA_STATES.map((stateName) => (
+              <option key={stateName} value={stateName}>
+                {stateName}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-gray-500">
+            Los odontólogos en tu mismo estado verán tus productos con prioridad.
+          </p>
         </div>
 
         <div>

@@ -1,15 +1,12 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { validatePhone, validateAddress } from "../../utils/validators";
-import { formatCurrencyVES, formatCurrencyUSD } from "../../utils/formatters";
 import PaymentMethodSelector from "./PaymentMethodSelector";
 import PaymentInstructions from "./PaymentInstructions";
 import toast from "react-hot-toast";
 
 export default function CheckoutForm({
   cartItems,
-  total_usd,
-  total_ves,
   onSubmit,
   loading,
 }) {
@@ -31,7 +28,7 @@ export default function CheckoutForm({
   });
 
   // Persist form data to survive tab switching or HMR
-  React.useEffect(() => {
+  useEffect(() => {
     sessionStorage.setItem("checkout_form_data", JSON.stringify(formData));
   }, [formData]);
 
@@ -173,27 +170,15 @@ export default function CheckoutForm({
         <PaymentInstructions paymentMethod={formData.payment_method} />
       </div>
 
-      <div className="bg-gray-50 text-gray-800 shadow-sm border border-gray-200 px-4 py-5 sm:p-6 mb-6 rounded-lg pointer-events-none">
-        <h4 className="text-md font-bold text-gray-900 mb-4 border-b pb-2">
-          Resumen de Cuenta
-        </h4>
-        <div className="flex justify-between font-bold text-xl mb-1">
-          <span>Total USD</span>
-          <span>{formatCurrencyUSD(total_usd)}</span>
-        </div>
-        <div className="flex justify-between font-bold text-sm text-gray-500">
-          <span>Conversión Bs.</span>
-          <span>{formatCurrencyVES(total_ves)}</span>
-        </div>
-      </div>
+      {/* Obsolete Resumen de Cuenta block removed */}
 
-      <div className="mt-5 flex justify-end gap-3 border-t pt-5">
+      <div className="mt-6">
         <button
           type="submit"
           disabled={loading}
-          className="w-full sm:w-auto inline-flex justify-center py-3 px-8 border border-transparent shadow-md text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed transition"
+          className="w-full inline-flex justify-center py-4 px-8 border border-transparent shadow-md text-base font-bold rounded-xl text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 uppercase tracking-wide"
         >
-          {loading ? "Procesando Orden..." : "Crear Pedido Seguro"}
+          {loading ? "Procesando Orden..." : "Completar Pago Seguro"}
         </button>
       </div>
     </form>
@@ -202,8 +187,6 @@ export default function CheckoutForm({
 
 CheckoutForm.propTypes = {
   cartItems: PropTypes.array.isRequired,
-  total_usd: PropTypes.number.isRequired,
-  total_ves: PropTypes.number.isRequired,
   onSubmit: PropTypes.func.isRequired,
   loading: PropTypes.bool,
 };

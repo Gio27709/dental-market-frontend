@@ -95,37 +95,64 @@ export default function ProductVariationSelector({
 
   return (
     <div className="mt-6 space-y-5">
-      {optionsMap.map((opt) => (
-        <div key={opt.name}>
-          <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">
-            {opt.name}
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {opt.values.map((val) => {
-              const isSelected = selections[opt.name] === val;
-              const isAvailable = isValueAvailable(opt.name, val);
+      {optionsMap.map((opt) => {
+        const isColorOption = opt.name.trim().toLowerCase() === "color" || opt.name.trim().toLowerCase() === "color";
 
-              return (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => handleSelect(opt.name, val)}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg border transition-all ${
-                    isSelected
-                      ? "bg-primary-600 text-white border-primary-600 shadow-sm"
-                      : isAvailable
-                        ? "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
-                        : "bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed opacity-60"
-                  }`}
-                >
-                  {val}
-                </button>
-              );
-            })}
+        return (
+          <div key={opt.name}>
+            <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">
+              {opt.name}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {opt.values.map((val) => {
+                const isSelected = selections[opt.name] === val;
+                const isAvailable = isValueAvailable(opt.name, val);
+                
+                const displayName = typeof val === 'string' && val.includes('|') ? val.split('|')[0] : val;
+                const hexValue = typeof val === 'string' && val.includes('|') ? val.split('|')[1] : null;
+
+                if (isColorOption && hexValue) {
+                  return (
+                    <button
+                      key={val}
+                      type="button"
+                      title={displayName}
+                      onClick={() => handleSelect(opt.name, val)}
+                      className={`w-8 h-8 rounded-full border-2 transition-all ${
+                        isSelected
+                          ? "border-gray-900 shadow-md scale-110"
+                          : isAvailable
+                          ? "border-transparent border-gray-200 hover:border-gray-400 hover:scale-105"
+                          : "opacity-30 border-transparent cursor-not-allowed"
+                      }`}
+                      style={{ backgroundColor: hexValue }}
+                      aria-label={displayName}
+                    />
+                  );
+                }
+
+                return (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => handleSelect(opt.name, val)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded text-center min-w-[3rem] transition-all ${
+                      isSelected
+                        ? "bg-[#f8f9fa] border-2 border-gray-900 text-gray-900 shadow-sm"
+                        : isAvailable
+                          ? "bg-[#f8f9fa] text-gray-700 border-2 border-transparent hover:border-gray-300"
+                          : "bg-gray-50 text-gray-400 border-2 border-transparent cursor-not-allowed opacity-50"
+                    }`}
+                  >
+                    {displayName}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
-      <div className="pt-1">
+        );
+      })}
+      <div className="hidden">
         {(() => {
           const matched = parsedVariations.find((v) =>
             Object.entries(selections).every(
@@ -145,7 +172,7 @@ export default function ProductVariationSelector({
               </p>
             );
           return (
-            <p className="text-sm text-green-600 font-medium">
+            <p className="text-sm text-[#84cc16] font-medium">
               ¡Stock Disponible! ({matched.stock} unid.)
               {matched.price_modifier > 0 && ` (+ $${matched.price_modifier})`}
             </p>

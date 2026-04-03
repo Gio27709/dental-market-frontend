@@ -7,13 +7,14 @@ import {
 } from "../../utils/formatters";
 import { ORDER_STATUS } from "../../utils/constants";
 
-const STATUS_BADGE_CLASSES = {
-  yellow: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  blue: "bg-blue-100 text-blue-800 border-blue-200",
-  green: "bg-green-100 text-green-800 border-green-200",
-  emerald: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  red: "bg-red-100 text-red-800 border-red-200",
-  gray: "bg-gray-100 text-gray-700 border-gray-200",
+// Adaptation to Royal Meridian palette based on the Stitch horizontal design
+const STATUS_BADGE_STYLES = {
+  yellow: { bg: "#fef9c3", text: "#ca8a04", dot: "#ca8a04" }, // Pending / In Review
+  blue: { bg: "#eff6ff", text: "#2563eb", dot: "#2563eb" },   // Shipped
+  green: { bg: "#f0fdf4", text: "#16a34a", dot: "#16a34a" },  // Delivered
+  emerald: { bg: "#dcfce7", text: "#059669", dot: "#059669" },
+  red: { bg: "#fef2f2", text: "#dc2626", dot: "#dc2626" },    // Cancelled / Rejected
+  gray: { bg: "#f3f4f6", text: "#4b5563", dot: "#4b5563" },
 };
 
 export default function OrderCard({ order }) {
@@ -41,67 +42,62 @@ export default function OrderCard({ order }) {
   }
 
   const statusInfo = ORDER_STATUS[statusKey] || ORDER_STATUS.pending;
-  const badgeClass =
-    STATUS_BADGE_CLASSES[statusInfo.color] || STATUS_BADGE_CLASSES.gray;
+  const badgeStyle = STATUS_BADGE_STYLES[statusInfo.color] || STATUS_BADGE_STYLES.gray;
   const itemCount = order.order_items?.length || 0;
 
   return (
     <div
-      id={`order-card-${order.id}`}
-      className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden cursor-pointer group"
       onClick={() => navigate(`/account/orders/${order.id}`)}
+      className="rounded-2xl bg-white hover:bg-gray-50 transition-colors duration-200 cursor-pointer px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-6"
+      style={{ boxShadow: "0 4px 24px rgba(107,30,150,0.04)" }}
     >
-      <div className="p-5">
-        {/* Header: Order Number + Date */}
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold text-gray-900 text-sm tracking-wide">
-            {formatOrderNumber(order.id)}
-          </h3>
-          <span className="text-xs text-gray-400">
-            {formatOrderDate(order.created_at)}
-          </span>
+      {/* Datos grid principal (Horizontal Layout) */}
+      <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+        {/* Order ID */}
+        <div>
+          <p className="text-[10px] uppercase tracking-wider font-bold mb-1" style={{ color: "#727785" }}>Order ID</p>
+          <p className="font-bold text-sm" style={{ color: "#191c23" }}>{formatOrderNumber(order.id)}</p>
         </div>
 
-        {/* Status Badge */}
-        <div className="mb-4">
-          <span
-            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${badgeClass}`}
-          >
-            {statusInfo.label}
-          </span>
+        {/* Placed On */}
+        <div>
+          <p className="text-[10px] uppercase tracking-wider font-bold mb-1" style={{ color: "#727785" }}>Placed On</p>
+          <p className="font-bold text-sm" style={{ color: "#191c23" }}>{formatOrderDate(order.created_at)}</p>
         </div>
 
-        {/* Total + Item count */}
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-xs text-gray-400 mb-0.5">Total</p>
-            <p className="text-lg font-bold text-primary-600">
-              {formatCurrencyUSD(order.total_usd ?? order.total ?? 0)}
-            </p>
-          </div>
-          <p className="text-xs text-gray-500">
-            {itemCount} {itemCount === 1 ? "producto" : "productos"}
+        {/* Total */}
+        <div>
+          <p className="text-[10px] uppercase tracking-wider font-bold mb-1" style={{ color: "#727785" }}>Total</p>
+          <p className="font-bold text-base" style={{ color: "#191c23" }}>
+            {formatCurrencyUSD(order.total_usd ?? order.total ?? 0)}
+          </p>
+        </div>
+
+        {/* Items */}
+        <div>
+          <p className="text-[10px] uppercase tracking-wider font-bold mb-1" style={{ color: "#727785" }}>Items</p>
+          <p className="font-bold text-sm" style={{ color: "#191c23" }}>
+            {itemCount} {itemCount === 1 ? "item" : "items"}
           </p>
         </div>
       </div>
 
-      {/* Footer Button */}
-      <div className="border-t border-gray-100 px-5 py-3 bg-gray-50 group-hover:bg-primary-50 transition-colors">
-        <span className="text-sm font-medium text-primary-600 group-hover:text-primary-700 flex items-center gap-1">
-          Ver detalle
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-              clipRule="evenodd"
-            />
-          </svg>
+      {/* Action Area (Badge + Link) */}
+      <div className="flex items-center gap-6 md:w-auto w-full justify-between md:justify-end">
+        {/* Status Badge */}
+        <span
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
+          style={{ backgroundColor: badgeStyle.bg, color: badgeStyle.text }}
+        >
+          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: badgeStyle.dot }}></span>
+          {statusInfo.label}
         </span>
+
+        {/* View Details CTA */}
+        <div className="flex items-center gap-1 text-sm font-bold" style={{ color: "#6b1e96" }}>
+          Ver detalle
+          <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>arrow_forward_ios</span>
+        </div>
       </div>
     </div>
   );

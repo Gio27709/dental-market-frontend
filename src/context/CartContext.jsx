@@ -261,7 +261,7 @@ export const CartProvider = ({ children }) => {
     const itemToUpdate = items.find((i) => i.id === itemId);
     if (!itemToUpdate) return;
 
-    const maxStock = itemToUpdate.variation?.stock || 999;
+    const maxStock = itemToUpdate.max_stock || itemToUpdate.variation?.stock || 999;
     const safeQuantity = validateCartItemQuantity(
       Number(requestedQuantity),
       maxStock,

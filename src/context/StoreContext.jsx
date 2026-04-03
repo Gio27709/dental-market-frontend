@@ -11,6 +11,7 @@ import {
   uploadProductImage,
   shipOrderItemAPI,
   getMyOrders,
+  cancelAbandonedOrderAPI,
 } from "../services/api";
 
 const StoreContext = createContext();
@@ -79,6 +80,8 @@ export const StoreProvider = ({ children }) => {
       const response = await createProductAPI(productData);
       const newProduct = response.data.data;
       setMyProducts((prev) => [newProduct, ...prev]);
+      // Invalidate global catalog cache so changes appear immediately
+      localStorage.removeItem("dental_market_products_cache");
       return { success: true, data: newProduct };
     } catch (err) {
       const msg = err.response?.data?.error || "Error al crear producto";
@@ -97,6 +100,8 @@ export const StoreProvider = ({ children }) => {
       // We could return the updated product from the API,
       // but for now re-fetching the list ensures all variations are perfectly synced
       await fetchMyProducts();
+      // Invalidate global catalog cache so changes appear immediately
+      localStorage.removeItem("dental_market_products_cache");
       return { success: true };
     } catch (err) {
       const msg = err.response?.data?.error || "Error al actualizar producto";
@@ -126,6 +131,8 @@ export const StoreProvider = ({ children }) => {
     try {
       await deleteProductAPI(id);
       setMyProducts((prev) => prev.filter((p) => p.id !== id));
+      // Invalidate global catalog cache so changes appear immediately
+      localStorage.removeItem("dental_market_products_cache");
       return { success: true };
     } catch (err) {
       return {
@@ -170,6 +177,22 @@ export const StoreProvider = ({ children }) => {
     }
   };
 
+  const cancelAbandonedStoreOrder = async (orderId) => {
+    setLoading(true);
+    try {
+      await cancelAbandonedOrderAPI(orderId);
+      await fetchStoreOrders();
+      return { success: true };
+    } catch (err) {
+      return {
+        success: false,
+        error: err.response?.data?.error || "Error al cancelar la orden abandonada",
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value = {
     storeProfile,
     myProducts,
@@ -185,6 +208,7 @@ export const StoreProvider = ({ children }) => {
     deleteProduct,
     fetchStoreOrders,
     shipItem,
+    cancelAbandonedStoreOrder,
   };
 
   return (

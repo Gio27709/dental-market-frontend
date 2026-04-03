@@ -4,68 +4,56 @@ import { formatCurrencyUSD, formatCurrencyVES } from "../../utils/formatters";
 export default function CartSummary({
   totalUsd,
   totalVes,
+  itemCount = 0,
   onCheckout,
   showShipping = false,
 }) {
+  const productLabel = itemCount === 1 ? "producto" : "productos";
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col h-full sticky top-24">
-      <h3 className="text-lg font-bold text-gray-900 mb-6">Resumen de Orden</h3>
-
-      <div className="space-y-4 mb-6 flex-grow">
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-500">Subtotal</span>
-          <span className="font-medium text-gray-900">
-            {formatCurrencyUSD(totalUsd)}
-          </span>
-        </div>
-
-        {showShipping && (
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-500">Envío</span>
-            <span className="font-medium text-green-600">Gratis</span>
-          </div>
-        )}
-
-        <div className="pt-4 border-t border-gray-100">
-          <div className="flex justify-between items-end mb-1">
-            <span className="text-base font-bold text-gray-900">Total USD</span>
-            <span className="text-xl font-black text-gray-900">
-              {formatCurrencyUSD(totalUsd)}
-            </span>
-          </div>
-          <div className="flex justify-between items-center text-sm mt-2 bg-gray-50 p-2 rounded">
-            <span className="text-gray-500">Ref. Bolívares</span>
-            <span className="font-medium text-gray-700">
-              {formatCurrencyVES(totalVes)}
-            </span>
-          </div>
-        </div>
+    <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col">
+      {/* Subtotal line — Amazon style */}
+      <div className="mb-4">
+        <span className="text-[15px] text-gray-700">
+          Subtotal ({itemCount} {productLabel}):{" "}
+        </span>
+        <span className="text-[15px] font-bold text-gray-900">
+          {formatCurrencyUSD(totalUsd)}
+        </span>
       </div>
 
+      {/* Ref. Bolívares */}
+      <div className="flex items-center gap-2 text-xs text-gray-500 mb-4 bg-gray-50 rounded-md px-3 py-2 border border-gray-100">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 flex-shrink-0">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+        <span>Ref. Bolívares: <span className="font-medium text-gray-600">{formatCurrencyVES(totalVes)}</span></span>
+      </div>
+
+      {showShipping && (
+        <div className="flex items-center gap-2 text-xs text-green-600 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.07-.504 1.07-1.125V6.75a2.625 2.625 0 0 0-2.625-2.625H3.375v8.25" />
+          </svg>
+          <span className="font-medium">Envío gratis</span>
+        </div>
+      )}
+
+      {/* Checkout Button */}
       <button
         onClick={onCheckout}
         disabled={totalUsd === 0}
-        className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-primary-700 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 disabled:cursor-not-allowed"
+        className="w-full bg-[#6b1e96] text-white py-3 px-4 rounded-full font-semibold text-[15px] hover:bg-[#531575] transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 disabled:cursor-not-allowed"
       >
         Proceder al pago
       </button>
 
-      <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-          className="w-4 h-4"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
-          />
+      {/* Trust badge */}
+      <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-gray-400">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
         </svg>
-        <span>Pago seguro mediante Escrow</span>
+        Pago seguro mediante Escrow
       </div>
     </div>
   );
@@ -74,6 +62,7 @@ export default function CartSummary({
 CartSummary.propTypes = {
   totalUsd: PropTypes.number.isRequired,
   totalVes: PropTypes.number.isRequired,
+  itemCount: PropTypes.number,
   onCheckout: PropTypes.func.isRequired,
   showShipping: PropTypes.bool,
 };

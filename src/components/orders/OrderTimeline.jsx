@@ -70,7 +70,6 @@ export default function OrderTimeline({ status }) {
               (status === "delivered" && idx === currentStep));
           const isActive =
             !isCancelled && idx === currentStep && status !== "delivered";
-          const isFuture = isCancelled || idx > currentStep;
 
           return (
             <div
@@ -78,11 +77,11 @@ export default function OrderTimeline({ status }) {
               className="flex flex-col items-center z-10 flex-1"
             >
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-lg border-2 transition-all duration-300 ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border-2 transition-all duration-300 ${
                   isCompleted
                     ? "bg-primary-500 border-primary-500 text-white"
                     : isActive
-                      ? "bg-white border-primary-500 text-primary-600 shadow-md ring-4 ring-primary-100"
+                      ? "bg-white border-primary-500 text-primary-600 shadow-md ring-2 ring-primary-100"
                       : "bg-gray-100 border-gray-300 text-gray-400"
                 }`}
               >
@@ -98,11 +97,6 @@ export default function OrderTimeline({ status }) {
                 }`}
               >
                 {step.label}
-              </p>
-              <p
-                className={`text-[10px] text-center mt-0.5 ${isFuture ? "text-gray-300" : "text-gray-500"}`}
-              >
-                {step.description}
               </p>
             </div>
           );
@@ -123,7 +117,7 @@ export default function OrderTimeline({ status }) {
             <div key={step.key} className="flex items-start gap-3">
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border-2 transition-all ${
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] border-2 transition-all ${
                     isCompleted
                       ? "bg-primary-500 border-primary-500 text-white"
                       : isActive
@@ -135,7 +129,7 @@ export default function OrderTimeline({ status }) {
                 </div>
                 {idx < STEPS.length - 1 && (
                   <div
-                    className={`w-0.5 h-6 mt-1 ${isCompleted ? "bg-primary-500" : "bg-gray-200"}`}
+                    className={`w-0.5 h-5 mt-1 ${isCompleted ? "bg-primary-500" : "bg-gray-200"}`}
                   />
                 )}
               </div>
@@ -151,7 +145,6 @@ export default function OrderTimeline({ status }) {
                 >
                   {step.label}
                 </p>
-                <p className="text-xs text-gray-500">{step.description}</p>
               </div>
             </div>
           );

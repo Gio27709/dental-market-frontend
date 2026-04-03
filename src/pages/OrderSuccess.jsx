@@ -71,15 +71,40 @@ export default function OrderSuccess() {
         </p>
 
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8">
-          <div className="bg-blue-50 text-blue-800 px-4 py-3 rounded-md font-medium text-sm flex items-center gap-2 border border-blue-100">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+          <div className={`px-4 py-3 rounded-md font-medium text-sm flex items-center gap-2 border ${
+            order.payment_status === "approved"
+              ? "bg-green-50 text-green-800 border-green-100"
+              : order.payment_status === "rejected"
+              ? "bg-red-50 text-red-800 border-red-100"
+              : "bg-blue-50 text-blue-800 border-blue-100"
+          }`}>
+            <span className={`w-2 h-2 rounded-full ${
+              order.payment_status === "approved" ? "bg-green-500" :
+              order.payment_status === "rejected" ? "bg-red-500" :
+              "bg-blue-500 animate-pulse"
+            }`}></span>
             Estado del Pago:{" "}
-            {order.payment_status === "pending_approval"
-              ? "Esperando aprobación"
-              : "Pendiente de comprobante"}
+            {order.payment_status === "pending"
+              ? "Pendiente de comprobante"
+              : order.payment_status === "under_review"
+              ? "En revisión"
+              : order.payment_status === "approved"
+              ? "Pago aprobado"
+              : order.payment_status === "rejected"
+              ? "Pago rechazado"
+              : order.payment_status}
           </div>
           <div className="bg-green-50 text-green-800 px-4 py-3 rounded-md font-medium text-sm border border-green-100">
-            Estado Envío: {order.order_status}
+            Estado Orden:{" "}
+            {order.order_status === "pending"
+              ? "Pendiente"
+              : order.order_status === "processing"
+              ? "En proceso"
+              : order.order_status === "shipped"
+              ? "Enviado"
+              : order.order_status === "delivered"
+              ? "Entregado"
+              : order.order_status}
           </div>
         </div>
 

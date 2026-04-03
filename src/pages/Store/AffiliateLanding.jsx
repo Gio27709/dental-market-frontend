@@ -164,6 +164,21 @@ export default function AffiliateLanding() {
                     </button>
                   </div>
                 </div>
+              ) : user?.role === "admin" ? (
+                <div className="text-center py-10">
+                  <div className="w-16 h-16 bg-[#6b1e96]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-8 h-8 text-[#6b1e96]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-3">Acceso de Administrador</h2>
+                  <p className="text-gray-500 mb-8 max-w-sm mx-auto">
+                    Como administrador de DENTIX, tienes acceso completo y no es necesario que apliques como afiliado.
+                  </p>
+                  <button onClick={() => navigate("/admin/store-applications")} className="bg-[#6b1e96] hover:bg-[#531575] text-white px-6 py-2.5 rounded-xl font-medium transition-colors shadow-sm">
+                    Ver Solicitudes
+                  </button>
+                </div>
               ) : (user?.role === "store" || user?.role === "owner") ? (
                 <div className="text-center py-10">
                   <div className="w-16 h-16 bg-[#6b1e96]/10 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -179,7 +194,45 @@ export default function AffiliateLanding() {
                     Ir a tu Panel de Tienda
                   </button>
                 </div>
-              ) : applicationStatus ? (
+              ) : applicationStatus === "rejected" ? (
+                <div className="text-center py-10">
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Solicitud Rechazada</h2>
+                  <p className="text-gray-500 mb-2 max-w-sm mx-auto">
+                    Tu solicitud de afiliación ha sido revisada y no fue aprobada en esta oportunidad.
+                  </p>
+                  <p className="text-gray-400 text-sm mb-8 max-w-sm mx-auto">
+                    Esto puede deberse a datos incompletos, documentación inválida u otros motivos. Puedes volver a intentarlo con información actualizada o contactar a soporte para más detalles.
+                  </p>
+                  <div className="flex flex-col sm:flex-row justify-center gap-3">
+                    <button 
+                      onClick={() => {
+                        setApplicationStatus(null);
+                        setForm({ business_name: "", rif: "", business_phone: "", business_address: "" });
+                      }} 
+                      className="bg-[#6b1e96] hover:bg-[#531575] text-white px-6 py-2.5 rounded-xl font-medium transition-colors shadow-sm flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                      </svg>
+                      Volver a Intentar
+                    </button>
+                    <a 
+                      href="mailto:soporte@dentix.com?subject=Solicitud de Tienda Rechazada" 
+                      className="bg-white border-2 border-gray-200 text-gray-700 hover:border-[#6b1e96] hover:text-[#6b1e96] px-6 py-2.5 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                      </svg>
+                      Contactar Soporte
+                    </a>
+                  </div>
+                </div>
+              ) : applicationStatus === "pending" || applicationStatus === "approved" ? (
                 <div className="text-center py-10">
                   <div className="w-16 h-16 bg-[#c3ff00]/20 rounded-full flex items-center justify-center mx-auto mb-6">
                     <svg className="w-8 h-8 text-[#6b1e96]" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useOrder } from "../context/OrderContext";
 import CheckoutForm from "../components/orders/CheckoutForm";
+import CheckoutSummary from "../components/orders/CheckoutSummary";
 import PaymentProofUploader from "../components/orders/PaymentProofUploader";
 import toast from "react-hot-toast";
 
@@ -19,9 +20,14 @@ export default function Checkout() {
 
   const [step, setStep] = useState(1);
   const [createdOrderId, setCreatedOrderId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Bug 5: double-click guard
 
-  // If cart is empty, redirect back
+  // Bug 2: Immediate ref flag to prevent redirect after cart is cleared post-order
+  const orderCreatedRef = useRef(false);
+
+  // If cart is empty and we haven't just created an order, redirect back
   useEffect(() => {
+    if (orderCreatedRef.current) return; // Order was created — cart is legitimately empty
     if (!cartLoading && (!items || items.length === 0) && step === 1) {
       toast.error("Tu carrito está vacío. Agrega productos para continuar.");
       navigate("/");
@@ -29,6 +35,10 @@ export default function Checkout() {
   }, [items, cartLoading, navigate, step]);
 
   const handleCreateOrder = async (formData) => {
+    // Bug 5: Prevent duplicate submissions from rapid clicks
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     // Validate variation_id integrity before sending to backend
     for (const item of items) {
       // If item has variation data (meaning the product has variations),
@@ -37,6 +47,7 @@ export default function Checkout() {
         toast.error(
           `"${item.name}" requiere seleccionar una variación. Vuelve al carrito y corrige.`,
         );
+        setIsSubmitting(false);
         return;
       }
       // Catch the "default" string that CartContext uses as fallback
@@ -44,6 +55,7 @@ export default function Checkout() {
         toast.error(
           `"${item.name}" tiene una variación no válida. Elimínalo del carrito y agrégalo de nuevo.`,
         );
+        setIsSubmitting(false);
         return;
       }
     }
@@ -67,7 +79,13 @@ export default function Checkout() {
     const result = await createOrder(orderPayload);
 
     if (result.success) {
+      // Bug 2: Set the ref BEFORE clearing cart to prevent useEffect redirect
+      orderCreatedRef.current = true;
+
       setCreatedOrderId(result.order.id);
+
+      // Bug 4: Clear checkout form data from sessionStorage
+      sessionStorage.removeItem("checkout_form_data");
 
       // Clear the cart context immediately to avoid resubmissions
       if (clearCart) {
@@ -79,6 +97,9 @@ export default function Checkout() {
       );
       // Move to step 2 (Upload Proof)
       setStep(2);
+    } else {
+      toast.error(result.error || "Ocurrió un error inesperado al crear la orden.");
+      setIsSubmitting(false); // Only reset on failure so user can retry
     }
   };
 
@@ -100,42 +121,59 @@ export default function Checkout() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Progress Tracker UX */}
-      <div className="mb-8">
-        <div className="flex items-center">
-          <div
-            className={`flex items-center justify-center w-8 h-8 rounded-full font-bold ${step === 1 ? "bg-primary-600 text-white" : "bg-green-500 text-white"}`}
-          >
-            {step === 1 ? "1" : "✓"}
-          </div>
-          <div
-            className={`flex-1 h-1 mx-2 ${step === 2 ? "bg-green-500" : "bg-gray-200"}`}
-          ></div>
-          <div
-            className={`flex items-center justify-center w-8 h-8 rounded-full font-bold ${step === 2 ? "bg-primary-600 text-white" : "bg-gray-200 text-gray-500"}`}
-          >
-            2
-          </div>
-        </div>
-        <div className="flex justify-between mt-2 text-sm font-medium text-gray-500">
-          <span className={step === 1 ? "text-primary-600" : "text-green-600"}>
-            Facturación y Pago
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      {/* Premium Breadcrumb Stepper */}
+      <div className="mb-8 overflow-x-auto pb-2 custom-scrollbar">
+        <nav aria-label="Progress" className="hidden sm:flex items-center text-sm font-medium whitespace-nowrap">
+          <ol className="flex items-center space-x-2 md:space-x-4">
+            <li className="flex items-center">
+              <span className={step === 1 ? "text-[#6b1e96] font-bold" : "text-gray-400 font-medium transition-colors"}>
+                Información y Pago
+              </span>
+              <span className="material-symbols-outlined mx-2 md:mx-4 text-gray-300 text-sm">chevron_right</span>
+            </li>
+            <li className="flex items-center">
+              <span className={step === 2 ? "text-[#6b1e96] font-bold" : "text-gray-400 font-medium transition-colors"}>
+                Comprobante
+              </span>
+              <span className="material-symbols-outlined mx-2 md:mx-4 text-gray-300 text-sm">chevron_right</span>
+            </li>
+            <li className="flex items-center">
+              <span className="text-gray-400 font-medium transition-colors">
+                Confirmación
+              </span>
+            </li>
+          </ol>
+        </nav>
+        {/* Mobile Stepper */}
+        <div className="sm:hidden flex items-center gap-2 text-sm font-bold text-[#6b1e96]">
+          <span className="bg-[#6b1e96] text-[#c3ff00] w-6 h-6 flex items-center justify-center rounded-full text-xs">
+            {step}
           </span>
-          <span className={step === 2 ? "text-primary-600" : ""}>
-            Comprobante
-          </span>
+          <span>{step === 1 ? "Información y Pago" : step === 2 ? "Subir Comprobante" : "Confirmación"}</span>
         </div>
       </div>
 
       {step === 1 && items && items.length > 0 && (
-        <CheckoutForm
-          cartItems={items}
-          total_usd={total_usd}
-          total_ves={total_ves}
-          onSubmit={handleCreateOrder}
-          loading={orderLoading}
-        />
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          {/* Columna Izquierda (Formulario) */}
+          <div className="w-full lg:w-[60%] xl:w-[65%] flex-shrink-0">
+            <CheckoutForm
+              cartItems={items}
+              onSubmit={handleCreateOrder}
+              loading={orderLoading || isSubmitting}
+            />
+          </div>
+
+          {/* Columna Derecha (Resumen Sticky) */}
+          <div className="w-full lg:w-[40%] xl:w-[35%] flex-shrink-0 relative">
+            <CheckoutSummary
+              cartItems={items}
+              total_usd={total_usd}
+              total_ves={total_ves}
+            />
+          </div>
+        </div>
       )}
 
       {step === 2 && createdOrderId && (

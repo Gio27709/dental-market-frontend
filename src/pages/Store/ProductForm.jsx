@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../../context/StoreContext";
 import { useProducts } from "../../context/ProductContext";
-import { getCategoriesAPI } from "../../services/api";
+import { getCategoriesAPI, getBrandsAPI } from "../../services/api";
 import toast from "react-hot-toast";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -26,6 +26,7 @@ export default function ProductForm() {
     name: "",
     description: "",
     category_id: "",
+    brand_id: "",
     price: "",
     compare_at_price: "",
     cost_price: "",
@@ -38,6 +39,10 @@ export default function ProductForm() {
   const [uploading, setUploading] = useState(false);
   const [fetchingProduct, setFetchingProduct] = useState(isEditing);
   const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
+  
+  // State for the color picker
+  const [pickerColors, setPickerColors] = useState({});
 
   useEffect(() => {
     fetchProfile();
@@ -45,6 +50,10 @@ export default function ProductForm() {
     getCategoriesAPI()
       .then((res) => setCategories(res.data.data || []))
       .catch(() => toast.error("Error al cargar categorías"));
+    // Load brands from DB
+    getBrandsAPI()
+      .then((res) => setBrands(res.data.data || []))
+      .catch(() => console.error("Error loading brands"));
 
     if (isEditing) {
       setFetchingProduct(true);
@@ -130,6 +139,7 @@ export default function ProductForm() {
             name: product.name || "",
             description: product.description || "",
             category_id: product.category_id || "",
+            brand_id: product.brand_id || "",
             price: product.price || "",
             compare_at_price: product.compare_at_price || "",
             cost_price: product.cost_price || "",
@@ -293,6 +303,7 @@ export default function ProductForm() {
       name: form.name,
       description: form.description,
       category_id: form.category_id,
+      brand_id: form.brand_id || null,
       price: parseFloat(form.price),
       compare_at_price: form.compare_at_price ? parseFloat(form.compare_at_price) : "",
       cost_price: form.cost_price ? parseFloat(form.cost_price) : "",
@@ -436,11 +447,39 @@ export default function ProductForm() {
                 >
                   <option value="">Seleccionar categoría...</option>
                   {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
+                    cat.children && cat.children.length > 0 ? (
+                      <optgroup key={cat.id} label={cat.name}>
+                        <option value={cat.id}>{cat.name} (General)</option>
+                        {cat.children.map((sub) => (
+                          <option key={sub.id} value={sub.id}>
+                            {sub.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ) : (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    )
                   ))}
                 </select>
+              </div>
+
+              {/* Marca (opcional) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Marca
+                </label>
+                <select
+                  name="brand_id"
+                  value={form.brand_id}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500/20"
+                >
+                  <option value="">Sin marca asignada</option>
+                  {brands.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-400 mt-1">Fabricante del producto (opcional)</p>
               </div>
             </div>
           </div>
@@ -612,9 +651,13 @@ export default function ProductForm() {
               </div>
 
               <div className="space-y-4">
-                {options.map((opt, i) => (
-                  <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white">
-                    <div className="flex justify-between items-center mb-4">
+                {options.map((opt, i) => {
+                  const isColorOption = opt.name.trim().toLowerCase() === "color" || opt.name.trim().toLowerCase() === "color";
+                  const currentColor = pickerColors[i] || "#000000";
+
+                  return (
+                    <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white">
+                      <div className="flex justify-between items-center mb-4">
                       <div className="w-1/3 mr-4">
                         <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Opción {i + 1}</label>
                         <input
@@ -636,39 +679,62 @@ export default function ProductForm() {
                     
                     <div>
                       <div className="w-full flex flex-wrap items-center gap-2 p-1.5 border border-gray-300 rounded-md bg-white focus-within:ring-1 focus-within:ring-primary-500">
-                        {opt.values.map((val, vIdx) => (
-                          <span key={vIdx} className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 border border-gray-200 text-gray-700 text-sm rounded-md shadow-sm">
-                            {val}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                 const newValues = opt.values.filter((_, idx) => idx !== vIdx);
-                                 handleOptionChange(i, "values", newValues);
-                              }}
-                              className="text-gray-400 hover:text-gray-700 font-medium focus:outline-none"
-                            >
-                              ✕
-                            </button>
-                          </span>
-                        ))}
+                        {opt.values.map((rawVal, vIdx) => {
+                          const valName = rawVal.includes('|') ? rawVal.split('|')[0] : rawVal;
+                          const valHex = rawVal.includes('|') ? rawVal.split('|')[1] : null;
+
+                          return (
+                            <span key={vIdx} className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 border border-gray-200 text-gray-700 text-sm rounded-md shadow-sm">
+                              {valHex && <span className="w-3.5 h-3.5 rounded-full border border-gray-300" style={{ backgroundColor: valHex }}></span>}
+                              {valName}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                   const newValues = opt.values.filter((_, idx) => idx !== vIdx);
+                                   handleOptionChange(i, "values", newValues);
+                                }}
+                                className="text-gray-400 hover:text-gray-700 font-medium focus:outline-none"
+                              >
+                                ✕
+                              </button>
+                            </span>
+                          );
+                        })}
+                        
+                        {isColorOption && (
+                          <input 
+                            type="color" 
+                            title="Selecciona el color exacto"
+                            value={currentColor}
+                            onChange={(e) => setPickerColors(prev => ({...prev, [i]: e.target.value}))}
+                            className="w-7 h-7 p-0 border-0 rounded cursor-pointer bg-transparent"
+                          />
+                        )}
+
                         <input
                           type="text"
-                          placeholder={opt.values.length === 0 ? "Escribe y presiona Enter o Coma" : "Agregar..."}
+                          placeholder={opt.values.length === 0 ? "Escribe y presiona Enter o Coma" : (isColorOption ? "Nombre color..." : "Agregar...")}
                           className="flex-1 min-w-[150px] px-2 py-1 outline-none text-sm bg-transparent placeholder-gray-400"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ',') {
                               e.preventDefault();
-                              const val = e.target.value.trim().replace(/,$/, '');
-                              if (val && !opt.values.includes(val)) {
-                                handleOptionChange(i, "values", [...opt.values, val]);
+                              const textVal = e.target.value.trim().replace(/,$/, '');
+                              if (textVal) {
+                                const finalVal = isColorOption ? `${textVal}|${currentColor}` : textVal;
+                                if (!opt.values.includes(finalVal)) {
+                                  handleOptionChange(i, "values", [...opt.values, finalVal]);
+                                }
                               }
                               e.target.value = "";
                             }
                           }}
                           onBlur={(e) => {
-                              const val = e.target.value.trim().replace(/,$/, '');
-                              if (val && !opt.values.includes(val)) {
-                                handleOptionChange(i, "values", [...opt.values, val]);
+                              const textVal = e.target.value.trim().replace(/,$/, '');
+                              if (textVal) {
+                                const finalVal = isColorOption ? `${textVal}|${currentColor}` : textVal;
+                                if (!opt.values.includes(finalVal)) {
+                                  handleOptionChange(i, "values", [...opt.values, finalVal]);
+                                }
                               }
                               e.target.value = "";
                           }}
@@ -676,7 +742,7 @@ export default function ProductForm() {
                       </div>
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
 
               <div className="pt-2">
@@ -713,7 +779,7 @@ export default function ProductForm() {
                         try {
                           parsedCombo = JSON.parse(v.attribute_value);
                           label = Object.entries(parsedCombo)
-                            .map(([, val]) => `${val}`)
+                            .map(([, val]) => typeof val === 'string' && val.includes('|') ? val.split('|')[0] : `${val}`)
                             .join(" / ");
                         } catch {
                           // Silently fall back to raw value for legacy records

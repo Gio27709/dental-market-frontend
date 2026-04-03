@@ -42,7 +42,7 @@ export default function PaymentApprovals() {
       toast.success(
         `Pago de la orden ${orderId.split("-")[0].toUpperCase()} aprobado con éxito.`,
       );
-      fetchOrders({ payment_status: "under_review" }); // Refresh queue
+      fetchOrders({ payment_status: "under_review", admin_view: "true" }); // Refresh queue con vista admin
     } else {
       toast.error(res.error || "No se pudo aprobar la orden.");
     }
@@ -63,7 +63,7 @@ export default function PaymentApprovals() {
     if (res.success) {
       toast.success(`Orden rechazada`);
       setRejectingOrderId(null);
-      fetchOrders({ payment_status: "under_review" }); // Refresh queue
+      fetchOrders({ payment_status: "under_review", admin_view: "true" }); // Refresh queue con vista admin
     } else {
       toast.error(res.error || "Error al rechazar pago");
     }

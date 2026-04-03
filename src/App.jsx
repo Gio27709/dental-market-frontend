@@ -5,10 +5,14 @@ import { ProductProvider } from "./context/ProductContext";
 import { CartProvider } from "./context/CartContext";
 import { OrderProvider } from "./context/OrderContext";
 import { StoreProvider } from "./context/StoreContext";
+import { LocationProvider } from "./context/LocationContext";
+import { FavoriteProvider } from "./context/FavoriteContext";
 import { Toaster } from "react-hot-toast";
 
 import Header from "./components/Header";
+import Footer from "./components/layout/Footer";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ScrollToTop from "./components/ScrollToTop";
 import AccountLayout from "./components/layout/account/AccountLayout";
 import AdminLayout from "./components/layout/admin/AdminLayout";
 import StoreLayout from "./components/layout/store/StoreLayout";
@@ -28,9 +32,12 @@ const PaymentApprovals = lazy(() => import("./pages/Admin/PaymentApprovals"));
 const AllOrders = lazy(() => import("./pages/Admin/AllOrders"));
 const ProductModeration = lazy(() => import("./pages/Admin/ProductModeration"));
 const StoreApplications = lazy(() => import("./pages/Admin/StoreApplications"));
+const CategoryManagement = lazy(() => import("./pages/Admin/CategoryManagement"));
+const PlatformSettings = lazy(() => import("./pages/admin/PlatformSettings"));
 
 const Orders = lazy(() => import("./pages/Account/Orders"));
 const OrderDetail = lazy(() => import("./pages/Account/OrderDetail"));
+const Favorites = lazy(() => import("./pages/Account/Favorites"));
 
 const StoreDashboard = lazy(() => import("./pages/Store/StoreDashboard"));
 const StoreProducts = lazy(() => import("./pages/Store/StoreProducts"));
@@ -39,16 +46,22 @@ const StoreOrders = lazy(() => import("./pages/Store/StoreOrders"));
 const StoreProfile = lazy(() => import("./pages/Store/StoreProfile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AffiliateLanding = lazy(() => import("./pages/Store/AffiliateLanding"));
+const StoreCatalog = lazy(() => import("./pages/StoreCatalog"));
+const StorePublicProfile = lazy(() => import("./pages/StorePublicProfile"));
+const UserPublicProfile = lazy(() => import("./pages/UserPublicProfile"));
 
 export default function App() {
   return (
     <Router>
-      <AuthProvider>
-        <ProductProvider>
-          <CartProvider>
-            <OrderProvider>
-              <StoreProvider>
-                <div className="min-h-screen flex flex-col font-sans">
+      <ScrollToTop />
+      <LocationProvider>
+        <AuthProvider>
+          <ProductProvider>
+            <FavoriteProvider>
+              <CartProvider>
+              <OrderProvider>
+                <StoreProvider>
+                  <div className="min-h-screen flex flex-col font-sans">
                   <Header />
                   <main className="flex-grow bg-gray-50">
                     <Suspense fallback={<LoadingSkeleton />}>
@@ -59,6 +72,9 @@ export default function App() {
                         <Route path="/register" element={<Register />} />
                         <Route path="/afiliate" element={<AffiliateLanding />} />
                         <Route path="/cart" element={<Cart />} />
+                        <Route path="/store-catalog" element={<StoreCatalog />} />
+                        <Route path="/store/:id" element={<StorePublicProfile />} />
+                        <Route path="/user/:id" element={<UserPublicProfile />} />
                         {/* Account Routes (Nested Layout) */}
                         <Route
                           path="/account"
@@ -71,6 +87,7 @@ export default function App() {
                           <Route index element={<Account />} />
                           <Route path="orders" element={<Orders />} />
                           <Route path="orders/:id" element={<OrderDetail />} />
+                          <Route path="favorites" element={<Favorites />} />
                         </Route>
                         <Route
                           path="/checkout"
@@ -105,6 +122,8 @@ export default function App() {
                           <Route path="orders" element={<AllOrders />} />
                           <Route path="product-moderation" element={<ProductModeration />} />
                           <Route path="store-applications" element={<StoreApplications />} />
+                          <Route path="categories" element={<CategoryManagement />} />
+                          <Route path="settings" element={<PlatformSettings />} />
                         </Route>
 
                         {/* Store Dashboard Routes (Nested Layout) */}
@@ -135,14 +154,7 @@ export default function App() {
                     </Suspense>
                   </main>
 
-                  <footer className="bg-white border-t border-gray-200 mt-auto">
-                    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                      <p className="text-center text-gray-500 text-sm">
-                        &copy; {new Date().getFullYear()} DentalMarket MVP.
-                        Todos los derechos reservados.
-                      </p>
-                    </div>
-                  </footer>
+                  <Footer />
                   <Toaster
                     position="bottom-center"
                     toastOptions={{
@@ -154,11 +166,13 @@ export default function App() {
                     }}
                   />
                 </div>
-              </StoreProvider>
-            </OrderProvider>
-          </CartProvider>
+                </StoreProvider>
+              </OrderProvider>
+            </CartProvider>
+          </FavoriteProvider>
         </ProductProvider>
-      </AuthProvider>
+        </AuthProvider>
+      </LocationProvider>
     </Router>
   );
 }
