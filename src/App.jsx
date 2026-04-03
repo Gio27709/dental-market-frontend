@@ -33,7 +33,7 @@ const AllOrders = lazy(() => import("./pages/Admin/AllOrders"));
 const ProductModeration = lazy(() => import("./pages/Admin/ProductModeration"));
 const StoreApplications = lazy(() => import("./pages/Admin/StoreApplications"));
 const CategoryManagement = lazy(() => import("./pages/Admin/CategoryManagement"));
-const PlatformSettings = lazy(() => import("./pages/admin/PlatformSettings"));
+const PlatformSettings = lazy(() => import("./pages/Admin/PlatformSettings"));
 
 const Orders = lazy(() => import("./pages/Account/Orders"));
 const OrderDetail = lazy(() => import("./pages/Account/OrderDetail"));
