@@ -5,6 +5,7 @@ import {
   createOrder as createOrderAPI,
   getMyOrders,
   getOrderByIdAPI,
+  getOrdersByGroupAPI,
   uploadPaymentProofAPI,
   approvePaymentAPI,
   rejectPaymentAPI,
@@ -17,6 +18,8 @@ export const useOrder = () => useContext(OrderContext);
 
 export const OrderProvider = ({ children }) => {
   const [orders, setOrders] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
+  const [summary, setSummary] = useState({ totalOrders: 0, countByPaymentStatus: {}, countByOrderStatus: {} });
   const [currentOrder, setCurrentOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -26,10 +29,23 @@ export const OrderProvider = ({ children }) => {
     setError(null);
     try {
       const response = await createOrderAPI(orderData);
-      const newOrder = response.data.data || response.data;
-      setCurrentOrder(newOrder);
-      setOrders((prev) => [newOrder, ...prev]);
-      return { success: true, order: newOrder };
+      const responseData = response.data;
+      
+      // Multi-store support: backend now returns { data, orders, order_group_id }
+      const primaryOrder = responseData.data || responseData;
+      const allOrders = responseData.orders || [primaryOrder];
+      const orderGroupId = responseData.order_group_id || null;
+      
+      setCurrentOrder(primaryOrder);
+      setOrders((prev) => [...allOrders, ...prev]);
+      
+      return { 
+        success: true, 
+        order: primaryOrder,
+        orders: allOrders,
+        order_group_id: orderGroupId,
+        orders_count: allOrders.length,
+      };
     } catch (err) {
       const msg = err.response?.data?.error || "Error al crear la orden";
       setError(msg);
@@ -39,12 +55,21 @@ export const OrderProvider = ({ children }) => {
     }
   };
 
-  const uploadPaymentProof = async (orderId, file) => {
+  const uploadPaymentProof = async (orderId, file, paymentDetails = {}) => {
     setLoading(true);
     setError(null);
     try {
       const formData = new FormData();
       formData.append("file", file); // Must match multer/busboy field name expectations on backend
+
+      // Append payer details to the multipart FormData
+      if (paymentDetails.payer_name) formData.append("payer_name", paymentDetails.payer_name);
+      if (paymentDetails.payer_phone) formData.append("payer_phone", paymentDetails.payer_phone);
+      if (paymentDetails.payer_cedula) formData.append("payer_cedula", paymentDetails.payer_cedula);
+      if (paymentDetails.reference_number) formData.append("reference_number", paymentDetails.reference_number);
+      if (paymentDetails.payer_email) formData.append("payer_email", paymentDetails.payer_email);
+      if (paymentDetails.payment_date) formData.append("payment_date", paymentDetails.payment_date);
+
       const response = await uploadPaymentProofAPI(orderId, formData);
       const updatedOrder = response.data.order || response.data;
       setCurrentOrder(updatedOrder);
@@ -68,7 +93,17 @@ export const OrderProvider = ({ children }) => {
     try {
       const config = { params: filters };
       const response = await getMyOrders(config);
-      setOrders(response.data.data || response.data);
+      const payload = response.data;
+      
+      if (payload.pagination) {
+        setOrders(payload.data || []);
+        setPagination(payload.pagination);
+        setSummary(payload.summary || {});
+      } else {
+        setOrders(payload.data || payload);
+        setPagination({ page: 1, limit: 999, total: 0, totalPages: 0 });
+        setSummary({ totalOrders: 0, countByPaymentStatus: {}, countByOrderStatus: {} });
+      }
     } catch (err) {
       if (err.name === "CanceledError" || err.message === "canceled") return;
       setError(err.response?.data?.error || "Error al cargar pedidos");
@@ -94,19 +129,46 @@ export const OrderProvider = ({ children }) => {
     }
   }, []);
 
+  const fetchOrdersByGroup = useCallback(async (groupId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getOrdersByGroupAPI(groupId);
+      const payload = response.data;
+      return {
+        success: true,
+        orders: payload.data || [],
+        summary: payload.summary || {},
+      };
+    } catch (err) {
+      const msg = err.response?.data?.error || "Error al buscar las órdenes";
+      setError(msg);
+      return { success: false, error: msg };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const approvePayment = async (orderId) => {
     setLoading(true);
     setError(null);
     try {
       const response = await approvePaymentAPI(orderId);
-      const updatedOrder = response.data.order || response.data;
+      const data = response.data;
+      const approvedIds = data.approved_order_ids || [orderId];
+
+      // Remove all approved orders from local state (they leave under_review)
       setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? updatedOrder : o)),
+        prev.filter((o) => !approvedIds.includes(o.id)),
       );
-      if (currentOrder && currentOrder.id === orderId) {
-        setCurrentOrder(updatedOrder);
+      if (currentOrder && approvedIds.includes(currentOrder.id)) {
+        setCurrentOrder(null);
       }
-      return { success: true, order: updatedOrder };
+      return {
+        success: true,
+        approved_count: data.approved_count || 1,
+        approved_order_ids: approvedIds,
+      };
     } catch (err) {
       const msg = err.response?.data?.error || "Error al aprobar pago";
       setError(msg);
@@ -121,14 +183,21 @@ export const OrderProvider = ({ children }) => {
     setError(null);
     try {
       const response = await rejectPaymentAPI(orderId, reason);
-      const updatedOrder = response.data.order || response.data;
+      const data = response.data;
+      const rejectedIds = data.rejected_order_ids || [orderId];
+
+      // Remove all rejected orders from local state
       setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? updatedOrder : o)),
+        prev.filter((o) => !rejectedIds.includes(o.id)),
       );
-      if (currentOrder && currentOrder.id === orderId) {
-        setCurrentOrder(updatedOrder);
+      if (currentOrder && rejectedIds.includes(currentOrder.id)) {
+        setCurrentOrder(null);
       }
-      return { success: true, order: updatedOrder };
+      return {
+        success: true,
+        rejected_count: data.rejected_count || 1,
+        rejected_order_ids: rejectedIds,
+      };
     } catch (err) {
       const msg = err.response?.data?.error || "Error al rechazar pago";
       setError(msg);
@@ -163,6 +232,8 @@ export const OrderProvider = ({ children }) => {
 
   const value = {
     orders,
+    pagination,
+    summary,
     currentOrder,
     loading,
     error,
@@ -170,6 +241,7 @@ export const OrderProvider = ({ children }) => {
     uploadPaymentProof,
     fetchOrders,
     fetchOrderById,
+    fetchOrdersByGroup,
     approvePayment,
     rejectPayment,
     confirmDelivery,

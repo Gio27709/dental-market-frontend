@@ -1,8 +1,9 @@
 import PropTypes from "prop-types";
 import { useState, useRef, useEffect } from "react";
 import ProductCard from "../ProductCard";
+import useHomeSections from "../../hooks/useHomeSections";
 
-const TABS = [
+const DEFAULT_TABS = [
   { id: "all", label: "Todos" },
   { id: "instruments", label: "Instrumental" },
   { id: "biomaterials", label: "Biomateriales" },
@@ -11,9 +12,16 @@ const TABS = [
 ];
 
 export default function TopSelling({ products }) {
+  const { sections } = useHomeSections();
+  const data = sections?.top_selling || {};
+
+  // Título y tabs dinámicos con fallback
+  const heading = data.heading || "Lo Más Vendido";
+  const tabs = data.tabs || DEFAULT_TABS;
+
   const available = products || [];
   const scrollRef = useRef(null);
-  
+
   const [activeTab, setActiveTab] = useState("all");
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -76,25 +84,25 @@ export default function TopSelling({ products }) {
     <section className="mb-16 relative">
       <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-gray-200 mb-6 gap-4">
         {/* Título */}
-        <h2 className="text-xl md:text-2xl font-bold text-gray-900 pb-0 border-b-[3px] border-blue-600 inline-block -mb-[2px] pr-4">
-          Lo Más Vendido
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 pb-0 border-b-[3px] border-purple-600 inline-block -mb-[2px] pr-4">
+          {heading}
         </h2>
 
         {/* Pestañas / Tabs */}
         <div className="flex overflow-x-auto scrollbar-hide gap-1 sm:gap-4 -mb-[1px]">
-          {TABS.map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`whitespace-nowrap pb-3 px-2 text-sm md:text-base font-medium transition-colors relative ${
                 activeTab === tab.id
-                  ? "text-blue-600"
+                  ? "text-purple-600"
                   : "text-gray-500 hover:text-gray-800"
               }`}
             >
               {tab.label}
               {activeTab === tab.id && (
-                <span className="absolute bottom-0 left-0 w-full h-[3px] bg-blue-600 rounded-t-sm" />
+                <span className="absolute bottom-0 left-0 w-full h-[3px] bg-purple-600 rounded-t-sm" />
               )}
             </button>
           ))}
@@ -108,11 +116,11 @@ export default function TopSelling({ products }) {
           disabled={!canScrollLeft}
           className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-20 w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] border border-gray-100 transition-all duration-300 ${
             canScrollLeft
-              ? "text-gray-600 hover:text-blue-600 hover:scale-110 active:scale-95"
+              ? "text-gray-600 hover:text-purple-600 hover:scale-110 active:scale-95"
               : "opacity-0 pointer-events-none"
           }`}
         >
-          <span className="material-symbols-rounded text-xl">chevron_left</span>
+          <span className="material-symbols-outlined text-xl">chevron_left</span>
         </button>
 
         {/* Contenedor del Carrusel (5 items por vista) */}
@@ -137,11 +145,11 @@ export default function TopSelling({ products }) {
           disabled={!canScrollRight}
           className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-20 w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] border border-gray-100 transition-all duration-300 ${
             canScrollRight
-              ? "text-gray-600 hover:text-blue-600 hover:scale-110 active:scale-95 opacity-100"
+              ? "text-gray-600 hover:text-purple-600 hover:scale-110 active:scale-95 opacity-100"
               : "opacity-0 pointer-events-none"
           }`}
         >
-          <span className="material-symbols-rounded text-xl">chevron_right</span>
+          <span className="material-symbols-outlined text-xl">chevron_right</span>
         </button>
       </div>
     </section>

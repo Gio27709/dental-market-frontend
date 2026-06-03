@@ -32,9 +32,15 @@ class ErrorBoundary extends React.Component {
             <p className="text-gray-500 mb-6 text-sm">
               Ha ocurrido un error inesperado al renderizar la aplicación. Hemos notificado el problema.
             </p>
+            {this.state.error && (
+              <div className="mb-6 p-4 bg-red-50 rounded text-left overflow-auto max-h-[300px] border border-red-200">
+                <p className="text-red-700 font-bold mb-2">{this.state.error.toString()}</p>
+                <pre className="text-xs text-red-600 whitespace-pre-wrap">{this.state.error.stack}</pre>
+              </div>
+            )}
             <button
               onClick={() => window.location.href = '/'}
-              className="w-full bg-primary-600 text-white font-semibold py-3 px-4 rounded-xl hover:bg-primary-700 transition"
+              className="w-full bg-[#163152] text-white font-semibold py-3 px-4 rounded-xl hover:bg-[#0f233a] transition"
             >
               Volver al Inicio
             </button>

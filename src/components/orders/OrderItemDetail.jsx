@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import { formatCurrencyUSD } from "../../utils/formatters";
 import { ORDER_STATUS } from "../../utils/constants";
+import ShippedBadge from "./ShippedBadge";
 
 const STATUS_BADGE_STYLES = {
   yellow: { bg: "#fef9c3", text: "#ca8a04" },
@@ -8,6 +9,7 @@ const STATUS_BADGE_STYLES = {
   green: { bg: "#f0fdf4", text: "#16a34a" },
   emerald: { bg: "#dcfce7", text: "#059669" },
   red: { bg: "#fef2f2", text: "#dc2626" },
+  indigo: { bg: "#eef2ff", text: "#4f46e5" },
   gray: { bg: "#f3f4f6", text: "#4b5563" },
 };
 
@@ -78,13 +80,17 @@ export default function OrderItemDetail({ item }) {
           <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#727785" }}>
             Cant: {item.quantity} × {formatCurrencyUSD(item.unit_price)}
           </p>
-          <span
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
-            style={{ backgroundColor: badgeStyle.bg, color: badgeStyle.text }}
-          >
-            <span className="w-1 h-1 rounded-full" style={{ backgroundColor: badgeStyle.text }}></span>
-            {statusInfo.label}
-          </span>
+          {item.delivery_status === "shipped" ? (
+            <ShippedBadge size="sm" label={statusInfo.label} />
+          ) : (
+            <span
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+              style={{ backgroundColor: badgeStyle.bg, color: badgeStyle.text }}
+            >
+              <span className="w-1 h-1 rounded-full" style={{ backgroundColor: badgeStyle.text }}></span>
+              {statusInfo.label}
+            </span>
+          )}
         </div>
       </div>
 

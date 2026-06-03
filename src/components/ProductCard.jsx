@@ -6,20 +6,57 @@ import PriceDisplay from "./products/PriceDisplay";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoriteContext";
 import { useAuth } from "../context/AuthContext";
+import { useProducts } from "../context/ProductContext";
+import { useLocationContext } from "../hooks/useLocationContext";
+import { getProximityLabel } from "../utils/stateProximity";
 import toast from "react-hot-toast";
 
 export default function ProductCard({ product }) {
-  const { addToCart } = useCart();
+  const { addToCart, items: cartItems } = useCart();
   const { toggleFavorite, favoriteIds } = useFavorites();
   const { user } = useAuth();
+  const { allProducts, trendingProductIds } = useProducts();
+  const { buyerState } = useLocationContext();
   const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   const isOwnProduct = user?.id === product.store_id;
 
-  const handleAddToCart = () => {
-    if (isOwnProduct) return;
-    // Agrega la variación por defecto si existe, de lo contrario null
-    addToCart(product, product.variations?.[0] || null, 1);
-    toast.success("Agregado a la bolsa");
+  // Phase 4: Compute proximity label for geo-badge
+  const storeState = product.store?.state || product.store_profiles?.state || null;
+  const proximityLabel = buyerState && storeState ? getProximityLabel(buyerState, storeState) : "";
+
+  // Resolve max stock for this product (consistent with CartContext logic)
+  const resolveProductMaxStock = () => {
+    const fullProduct = allProducts?.find(p => p.id === product.id) || product;
+    const defaultVariation = fullProduct?.variations?.[0];
+    if (defaultVariation?.stock != null) return defaultVariation.stock;
+    const defaultVar = fullProduct?.variations?.find(v =>
+      v.attribute_name === "default" ||
+      v.attribute_value === '{"_default":"default"}' ||
+      v.attribute_value === "default"
+    );
+    if (defaultVar?.stock != null) return defaultVar.stock;
+    if (fullProduct?.product_variations?.length > 0 && fullProduct.product_variations[0].stock != null) return fullProduct.product_variations[0].stock;
+    if (fullProduct?.stock != null) return fullProduct.stock;
+    return 99; // Safe cap — backend enforces actual limit
+  };
+
+  const maxStock = resolveProductMaxStock();
+  // DEDUP FIX: Search cart by product_id to catch items regardless of variation_id format
+  const totalCartQtyForProduct = cartItems
+    .filter(ci => ci.product_id === product.id)
+    .reduce((sum, ci) => sum + Number(ci.quantity), 0);
+  const isCartAtMax = maxStock > 0 && totalCartQtyForProduct >= maxStock;
+
+  const handleAddToCart = async () => {
+    if (isOwnProduct || isAdding || isCartAtMax) return;
+    setIsAdding(true);
+    try {
+      const success = await addToCart(product, product.variations?.[0] || null, 1);
+      if (success) toast.success("Agregado a la bolsa");
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   const handleFavorite = (e) => {
@@ -97,12 +134,18 @@ export default function ProductCard({ product }) {
           )}
         </div>
 
-        {/* Badge Vendedor Superior Izquierdo */}
-        <div className="absolute top-4 left-4 z-10 max-w-[70%]">
+        {/* Badge Vendedor Superior Izquierdo y Tendencia */}
+        <div className="absolute top-4 left-4 z-10 max-w-[70%] flex flex-col gap-2">
+          {trendingProductIds?.has(product.id) && (
+            <span className="px-2 py-1 text-[9px] font-bold tracking-wider uppercase bg-orange-500 text-white shadow-sm rounded-md block w-max flex items-center gap-1">
+              <span className="material-symbols-outlined text-[10px]">local_fire_department</span>
+              MÁS VENDIDO
+            </span>
+          )}
           <Link 
             to={`/store/${product.store_id}`}
             onClick={(e) => e.stopPropagation()}
-            className="px-2 py-1 text-[9px] font-bold tracking-wider uppercase bg-[#6b1e96]/10 backdrop-blur-sm text-[#6b1e96] shadow-sm border border-[#6b1e96]/20 rounded-md block whitespace-nowrap overflow-hidden text-ellipsis hover:bg-[#6b1e96] hover:text-white transition-colors"
+            className="px-2 py-1 text-[9px] font-bold tracking-wider uppercase bg-[#6b1e96]/10 backdrop-blur-sm text-[#6b1e96] shadow-sm border border-[#6b1e96]/20 rounded-md block whitespace-nowrap overflow-hidden text-ellipsis hover:bg-[#6b1e96] hover:text-white transition-colors w-max"
           >
             {storeName}
           </Link>
@@ -112,12 +155,34 @@ export default function ProductCard({ product }) {
       {/* Sección de Contenido Inferior */}
       <div className="p-5 flex flex-col flex-grow bg-white">
         
-        {/* Indicador de Disponibilidad */}
-        <div className="mb-2 flex items-center gap-1.5">
-          <div className={`h-1.5 w-1.5 rounded-full ${isAvailable ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
-          <span className={`text-[11px] font-medium tracking-wide uppercase ${isAvailable ? 'text-emerald-600' : 'text-amber-600'}`}>
-            {isAvailable ? 'Disponible' : 'Sin Stock'}
-          </span>
+        {/* Indicador de Disponibilidad + Proximidad */}
+        <div className="mb-2 flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <div className={`h-1.5 w-1.5 rounded-full ${isAvailable ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
+            <span className={`text-[11px] font-medium tracking-wide uppercase ${isAvailable ? 'text-emerald-600' : 'text-amber-600'}`}>
+              {isAvailable ? 'Disponible' : 'Sin Stock'}
+            </span>
+          </div>
+
+          {/* Phase 4: Geo-Proximity Badge */}
+          {proximityLabel === "same_state" && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold tracking-wide uppercase bg-emerald-50 text-emerald-700 border border-emerald-200/60 rounded-md animate-[fadeIn_0.3s_ease-out]">
+              <span className="material-symbols-outlined text-[10px]">location_on</span>
+              En tu estado
+            </span>
+          )}
+          {proximityLabel === "neighbor" && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold tracking-wide uppercase bg-blue-50 text-blue-600 border border-blue-200/60 rounded-md animate-[fadeIn_0.3s_ease-out]">
+              <span className="material-symbols-outlined text-[10px]">near_me</span>
+              Cerca de ti
+            </span>
+          )}
+          {proximityLabel === "regional" && storeState && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium tracking-wide uppercase bg-slate-50 text-slate-500 border border-slate-200/60 rounded-md">
+              <span className="material-symbols-outlined text-[10px]">local_shipping</span>
+              {storeState}
+            </span>
+          )}
         </div>
 
         {/* Título de Producto linkeado */}
@@ -169,13 +234,37 @@ export default function ProductCard({ product }) {
           ) : (
             <button
               onClick={handleAddToCart}
-              className="w-full bg-[#6b1e96] hover:bg-[#531575] active:bg-[#43105e] text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 group text-sm"
-              title="Agregar al carrito"
+              disabled={isAdding || isCartAtMax}
+              className={`w-full font-medium py-2 px-4 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 text-sm ${
+                isCartAtMax
+                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  : isAdding
+                  ? "bg-[#531575] text-white cursor-wait"
+                  : "bg-[#6b1e96] hover:bg-[#531575] active:bg-[#43105e] text-white group"
+              }`}
+              title={isCartAtMax ? "Máximo en carrito" : "Agregar al carrito"}
             >
-              <svg className="h-4 w-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-              </svg>
-              Al Carrito
+              {isAdding ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Agregando...
+                </>
+              ) : isCartAtMax ? (
+                <>
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  Máximo en carrito
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                  </svg>
+                  Al Carrito
+                </>
+              )}
             </button>
           )}
         </div>
@@ -202,9 +291,11 @@ ProductCard.propTypes = {
     stock_status: PropTypes.string,
     store: PropTypes.shape({
       business_name: PropTypes.string,
+      state: PropTypes.string,
     }),
     store_profiles: PropTypes.shape({
       business_name: PropTypes.string,
+      state: PropTypes.string,
     }),
     rating_avg: PropTypes.number,
     review_count: PropTypes.number,

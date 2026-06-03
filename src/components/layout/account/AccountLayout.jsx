@@ -38,6 +38,11 @@ export default function AccountLayout() {
       icon: "favorite",
     },
     {
+      name: "Notificaciones",
+      path: "/account/notifications",
+      icon: "notifications",
+    },
+    {
       name: "Direcciones",
       path: "#",
       icon: "location_on",
@@ -57,9 +62,8 @@ export default function AccountLayout() {
     },
     {
       name: "Contraseña",
-      path: "#",
+      path: "/account/password",
       icon: "lock",
-      disabled: true,
     },
     {
       name: "Soporte",
@@ -78,15 +82,35 @@ export default function AccountLayout() {
             {/* User Header */}
             <div className="px-6 py-5" style={{ background: "linear-gradient(135deg, #6b1e96 0%, #531575 100%)" }}>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center text-lg font-bold" style={{ background: "#c3ff00", color: "#531575" }}>
-                  {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
-                </div>
+                {user.avatarUrl ? (
+                  <>
+                    <img 
+                      src={user.avatarUrl} 
+                      alt="Avatar" 
+                      className="w-12 h-12 flex-shrink-0 rounded-full object-cover" 
+                      style={{ border: "2px solid rgba(195,255,0,0.4)" }} 
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        if (e.target.nextSibling) {
+                          e.target.nextSibling.style.display = 'flex';
+                        }
+                      }}
+                    />
+                    <div className="w-12 h-12 flex-shrink-0 rounded-full items-center justify-center text-lg font-bold" style={{ background: "#c3ff00", color: "#531575", display: "none" }}>
+                      {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center text-lg font-bold" style={{ background: "#c3ff00", color: "#531575" }}>
+                    {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <h2 className="text-base font-bold text-white leading-tight truncate">
                     {user.firstName ? `${user.firstName} ${user.lastName || ""}` : "Usuario"}
                   </h2>
-                  <p className="text-xs text-white/70 capitalize mt-0.5">
-                    {user.role === 'buyer' ? 'Usuario' : user.role === 'admin' ? 'Administrador' : (user.role === 'store' || user.role === 'owner' || user.role === 'store/owner') ? 'Tienda' : user.role}
+                  <p className="text-xs text-white/70 mt-0.5">
+                    {user.role === 'user' ? 'Usuario' : user.role === 'delivery' ? 'Repartidor 🛵' : user.role === 'admin' ? 'Administrador' : user.role === 'owner' ? 'Owner 👑' : (user.role === 'store' || user.role === 'store/owner') ? 'Tienda' : user.role}
                   </p>
                 </div>
               </div>
@@ -117,7 +141,7 @@ export default function AccountLayout() {
             <nav className="p-3 space-y-1">
               
               {/* Rutas Store / Owner (Very Top Priority) */}
-              {(user.role === "store" || user.role === "owner" || user.role === "store/owner") && (
+              {(user.role === "store" || user.role === "store/owner") && (
                 <>
                   <div className="pb-1 mx-4">
                     <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#727785" }}>
@@ -126,18 +150,46 @@ export default function AccountLayout() {
                   </div>
                   <Link
                     to="/store"
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:text-[#6b1e96] transition-all duration-200 mb-2"
+                    className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm font-bold text-white shadow-lg shadow-[#6b1e96]/30 hover:shadow-[#6b1e96]/40 transition-all duration-300 transform hover:-translate-y-0.5 mb-2"
+                    style={{ background: "linear-gradient(135deg, #6b1e96 0%, #531575 100%)" }}
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: "20px", color: "#9ca3af" }}>
-                      storefront
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined" style={{ fontSize: "20px", color: "#c3ff00" }}>
+                        storefront
+                      </span>
+                      Panel Tienda
+                    </div>
+                    <span className="material-symbols-outlined text-[16px] text-white/50">open_in_new</span>
+                  </Link>
+                </>
+              )}
+
+              {/* Rutas Delivery (Rider App) */}
+              {user.role === "delivery" && (
+                <>
+                  <div className="pb-1 mx-4">
+                    <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#727785" }}>
+                      App Rider
                     </span>
-                    Panel Tienda
+                  </div>
+                  <Link
+                    to="/delivery"
+                    className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm font-bold text-white shadow-lg shadow-[#6b1e96]/30 hover:shadow-[#6b1e96]/40 transition-all duration-300 transform hover:-translate-y-0.5 mb-2"
+                    style={{ background: "linear-gradient(135deg, #6b1e96 0%, #531575 100%)" }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined" style={{ fontSize: "20px", color: "#c3ff00" }}>
+                        two_wheeler
+                      </span>
+                      Panel Repartidor
+                    </div>
+                    <span className="material-symbols-outlined text-[16px] text-white/50">open_in_new</span>
                   </Link>
                 </>
               )}
 
               {/* Rutas Admin (Very Top Priority) */}
-              {user.role === "admin" && (
+              {(user.role === "admin" || user.role === "owner") && (
                 <>
                   <div className="pb-1 mx-4">
                     <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#727785" }}>
@@ -146,21 +198,16 @@ export default function AccountLayout() {
                   </div>
                   <Link
                     to="/admin"
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:text-[#6b1e96] transition-all duration-200"
+                    className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm font-bold text-white shadow-lg shadow-[#6b1e96]/30 hover:shadow-[#6b1e96]/40 transition-all duration-300 transform hover:-translate-y-0.5 mb-2"
+                    style={{ background: "linear-gradient(135deg, #6b1e96 0%, #531575 100%)" }}
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: "20px", color: "#9ca3af" }}>
-                      bar_chart
-                    </span>
-                    Dashboard General
-                  </Link>
-                  <Link
-                    to="/admin/orders"
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:text-[#6b1e96] transition-all duration-200 mb-2"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: "20px", color: "#9ca3af" }}>
-                      list_alt
-                    </span>
-                    Todos los Pedidos
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined" style={{ fontSize: "20px", color: "#c3ff00" }}>
+                        admin_panel_settings
+                      </span>
+                      Panel Admin
+                    </div>
+                    <span className="material-symbols-outlined text-[16px] text-white/50">open_in_new</span>
                   </Link>
                 </>
               )}

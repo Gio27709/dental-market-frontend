@@ -1,6 +1,7 @@
 import { useRef, useEffect } from "react";
+import useHomeSections from "../../hooks/useHomeSections";
 
-const BRAND_LIST = [
+const FALLBACK_BRAND_LIST = [
   {
     id: 1,
     name: "NIC",
@@ -43,11 +44,14 @@ const BRAND_LIST = [
   },
 ];
 
-// Duplicamos para lograr el scroll infinito
-const BRANDS = [...BRAND_LIST, ...BRAND_LIST];
-
 export default function BrandsTicker() {
   const trackRef = useRef(null);
+  
+  const { sections } = useHomeSections();
+  const data = sections?.brands_ticker || {};
+  const heading = data.heading || "Marcas de confianza en odontología";
+  const brandsList = data.brands || FALLBACK_BRAND_LIST;
+  const BRANDS = [...brandsList, ...brandsList];
 
   // Physics State
   const state = useRef({
@@ -128,7 +132,7 @@ export default function BrandsTicker() {
     <section className="py-10 mb-12 bg-white overflow-hidden select-none border-t border-b border-gray-100 rounded-2xl">
       {/* Título opcional */}
       <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-6">
-        Marcas de confianza en odontología
+        {heading}
       </p>
 
       <div
@@ -150,13 +154,13 @@ export default function BrandsTicker() {
           {BRANDS.map((brand, index) => (
             <div
               key={`${brand.id}-${index}`}
-              className="flex-shrink-0 grayscale opacity-60 hover:grayscale-0 hover:opacity-100 hover:scale-105 transition-all duration-300"
+              className="flex-shrink-0 hover:scale-105 transition-transform duration-300"
             >
               <img
                 src={brand.img}
                 alt={brand.name}
                 draggable="false"
-                className="h-8 md:h-10 w-auto object-contain pointer-events-none"
+                className="h-10 md:h-12 lg:h-14 w-auto object-contain pointer-events-none drop-shadow-sm"
                 onError={(e) => {
                   // Fallback: mostrar el nombre como texto si la imagen falla
                   e.target.style.display = "none";

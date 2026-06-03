@@ -8,7 +8,7 @@ export default function Register() {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "buyer",
+    role: "user",
   });
 
   const [passwordValidations, setPasswordValidations] = useState({
@@ -188,7 +188,7 @@ export default function Register() {
                 disabled={loading}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-900"
               >
-                <option value="buyer">Usuario normal (Cliente)</option>
+                <option value="user">Usuario normal (Cliente)</option>
                 <option value="professional">Profesional Dental</option>
               </select>
             </div>

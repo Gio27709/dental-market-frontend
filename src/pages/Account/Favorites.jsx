@@ -1,13 +1,17 @@
+import { useState } from "react";
 import { useFavorites } from "../../context/FavoriteContext";
 import { Link } from "react-router-dom";
 import { useProducts } from "../../context/ProductContext";
 import { useCart } from "../../context/CartContext";
+import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 
 export default function Favorites() {
   const { favorites, loading, toggleFavorite } = useFavorites();
   const { allProducts } = useProducts();
   const { addToCart } = useCart();
+  const { user } = useAuth();
+  const [addingIds, setAddingIds] = useState(new Set());
 
   if (loading) {
     return (
@@ -25,9 +29,23 @@ export default function Favorites() {
     return { ...fav, product: fullProduct };
   }).filter(Boolean);
 
-  const handleAddToCart = (product) => {
-    addToCart(product, product.variations?.[0] || null, 1);
-    toast.success("Agregado a la bolsa");
+  const handleAddToCart = async (product) => {
+    if (user?.id === product.store_id) {
+      toast.error("No puedes agregar tu propio producto al carrito.");
+      return;
+    }
+    if (addingIds.has(product.id)) return;
+    setAddingIds(prev => new Set(prev).add(product.id));
+    try {
+      const success = await addToCart(product, product.variations?.[0] || null, 1);
+      if (success) toast.success("Agregado a la bolsa");
+    } finally {
+      setAddingIds(prev => {
+        const next = new Set(prev);
+        next.delete(product.id);
+        return next;
+      });
+    }
   };
 
   return (
@@ -249,16 +267,19 @@ export default function Favorites() {
                   {/* Add to Cart Button */}
                   <button
                     onClick={() => handleAddToCart(product)}
+                    disabled={addingIds.has(product.id)}
                     style={{
                       width: "100%",
                       padding: "0.75rem",
                       borderRadius: "0.75rem",
                       border: "none",
-                      background: "linear-gradient(135deg, #6b1e96 0%, #4f0077 100%)",
+                      background: addingIds.has(product.id)
+                        ? "linear-gradient(135deg, #531575 0%, #3a0055 100%)"
+                        : "linear-gradient(135deg, #6b1e96 0%, #4f0077 100%)",
                       color: "#ffffff",
                       fontWeight: "700",
                       fontSize: "0.8125rem",
-                      cursor: "pointer",
+                      cursor: addingIds.has(product.id) ? "wait" : "pointer",
                       transition: "all 0.2s ease",
                       display: "flex",
                       alignItems: "center",
@@ -266,20 +287,35 @@ export default function Favorites() {
                       gap: "0.5rem",
                       boxShadow: "0 2px 8px rgba(107, 30, 150, 0.2)",
                       marginBottom: "0.5rem",
+                      opacity: addingIds.has(product.id) ? 0.85 : 1,
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = "0 4px 16px rgba(107, 30, 150, 0.35)";
-                      e.currentTarget.style.transform = "translateY(-1px)";
+                      if (!addingIds.has(product.id)) {
+                        e.currentTarget.style.boxShadow = "0 4px 16px rgba(107, 30, 150, 0.35)";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.boxShadow = "0 2px 8px rgba(107, 30, 150, 0.2)";
                       e.currentTarget.style.transform = "translateY(0)";
                     }}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                    </svg>
-                    Añadir a la bolsa
+                    {addingIds.has(product.id) ? (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 1s linear infinite" }}>
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25"></circle>
+                          <path fill="currentColor" opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Agregando...
+                      </>
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                        </svg>
+                        Añadir a la bolsa
+                      </>
+                    )}
                   </button>
 
                   {/* Remove Link */}

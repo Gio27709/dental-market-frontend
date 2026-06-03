@@ -1,8 +1,93 @@
+import { COUNTRY_CODES } from "./constants.js";
+
+/**
+ * Valida un teléfono completo con código de país.
+ * Formato esperado: +{código}{número local de solo dígitos}
+ * Ejemplo: +584141234567
+ */
 export const validatePhone = (phone) => {
-  // Formato venezolano aceptable: 04121234567 o 0412-1234567
-  const regex = /^04\d{2}-?\d{7}$/;
   if (!phone) return false;
-  return regex.test(phone.trim());
+  const cleaned = phone.trim();
+  // Eliminar espacios, guiones y paréntesis para validar solo dígitos
+  const digitsOnly = cleaned.replace(/[\s\-()]/g, "");
+  // Internacional: +{1-4 dígitos código}{7-11 dígitos locales} (ej: +584121234567)
+  if (/^\+\d{8,15}$/.test(digitsOnly)) return true;
+  // Local: 7-11 dígitos puros (ej: 04121234567, 4121234567, 0412-1234567)
+  if (/^\d{7,11}$/.test(digitsOnly)) return true;
+  return false;
+};
+
+/**
+ * Valida el número local (sin código de país) según el país seleccionado.
+ * Retorna { valid: boolean, error: string | null }
+ */
+export const validateLocalPhone = (localNumber, countryCode) => {
+  if (!localNumber || localNumber.trim() === "") {
+    return { valid: true, error: null }; // Teléfono es opcional
+  }
+
+  const digitsOnly = localNumber.replace(/\D/g, "");
+
+  if (digitsOnly !== localNumber) {
+    return { valid: false, error: "El número solo debe contener dígitos." };
+  }
+
+  const country = COUNTRY_CODES.find((c) => c.code === countryCode);
+  if (!country) {
+    // Fallback genérico
+    if (digitsOnly.length < 7 || digitsOnly.length > 11) {
+      return { valid: false, error: "El número debe tener entre 7 y 11 dígitos." };
+    }
+    return { valid: true, error: null };
+  }
+
+  if (digitsOnly.length < country.minDigits || digitsOnly.length > country.maxDigits) {
+    const expected = country.minDigits === country.maxDigits
+      ? `${country.minDigits} dígitos`
+      : `entre ${country.minDigits} y ${country.maxDigits} dígitos`;
+    return {
+      valid: false,
+      error: `Para ${country.name} el número debe tener ${expected}.`,
+    };
+  }
+
+  return { valid: true, error: null };
+};
+
+/**
+ * Parsea un teléfono almacenado (+584141234567) en { countryCode, localNumber }.
+ * Intenta hacer match con los COUNTRY_CODES conocidos (más largo primero).
+ */
+export const parsePhoneWithCountryCode = (fullPhone) => {
+  if (!fullPhone) return { countryCode: "+58", localNumber: "" };
+
+  const cleaned = fullPhone.replace(/[\s-]/g, "");
+
+  // Ordenar códigos por longitud descendiente para evitar match parcial (+5 antes de +58)
+  const sorted = [...COUNTRY_CODES].sort((a, b) => b.code.length - a.code.length);
+
+  for (const country of sorted) {
+    if (cleaned.startsWith(country.code)) {
+      return {
+        countryCode: country.code,
+        localNumber: cleaned.slice(country.code.length),
+      };
+    }
+  }
+
+  // Fallback: si empieza con + pero no matchea ningún código conocido
+  if (cleaned.startsWith("+")) {
+    const match = cleaned.match(/^\+(\d{1,4})/);
+    if (match) {
+      return {
+        countryCode: `+${match[1]}`,
+        localNumber: cleaned.slice(match[0].length),
+      };
+    }
+  }
+
+  // Sin código de país detectado, asumir Venezuela
+  return { countryCode: "+58", localNumber: cleaned };
 };
 
 export const validateAddress = (address) => {

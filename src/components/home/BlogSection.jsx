@@ -1,51 +1,33 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-
-// Mock data para los artículos del blog
-const BLOG_POSTS = [
-  {
-    id: 1,
-    title: "Nuevos avances en escáneres intraorales 3D",
-    author: "Dra. Ana Silva",
-    date: "05 Jun, 2024",
-    comments: 12,
-    excerpt: "Descubre cómo la nueva generación de escáneres está reduciendo el tiempo de toma de impresiones a menos de un minuto y mejorando la precisión marginal...",
-    image: "https://images.unsplash.com/photo-1599427303058-f04cb25e3650?q=80&w=400&h=300&auto=format&fit=crop",
-  },
-  {
-    id: 2,
-    title: "Cómo elegir la mejor resina compuesta",
-    author: "Dr. Roberto Vargas",
-    date: "28 May, 2024",
-    comments: 8,
-    excerpt: "Guía completa comparando las últimas marcas del mercado y sus propiedades de mimetismo óptico para restauraciones estéticas del sector anterior...",
-    image: "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=400&h=300&auto=format&fit=crop",
-  },
-  {
-    id: 3,
-    title: "Mantenimiento clave de tu unidad dental",
-    author: "Ing. Carlos Díaz",
-    date: "14 May, 2024",
-    comments: 24,
-    excerpt: "Cinco pasos semanales que evitarán averías costosas en las válvulas de tus jeringas triples y mangueras neumáticas. Prolonga la vida de tus equipos...",
-    image: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=400&h=300&auto=format&fit=crop",
-  },
-  {
-    id: 4,
-    title: "Tendencias tecnológicas en Ortodoncia 2024",
-    author: "Dra. Lucía Méndez",
-    date: "02 May, 2024",
-    comments: 5,
-    excerpt: "Desde alineadores invisibles impresos in-office hasta software de predicción 3D con IA interconectada al CBCT. Todo lo que depara este año...",
-    image: "https://images.unsplash.com/photo-1588776814546-1ffcf41def98?q=80&w=400&h=300&auto=format&fit=crop",
-  },
-];
+import { getPostsAPI } from "../../services/api";
 
 export default function BlogSection() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const res = await getPostsAPI();
+        if (res.data?.success) {
+          // Take only the latest 4 posts to display on Home
+          setPosts(res.data.data.slice(0, 4));
+        }
+      } catch (err) {
+        console.error("Error fetching blog posts for home:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPosts();
+  }, []);
+
   return (
     <section className="mb-16">
       <div className="max-w-7xl mx-auto">
         {/* Header de la sección */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4 px-4 sm:px-6 lg:px-8">
           <div>
             <h2 className="text-[28px] font-bold text-gray-900 leading-tight">
               Últimas Noticias y Artículos
@@ -55,64 +37,80 @@ export default function BlogSection() {
             </p>
           </div>
           <Link
-            to="/blog"
-            className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2.5 rounded-md transition-colors shadow-sm self-start md:self-auto"
+            to="/news"
+            className="inline-flex items-center justify-center bg-[#531575] hover:bg-[#6b1e96] text-white font-medium px-6 py-2.5 rounded-md transition-colors shadow-sm self-start md:self-auto"
           >
             Ver Todos
           </Link>
         </div>
 
         {/* Grid del Blog */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {BLOG_POSTS.map((post) => (
-            <article
-              key={post.id}
-              className="bg-white rounded-xl border border-gray-100 flex flex-col overflow-hidden hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-shadow duration-300"
-            >
-              {/* Imagen (Aspect Ratio fijo para alineación) */}
-              <Link to={`/blog/${post.id}`} className="block overflow-hidden h-48">
-                <img
-                  src={post.image}
-                  alt={post.title}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                />
-              </Link>
+        <div className="px-4 sm:px-6 lg:px-8">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-gray-100 animate-pulse h-80 rounded-xl" />
+              ))}
+            </div>
+          ) : posts.length === 0 ? (
+            <div className="text-center py-10 bg-gray-50 rounded-xl border border-gray-100">
+               <p className="text-gray-500">Próximamente publicaremos artículos.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {posts.map((post) => (
+                <article
+                  key={post.id}
+                  className="bg-white rounded-xl border border-gray-100 flex flex-col overflow-hidden hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-shadow duration-300 group"
+                >
+                  {/* Imagen */}
+                  <Link to={`/news/${post.id}`} className="block overflow-hidden h-48 bg-gray-50 relative">
+                    {post.thumbnail_url ? (
+                      <img
+                        src={post.thumbnail_url}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor" className="w-12 h-12 text-gray-300"><path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
+                      </div>
+                    )}
+                    <span className="absolute top-3 left-3 bg-[#c3ff00] text-[#111111] text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded shadow-sm">
+                       {post.category || 'General'}
+                    </span>
+                  </Link>
 
-              {/* Contenido Principal */}
-              <div className="p-5 flex-1 flex flex-col">
-                <Link to={`/blog/${post.id}`}>
-                  <h3 className="text-lg font-bold text-gray-900 line-clamp-2 hover:text-blue-600 transition-colors leading-snug mb-3">
-                    {post.title}
-                  </h3>
-                </Link>
+                  {/* Contenido Principal */}
+                  <div className="p-5 flex-1 flex flex-col">
+                    <Link to={`/news/${post.id}`}>
+                      <h3 className="text-lg font-bold text-gray-900 line-clamp-2 group-hover:text-[#531575] transition-colors leading-snug mb-3">
+                        {post.title}
+                      </h3>
+                    </Link>
 
-                {/* Autor */}
-                <div className="flex items-center gap-2 mb-3 text-sm text-gray-500">
-                  <span className="material-symbols-rounded text-[18px]">account_circle</span>
-                  <span>{post.author}</span>
-                </div>
+                    {/* Extracto */}
+                    <p className="text-gray-500 text-sm line-clamp-3 mb-4 flex-1">
+                      {post.content?.replace(/<[^>]+>/g, '') || "Ingresa para leer el artículo completo..."}
+                    </p>
 
-                {/* Extracto */}
-                <p className="text-gray-500 text-sm line-clamp-3 mb-4 flex-1">
-                  {post.excerpt}
-                </p>
+                    <hr className="border-gray-100 mb-4" />
 
-                <hr className="border-gray-100 mb-4" />
-
-                {/* Pie de tarjeta (Comentarios y Fecha) */}
-                <div className="flex items-center justify-between text-xs text-gray-400 font-medium pb-1">
-                  <div className="flex items-center gap-1.5 hover:text-blue-600 cursor-pointer transition-colors">
-                    <span className="material-symbols-rounded text-[16px]">chat_bubble_outline</span>
-                    <span>{post.comments} Comentarios</span>
+                    {/* Pie de tarjeta (Comentarios y Fecha) */}
+                    <div className="flex items-center justify-between text-xs text-gray-400 font-medium pb-1">
+                      <div className="flex items-center gap-1.5 text-[#531575] font-semibold">
+                         Leer Artículo
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[16px]">calendar_today</span>
+                        <span>{new Date(post.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="material-symbols-rounded text-[16px]">calendar_today</span>
-                    <span>{post.date}</span>
-                  </div>
-                </div>
-              </div>
-            </article>
-          ))}
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>

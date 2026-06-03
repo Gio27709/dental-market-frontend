@@ -27,6 +27,29 @@ export default function ProtectedRoute({
     );
   }
 
+  // BUG FIX: Verify user account status — blocked/banned users should not access the app
+  if (user.status === "banned" || user.status === "suspended" || user.status === "disabled") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center p-8 max-w-md">
+          <h2 className="text-2xl font-bold text-red-600 mb-2">
+            Cuenta Suspendida
+          </h2>
+          <p className="text-gray-600 mb-4">
+            Tu cuenta ha sido {user.status === "banned" ? "bloqueada" : "suspendida"}.
+            Contacta al soporte si crees que es un error.
+          </p>
+          <button
+            onClick={() => window.location.href = "/"}
+            className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition"
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (requiredRole && requiredRole.length > 0) {
     if (!requiredRole.includes(user.role)) {
       return (

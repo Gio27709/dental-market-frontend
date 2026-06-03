@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import PropTypes from "prop-types";
-import { createContext, useState, useEffect, useContext } from "react";
+import { createContext, useState, useEffect, useContext, useRef } from "react";
 import { useAuth } from "./AuthContext";
 import { useProducts } from "./ProductContext";
 import {
@@ -23,7 +23,7 @@ const CART_STORAGE_KEY = "dental_market_cart";
 
 export const CartProvider = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
-  const { bcvRate } = useProducts();
+  const { bcvRate, products: allProducts } = useProducts();
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -102,16 +102,27 @@ export const CartProvider = ({ children }) => {
   const loadRemoteCart = async () => {
     try {
       const { data } = await fetchCart();
-      // data corresponds to formattedItems from controller
-      // Remap id to frontend_id for UI compatibility if needed, but our controller already gives id, product_id, variation_id etc.
-      // Make sure UI components use item.id correctly.
-      setItems(
-        data.map((item) => ({
-          ...item,
-          id: item.frontend_id || item.id, // For local compat
-          db_id: item.id, // Store real DB PK here
-        })),
-      );
+      // Remap and deduplicate by frontend_id
+      const mapped = data.map((item) => ({
+        ...item,
+        id: item.frontend_id || item.id,
+        db_id: item.id,
+      }));
+
+      // Deduplicate: merge items with same frontend_id (same product+variation)
+      const deduped = [];
+      const seen = new Map();
+      for (const item of mapped) {
+        if (seen.has(item.id)) {
+          const existing = seen.get(item.id);
+          existing.quantity += item.quantity;
+        } else {
+          seen.set(item.id, { ...item });
+          deduped.push(seen.get(item.id));
+        }
+      }
+
+      setItems(deduped);
     } catch (err) {
       console.error("Error fetching remote cart", err);
     }
@@ -144,99 +155,194 @@ export const CartProvider = ({ children }) => {
   }, [items, bcvRate, loading]);
 
   // 4. Actions
-  const addToCart = async (product, variation, quantity = 1) => {
-    const variationId = variation?.id || "default";
-    const frontendId = generateCartItemUniqueId(product.id, variationId);
-    
-    // Validar si el producto está forzado a "Sin stock" desde el backend
-    let maxStock = variation?.stock || product.stock || 999;
-    if (product.stock_status === "Sin stock") {
+  // Mutex to prevent concurrent addToCart/updateQuantity calls from rapid button clicks
+  const isAddingRef = useRef(false);
+  const isUpdatingRef = useRef(false);
+
+  const resolveMaxStock = (product, variation) => {
+    let maxStock;
+    if (variation && variation.stock != null) {
+      maxStock = variation.stock;
+    } else {
+      const defaultVar = product?.variations?.find(
+        (v) =>
+          v.attribute_name === "default" ||
+          v.attribute_value === '{"_default":"default"}' ||
+          v.attribute_value === "default",
+      );
+      if (defaultVar && defaultVar.stock != null) {
+        maxStock = defaultVar.stock;
+      } else if (
+        product?.product_variations?.length > 0 &&
+        product.product_variations[0].stock != null
+      ) {
+        maxStock = product.product_variations[0].stock;
+      } else if (product?.stock != null) {
+        maxStock = product.stock;
+      } else {
+        // No stock source found — use a safe cap and let the backend enforce the real limit.
+        // Using 0 would incorrectly block available products that simply lack frontend stock data.
+        maxStock = 99;
+        console.warn(
+          "[CartContext] resolveMaxStock: No stock source found for product",
+          product?.id,
+          "— using safe cap 99, backend will enforce actual limit",
+        );
+      }
+    }
+    if (product?.stock_status === "Sin stock") {
       maxStock = 0;
     }
+    return maxStock;
+  };
 
-    const safeQuantity = validateCartItemQuantity(quantity, maxStock);
-
-    if (maxStock === 0 || safeQuantity === 0) {
-      toast.error("Este producto está agotado.");
-      return;
+  /**
+   * Resolves maxStock for a cart item by looking up the full product in the catalog.
+   * This ensures items added before the fix (with max_stock=999) get correct limits.
+   */
+  const resolveMaxStockForCartItem = (cartItem) => {
+    // Try to find the real product data from the catalog
+    const product = allProducts?.find((p) => p.id === cartItem.product_id);
+    if (product) {
+      // Find the specific variation if the cart item has one
+      const variation = cartItem.variation_id
+        ? product.variations?.find((v) => v.id === cartItem.variation_id) ||
+          cartItem.variation
+        : cartItem.variation;
+      return resolveMaxStock(product, variation);
     }
+    // Fallback to cart item's stored data — use safe cap so backend enforces real limit
+    const fallbackStock = cartItem.variation?.stock ?? cartItem.max_stock ?? 99;
+    if (fallbackStock === 99)
+      console.warn(
+        "[CartContext] resolveMaxStockForCartItem: No catalog match for cart item",
+        cartItem.product_id,
+        "— using safe cap 99",
+      );
+    return fallbackStock;
+  };
 
-    // Calculate new item shape for Optimistic UI
-    const newItem = {
-      id: frontendId,
-      product_id: product.id,
-      store_id: product.store_id,
-      variation_id: variation?.id || null,
-      name: product.name,
-      price_usd: product.price + (variation?.price_modifier || 0),
-      quantity: safeQuantity,
-      image: product.images?.[0] || null,
-      variation: variation || null,
-      max_stock: maxStock,
-    };
+  const addToCart = async (product, variation, quantity = 1) => {
+    // MUTEX: Block concurrent calls from rapid clicking
+    if (isAddingRef.current) {
+      return false;
+    }
+    isAddingRef.current = true;
 
-    if (user) {
-      // Optimistic Remote Logic
-      const previousItems = [...items]; // Save for rollback
+    try {
+      const variationId = variation?.id || "default";
+      const frontendId = generateCartItemUniqueId(product.id, variationId);
 
-      setItems((prev) => {
-        const existingItem = prev.find((item) => item.id === frontendId);
-        if (existingItem) {
-          return prev.map((item) =>
-            item.id === frontendId
-              ? {
-                  ...item,
-                  quantity: validateCartItemQuantity(
-                    Number(item.quantity) + Number(safeQuantity),
-                    maxStock,
-                  ),
-                }
-              : item,
-          );
-        }
-        return [...prev, newItem];
-      });
+      // STOCK FIX: Properly resolve maxStock from default variation
+      let maxStock = resolveMaxStock(product, variation);
 
-      try {
-        const response = await addCartItem({
-          productId: product.id,
-          variationId: variation?.id || null,
-          quantity: safeQuantity,
-        });
+      const safeQuantity = validateCartItemQuantity(quantity, maxStock);
 
-        // If it was a totally new item, swap its temporary ID for the real database ID returning from the API.
-        if (response?.data?.item?.id) {
-          setItems((currentItems) =>
-            currentItems.map((item) =>
-              item.id === frontendId
-                ? { ...item, db_id: response.data.item.id }
-                : item,
-            ),
-          );
-        }
-      } catch (err) {
-        console.error("Optimistic Add Failed, rolling back", err);
-        setItems(previousItems); // Rollback
+      if (maxStock === 0 || safeQuantity === 0) {
+        toast.error("Este producto está agotado.");
+        return false;
       }
-    } else {
-      // Local Cart Logic
-      setItems((prev) => {
-        const existingItem = prev.find((item) => item.id === frontendId);
-        if (existingItem) {
-          return prev.map((item) =>
-            item.id === frontendId
-              ? {
-                  ...item,
-                  quantity: validateCartItemQuantity(
-                    Number(item.quantity) + Number(safeQuantity),
-                    maxStock,
-                  ),
-                }
-              : item,
+
+      // Pre-check: does adding this exceed stock?
+      // DEDUP FIX: Search by product_id to catch items with different variation_id formats
+      // (e.g., StoreCatalog sends null → "default", ProductDetail sends real UUID)
+      const existingByFrontendId = items.find((item) => item.id === frontendId);
+      const existingByProductId = !existingByFrontendId
+        ? items.find((item) => item.product_id === product.id)
+        : null;
+      const existingItem = existingByFrontendId || existingByProductId;
+
+      if (existingItem) {
+        const projectedQty =
+          Number(existingItem.quantity) + Number(safeQuantity);
+        if (projectedQty > maxStock) {
+          toast.error(
+            `Stock insuficiente. Disponible: ${maxStock}, ya tienes ${existingItem.quantity} en tu carrito.`,
           );
+          return false;
         }
-        return [...prev, newItem];
-      });
+      }
+
+      // Calculate new item shape
+      const newItem = {
+        id: frontendId,
+        product_id: product.id,
+        store_id: product.store_id,
+        variation_id: variation?.id || null,
+        name: product.name,
+        price_usd: product.price + (variation?.price_modifier || 0),
+        quantity: safeQuantity,
+        image: product.images?.[0] || null,
+        variation: variation || null,
+        max_stock: maxStock,
+        offers_local_delivery: product.store?.offers_local_delivery || false,
+        delivery_fee: product.delivery_fee || product.store?.default_delivery_fee || 0,
+        store_name: product.store?.business_name || product.store_name || null,
+        store_state: product.store?.state || product.store_state || null,
+      };
+
+      if (user) {
+        // SERVER-FIRST: Wait for backend confirmation before updating UI
+        try {
+          const response = await addCartItem({
+            productId: product.id,
+            variationId: variation?.id || null,
+            quantity: safeQuantity,
+          });
+
+          // Backend confirmed — now safely update local state
+          setItems((prev) => {
+            const existing = prev.find((item) => item.id === frontendId);
+            if (existing) {
+              return prev.map((item) =>
+                item.id === frontendId
+                  ? {
+                      ...item,
+                      quantity: validateCartItemQuantity(
+                        Number(item.quantity) + Number(safeQuantity),
+                        maxStock,
+                      ),
+                      db_id: response?.data?.item?.id || item.db_id,
+                    }
+                  : item,
+              );
+            }
+            return [
+              ...prev,
+              { ...newItem, db_id: response?.data?.item?.id || null },
+            ];
+          });
+
+          return true; // Success
+        } catch (err) {
+          console.error("Add to cart failed:", err);
+          const serverMessage = err.response?.data?.error;
+          toast.error(serverMessage || "No se pudo agregar al carrito.");
+          return false;
+        }
+      } else {
+        // Local Cart Logic — stock already validated above
+        setItems((prev) => {
+          const existing = prev.find((item) => item.id === frontendId);
+          if (existing) {
+            return prev.map((item) =>
+              item.id === frontendId
+                ? {
+                    ...item,
+                    quantity: validateCartItemQuantity(
+                      Number(item.quantity) + Number(safeQuantity),
+                      maxStock,
+                    ),
+                  }
+                : item,
+            );
+          }
+          return [...prev, newItem];
+        });
+        return true;
+      }
+    } finally {
+      isAddingRef.current = false;
     }
   };
 
@@ -258,40 +364,56 @@ export const CartProvider = ({ children }) => {
   };
 
   const updateQuantity = async (itemId, requestedQuantity) => {
-    const itemToUpdate = items.find((i) => i.id === itemId);
-    if (!itemToUpdate) return;
+    // MUTEX: Block concurrent calls from rapid clicking
+    if (isUpdatingRef.current) return;
+    isUpdatingRef.current = true;
 
-    const maxStock = itemToUpdate.max_stock || itemToUpdate.variation?.stock || 999;
-    const safeQuantity = validateCartItemQuantity(
-      Number(requestedQuantity),
-      maxStock,
-    );
+    try {
+      const itemToUpdate = items.find((i) => i.id === itemId);
+      if (!itemToUpdate) return;
 
-    if (user) {
-      try {
-        if (itemToUpdate.db_id) {
-          // Optimistic local update
-          setItems((prev) =>
-            prev.map((item) =>
-              item.id === itemId ? { ...item, quantity: safeQuantity } : item,
-            ),
-          );
-          // Request backend sync
-          await updateCartItemAPI(itemToUpdate.db_id, {
-            quantity: safeQuantity,
-          });
-        }
-      } catch (err) {
-        console.error("Error updating quantity, rolling back", err);
-        await loadRemoteCart(); // rollback on failure
-      }
-    } else {
-      setItems((prev) =>
-        prev.map((item) => {
-          if (item.id === itemId) return { ...item, quantity: safeQuantity };
-          return item;
-        }),
+      // STOCK FIX: Resolve real maxStock from catalog, not from stale cart item data
+      const maxStock = resolveMaxStockForCartItem(itemToUpdate);
+      const safeQuantity = validateCartItemQuantity(
+        Number(requestedQuantity),
+        maxStock,
       );
+
+      // If already at this quantity, no-op
+      if (safeQuantity === Number(itemToUpdate.quantity)) return;
+
+      if (user) {
+        // SERVER-FIRST: Wait for backend confirmation
+        try {
+          if (itemToUpdate.db_id) {
+            await updateCartItemAPI(itemToUpdate.db_id, {
+              quantity: safeQuantity,
+            });
+            // Backend confirmed — now update local state
+            setItems((prev) =>
+              prev.map((item) =>
+                item.id === itemId
+                  ? { ...item, quantity: safeQuantity, max_stock: maxStock }
+                  : item,
+              ),
+            );
+          }
+        } catch (err) {
+          console.error("Error updating quantity:", err);
+          const serverMessage = err.response?.data?.error;
+          toast.error(serverMessage || "No se pudo actualizar la cantidad.");
+        }
+      } else {
+        setItems((prev) =>
+          prev.map((item) => {
+            if (item.id === itemId)
+              return { ...item, quantity: safeQuantity, max_stock: maxStock };
+            return item;
+          }),
+        );
+      }
+    } finally {
+      isUpdatingRef.current = false;
     }
   };
 
@@ -303,7 +425,7 @@ export const CartProvider = ({ children }) => {
       itemToUpdate.product_id,
       newVariation.id,
     );
-    const maxStock = newVariation.stock || 999;
+    const maxStock = resolveMaxStock(null, newVariation);
     const safeQuantity = validateCartItemQuantity(
       Number(itemToUpdate.quantity),
       maxStock,

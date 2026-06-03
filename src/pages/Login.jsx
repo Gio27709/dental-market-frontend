@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import toast from "react-hot-toast";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const { login, loginWithGoogle, user } = useAuth();
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const { login, loginWithGoogle, user, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -49,6 +51,25 @@ export default function Login() {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Please enter your email address.");
+      return;
+    }
+    try {
+      setLoading(true);
+      setError(null);
+      await resetPassword(email);
+      toast.success("Reset link sent! Please check your inbox.");
+      setIsForgotPassword(false);
+    } catch (err) {
+      setError(err.message || "Failed to send reset link");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex bg-white font-sans">
       {/* Left Column: Image/Branding */}
@@ -73,9 +94,13 @@ export default function Login() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-[420px]">
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Sign in</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              {isForgotPassword ? "Reset Password" : "Sign in"}
+            </h2>
             <p className="text-gray-500">
-              Please enter your details to sign in.
+              {isForgotPassword
+                ? "Enter your email to receive a password reset link."
+                : "Please enter your details to sign in."}
             </p>
           </div>
 
@@ -85,97 +110,147 @@ export default function Login() {
             </div>
           )}
 
-          <button
-            onClick={handleGoogleLogin}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 rounded-lg text-gray-800 font-medium hover:bg-gray-50 transition-colors mb-6 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            <img
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="Google"
-              loading="lazy"
-              className="w-5 h-5"
-            />
-            <span>Sign in with Google</span>
-          </button>
-
-          <div className="flex items-center text-center mb-6 text-gray-400">
-            <div className="flex-1 border-b border-gray-200" />
-            <span className="px-3 text-sm uppercase tracking-wider">OR</span>
-            <div className="flex-1 border-b border-gray-200" />
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                required
+          {!isForgotPassword && (
+            <>
+              <button
+                onClick={handleGoogleLogin}
                 disabled={loading}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-900"
-                placeholder="name@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                required
-                disabled={loading}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-900"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between mt-2 mb-8">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="remember"
-                  className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
-                />
-                <label
-                  htmlFor="remember"
-                  className="text-sm text-gray-500 cursor-pointer"
-                >
-                  Remember me
-                </label>
-              </div>
-              <a
-                href="#"
-                className="text-sm font-medium text-primary-600 hover:underline"
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 rounded-lg text-gray-800 font-medium hover:bg-gray-50 transition-colors mb-6 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Forgot password
-              </a>
-            </div>
+                <img
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                  alt="Google"
+                  loading="lazy"
+                  className="w-5 h-5"
+                />
+                <span>Sign in with Google</span>
+              </button>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 bg-primary-600 text-white font-semibold rounded-lg shadow-md hover:bg-primary-700 hover:-translate-y-[1px] hover:shadow-lg transition-all active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              {loading ? "Signing In..." : "Sign in"}
-            </button>
-          </form>
+              <div className="flex items-center text-center mb-6 text-gray-400">
+                <div className="flex-1 border-b border-gray-200" />
+                <span className="px-3 text-sm uppercase tracking-wider">OR</span>
+                <div className="flex-1 border-b border-gray-200" />
+              </div>
+            </>
+          )}
 
-          <p className="text-center mt-8 text-gray-500 text-sm">
-            Don&apos;t have an account?{" "}
-            <Link
-              to={`/register${redirectPath !== "/" ? `?redirect=${redirectPath}` : ""}`}
-              className="font-semibold text-primary-600 hover:underline ml-1"
-            >
-              Create an account
-            </Link>
-          </p>
+          {isForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  disabled={loading}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-900"
+                  placeholder="name@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 px-4 bg-primary-600 text-white font-semibold rounded-lg shadow-md hover:bg-primary-700 hover:-translate-y-[1px] hover:shadow-lg transition-all active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                {loading ? "Sending..." : "Send Reset Link"}
+              </button>
+
+              <div className="text-center mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotPassword(false);
+                    setError(null);
+                  }}
+                  className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  Back to Sign In
+                </button>
+              </div>
+            </form>
+          ) : (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    disabled={loading}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-900"
+                    placeholder="name@company.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    disabled={loading}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-900"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between mt-2 mb-8">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="remember"
+                      className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                    />
+                    <label
+                      htmlFor="remember"
+                      className="text-sm text-gray-500 cursor-pointer"
+                    >
+                      Remember me
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsForgotPassword(true);
+                      setError(null);
+                    }}
+                    className="text-sm font-medium text-primary-600 hover:underline"
+                  >
+                    Forgot password
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 px-4 bg-primary-600 text-white font-semibold rounded-lg shadow-md hover:bg-primary-700 hover:-translate-y-[1px] hover:shadow-lg transition-all active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                >
+                  {loading ? "Signing In..." : "Sign in"}
+                </button>
+              </form>
+
+              <p className="text-center mt-8 text-gray-500 text-sm">
+                Don&apos;t have an account?{" "}
+                <Link
+                  to={`/register${redirectPath !== "/" ? `?redirect=${redirectPath}` : ""}`}
+                  className="font-semibold text-primary-600 hover:underline ml-1"
+                >
+                  Create an account
+                </Link>
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>

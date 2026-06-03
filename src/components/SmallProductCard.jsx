@@ -1,12 +1,22 @@
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
-import { formatCurrencyUSD } from "../utils/formatters";
+import { formatCurrencyUSD, formatCurrencyVES } from "../utils/formatters";
+import { useCurrency } from "../context/CurrencyContext";
+import { useProducts } from "../context/ProductContext";
 
 export default function SmallProductCard({ product, badge }) {
+  const { isVES } = useCurrency();
+  const { bcvRate, trendingProductIds } = useProducts();
+  const isTrending = trendingProductIds?.has(product.id);
   const hasImage = product.images && product.images.length > 0;
   const price = Number(product.price) || 0;
   // Simula un precio original más alto para mostrar tachado
   const originalPrice = product.originalPrice || Math.round(price * 1.35 * 100) / 100;
+
+  const formatPrice = (amount) => {
+    if (isVES) return formatCurrencyVES(amount * Number(bcvRate || 1));
+    return formatCurrencyUSD(amount);
+  };
 
   return (
     <Link
@@ -27,18 +37,21 @@ export default function SmallProductCard({ product, badge }) {
             image
           </span>
         )}
-        {/* Badge (SALE / NEW) */}
-        {badge && (
+        {/* Badge (SALE / NEW / HOT / MÁS VENDIDO) */}
+        {(badge || isTrending) && (
           <span
-            className={`absolute top-0.5 left-0.5 px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-md text-white leading-none ${
+            className={`absolute top-0.5 left-0.5 px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-md text-white leading-none flex items-center gap-0.5 ${
               badge === "SALE"
                 ? "bg-red-500"
                 : badge === "NEW"
                 ? "bg-blue-500"
+                : isTrending
+                ? "bg-orange-500"
                 : "bg-emerald-500"
             }`}
           >
-            {badge}
+            {isTrending && !badge && <span className="material-symbols-outlined text-[10px] leading-none">local_fire_department</span>}
+            {badge || "HOT"}
           </span>
         )}
       </div>
@@ -78,10 +91,10 @@ export default function SmallProductCard({ product, badge }) {
         {/* Precios */}
         <div className="flex items-center gap-2 mt-1.5">
           <span className="text-[15px] font-bold text-[#6b1e96]">
-            {formatCurrencyUSD(price)}
+            {formatPrice(price)}
           </span>
           <span className="text-[11px] text-gray-400 line-through">
-            {formatCurrencyUSD(originalPrice)}
+            {formatPrice(originalPrice)}
           </span>
         </div>
       </div>

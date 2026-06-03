@@ -5,8 +5,26 @@ import { useProducts } from "../../context/ProductContext";
 export default function CartItem({ item, onUpdateQuantity, onRemove }) {
   const { products } = useProducts();
 
-  const isAtMaxStock = item.quantity >= (item.variation?.stock || 999);
+  // Robust maxStock: resolve from catalog, not stale cart item data
   const productInfo = products.find((p) => p.id === item.product_id);
+  const resolvedMaxStock = (() => {
+    if (productInfo) {
+      if (item.variation_id) {
+        const v = productInfo.variations?.find((v) => v.id === item.variation_id);
+        if (v && v.stock != null) return v.stock;
+      }
+      const defaultVar = productInfo.variations?.find(
+        (v) => v.attribute_name === "default" || v.attribute_value === '{"_default":"default"}' || v.attribute_value === "default"
+      );
+      if (defaultVar && defaultVar.stock != null) return defaultVar.stock;
+      if (productInfo.product_variations?.length > 0 && productInfo.product_variations[0].stock != null) return productInfo.product_variations[0].stock;
+      if (productInfo.stock != null) return productInfo.stock;
+    }
+    return item.variation?.stock ?? item.max_stock ?? 999;
+  })();
+  const maxStock = resolvedMaxStock;
+  const isAtMaxStock = item.quantity >= maxStock;
+  const isOverStock = maxStock === 0 || item.quantity > maxStock;
   const availableVariations = productInfo?.variations || [];
   const storeName = productInfo?.store_profiles?.business_name || productInfo?.store?.business_name;
   const storeState = productInfo?.store_profiles?.state;
@@ -67,10 +85,26 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }) {
               {item.name}
             </Link>
 
-            {/* Availability */}
-            <p className="text-xs text-green-600 font-medium mt-1">
-              Disponible {item.variation?.stock > 0 && <span className="text-gray-500 font-normal">({item.variation.stock} disponibles)</span>}
-            </p>
+            {/* Availability — STOCK FIX: show warning if at/over stock */}
+            {isOverStock ? (
+              <p className="text-xs text-red-600 font-semibold mt-1 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+                {maxStock === 0 ? "Agotado" : `Solo ${maxStock} disponible${maxStock !== 1 ? 's' : ''}`}
+              </p>
+            ) : isAtMaxStock ? (
+              <p className="text-xs text-amber-600 font-medium mt-1 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                </svg>
+                El vendedor solo tiene {maxStock} unidad{maxStock !== 1 ? 'es' : ''} disponible{maxStock !== 1 ? 's' : ''}
+              </p>
+            ) : (
+              <p className="text-xs text-green-600 font-medium mt-1">
+                Disponible {maxStock < 999 && <span className="text-gray-500 font-normal">({maxStock} disponibles)</span>}
+              </p>
+            )}
 
             {/* Store name and Location */}
             {storeName && (
@@ -81,6 +115,19 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }) {
                   {storeState && ` - ${storeState}`}
                 </span>
               </p>
+            )}
+
+            {/* Suspended store alert badge & detailed info */}
+            {item.store_is_suspended && (
+              <div className="mt-2.5 flex items-start gap-2.5 p-3.5 bg-red-50/90 border border-red-200/80 rounded-xl text-red-800 animate-pulse">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-600">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+                <div className="text-xs leading-relaxed">
+                  <p className="font-extrabold text-red-950 text-sm">Tienda Suspendida Temporalmente</p>
+                  <p className="text-[11px] text-red-800 font-medium mt-1">Este vendedor tiene demoras críticas de despacho y sus operaciones están suspendidas. Elimina este producto para poder completar tu compra.</p>
+                </div>
+              </div>
             )}
 
             {/* Variation Attributes — Amazon-style individual lines */}
@@ -200,6 +247,7 @@ CartItem.propTypes = {
     price_usd: PropTypes.number.isRequired,
     quantity: PropTypes.number.isRequired,
     image: PropTypes.string,
+    store_is_suspended: PropTypes.bool,
     variation: PropTypes.shape({
       attribute_name: PropTypes.string,
       attribute_value: PropTypes.string,

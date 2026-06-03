@@ -10,7 +10,7 @@ export default function PaymentMethodSelector({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium text-gray-900">Método de Pago</h3>
+      <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Selecciona tu opción de pago</h4>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {methods.map(([key, { label, icon }]) => {
@@ -21,37 +21,29 @@ export default function PaymentMethodSelector({
               key={key}
               onClick={() => onChange(key)}
               className={`
-                relative flex cursor-pointer rounded-lg border p-4 shadow-sm focus:outline-none transition-colors
+                relative flex items-center justify-between cursor-pointer rounded-2xl border p-4.5 shadow-xs transition-all duration-300 active:scale-[0.99]
                 ${
                   isSelected
-                    ? "border-primary-500 bg-primary-50 ring-2 ring-primary-500"
-                    : "border-gray-300 bg-white hover:bg-gray-50"
+                    ? "border-[#6b1e96] bg-purple-50/20 ring-1 ring-[#6b1e96]"
+                    : "border-slate-200 bg-white hover:bg-slate-50/80 hover:shadow-xs"
                 }
               `}
             >
-              <span className="flex flex-1">
-                <span className="flex flex-col">
-                  <span className="block text-sm font-medium text-gray-900 flex items-center gap-2">
-                    <span className="text-xl">{icon}</span>
-                    {label}
-                  </span>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100/50">{icon}</span>
+                <span className="text-sm font-bold text-slate-800">
+                  {label}
                 </span>
-              </span>
+              </div>
               <div
-                className={`flex h-5 w-5 items-center justify-center rounded-full border ${
+                className={`flex h-5 w-5 items-center justify-center rounded-full border transition-all ${
                   isSelected
-                    ? "border-transparent bg-primary-600"
-                    : "border-gray-300 bg-white"
+                    ? "border-[#6b1e96] bg-white"
+                    : "border-slate-300 bg-white"
                 }`}
               >
                 {isSelected && (
-                  <svg
-                    className="h-3 w-3 text-white"
-                    fill="currentColor"
-                    viewBox="0 0 12 12"
-                  >
-                    <path d="M3.707 5.293a1 1 0 00-1.414 1.414l1.414-1.414zM5 8l-.707.707a1 1 0 001.414 0L5 8zm4.707-3.293a1 1 0 00-1.414-1.414l1.414 1.414zm-7.414 2l2 2 1.414-1.414-2-2-1.414 1.414zm3.414 2l4-4-1.414-1.414-4 4 1.414 1.414z" />
-                  </svg>
+                  <div className="h-3 w-3 rounded-full bg-[#6b1e96] animate-scale-up" />
                 )}
               </div>
             </div>
@@ -59,7 +51,12 @@ export default function PaymentMethodSelector({
         })}
       </div>
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && (
+        <p className="mt-2.5 text-xs font-bold text-red-500 flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-sm">error</span>
+          {error}
+        </p>
+      )}
     </div>
   );
 }

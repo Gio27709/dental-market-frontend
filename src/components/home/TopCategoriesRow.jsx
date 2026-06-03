@@ -1,19 +1,38 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { getCategoriesAPI } from "../../services/api";
+import { getTrendingAPI } from "../../services/api";
+import useHomeSections from "../../hooks/useHomeSections";
 
 export default function TopCategoriesRow() {
+  const { sections } = useHomeSections();
+  const data = sections?.top_categories || {};
+  const heading = data.heading || "Categorías Destacadas y Tendencias";
+  const subheading = data.subheading || "Explora las líneas de productos más solicitadas por clínicas dentales.";
+  
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Helper para asignar iconos dinámicos a las categorías
+  const getCategoryIcon = (name) => {
+    if (!name) return "category";
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes("resina") || lowerName.includes("composite")) return "science";
+    if (lowerName.includes("instrumental") || lowerName.includes("herramienta") || lowerName.includes("quirurgico")) return "handyman";
+    if (lowerName.includes("anestesia")) return "vaccines";
+    if (lowerName.includes("descartable")) return "medication";
+    if (lowerName.includes("ortodoncia")) return "airline_seat_flat_angled";
+    if (lowerName.includes("equipo") || lowerName.includes("mayor")) return "devices_other";
+    if (lowerName.includes("biomaterial") || lowerName.includes("hueso")) return "biotech";
+    return "category";
+  };
+
   useEffect(() => {
-    getCategoriesAPI()
+    getTrendingAPI({ cat_limit: 7 })
       .then((res) => {
-        // Solo categorías raíz (el backend ya las retorna como árbol, las raíces son el nivel top)
-        const roots = (res.data.data || []).slice(0, 8);
-        setCategories(roots);
+        const trending = res.data?.data?.trending_categories || [];
+        setCategories(trending);
       })
-      .catch(() => console.error("Error loading categories"))
+      .catch(() => console.error("Error loading trending categories"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -27,7 +46,7 @@ export default function TopCategoriesRow() {
           </div>
         </div>
         <div className="flex gap-4 overflow-hidden pb-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
+          {[1, 2, 3, 4, 5, 6, 7].map((i) => (
             <div key={i} className="flex-shrink-0 w-[140px] md:w-[160px] h-[120px] bg-gray-100 rounded-2xl animate-pulse" />
           ))}
         </div>
@@ -39,18 +58,18 @@ export default function TopCategoriesRow() {
 
   return (
     <div className="mb-8">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Categorías Destacadas y Tendencias
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Explora las líneas de productos más solicitadas por clínicas dentales.
-          </p>
-        </div>
+      <div className="flex flex-col mb-8 relative">
+        <div className="absolute -left-6 sm:-left-10 top-1 w-1.5 h-[80%] bg-[#6b1e96] rounded-r-md hidden md:block"></div>
+        <h2 className="text-3xl md:text-4xl font-extrabold text-[#163152] tracking-tight flex items-center gap-3">
+          {heading}
+          <span className="text-[#c3ff00] material-symbols-outlined text-3xl">hotel_class</span>
+        </h2>
+        <p className="mt-2 text-base text-slate-500 font-medium max-w-2xl">
+          {subheading}
+        </p>
       </div>
 
-      {/* Fila de Categorías con Íconos */}
+      {/* Fila de Categorías en Tendencia (máx 7, ordenadas por ventas) */}
       <div 
         className="flex gap-4 overflow-x-auto pb-4 snap-x"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
@@ -59,14 +78,30 @@ export default function TopCategoriesRow() {
           <Link
             key={cat.id}
             to={`/store-catalog?category=${cat.id}`}
-            className="flex-shrink-0 snap-start w-[140px] md:w-[160px] flex flex-col items-center justify-center p-6 bg-white rounded-2xl border border-gray-200 shadow-sm hover:border-primary-500 hover:shadow-md transition-all group"
+            className="flex-shrink-0 snap-start w-[140px] md:w-[160px] flex flex-col items-center justify-center p-6 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-[0_15px_30px_-5px_rgba(107,30,150,0.15)] hover:-translate-y-1.5 transition-all duration-300 group relative overflow-hidden"
           >
-            <span className="material-symbols-outlined text-5xl text-gray-400 group-hover:text-primary-600 transition-colors mb-3">
-              {cat.icon || "category"}
-            </span>
-            <span className="text-sm font-semibold text-gray-700 group-hover:text-primary-700 text-center">
+            {/* Subtle glow background on hover */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#6b1e96]/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+            <div className="relative z-10 w-16 h-16 mb-4 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-[#6b1e96]/5 transition-colors duration-300">
+              <span className="material-symbols-outlined text-4xl text-slate-400 group-hover:text-[#6b1e96] transition-colors">
+                {cat.icon || getCategoryIcon(cat.name)}
+              </span>
+            </div>
+            
+            <span className="relative z-10 text-[14px] font-bold text-[#163152] group-hover:text-[#6b1e96] text-center leading-tight">
               {cat.name}
             </span>
+
+            {/* Badge de ventas premium estilo Glassmorphism */}
+            {cat.total_sold > 0 && (
+              <div className="absolute top-3 right-3 z-20">
+                <div className="flex items-center gap-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-md transform group-hover:scale-105 transition-transform duration-300">
+                  <span className="material-symbols-outlined text-[11px] leading-none">local_fire_department</span>
+                  {cat.total_sold}
+                </div>
+              </div>
+            )}
           </Link>
         ))}
       </div>

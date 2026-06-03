@@ -22,8 +22,9 @@ export default function ProductDetail() {
     fetchProductById,
     allProducts,
     loading: globalLoading,
+    trendingProductIds,
   } = useProducts();
-  const { addToCart } = useCart();
+  const { addToCart, items: cartItems } = useCart();
   const { toggleFavorite, favoriteIds } = useFavorites();
   const { user } = useAuth();
   const { addViewed, getViewedProducts } = useRecentlyViewed();
@@ -36,6 +37,7 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description"); // "description", "reviews", "qa"
   const [descImageIndex, setDescImageIndex] = useState(0);
+  const [isAdding, setIsAdding] = useState(false);
 
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
 
@@ -113,44 +115,73 @@ export default function ProductDetail() {
     ? validVariations.find((v) => String(v.id) === String(selectedVariationId))
     : null;
 
+  // DEDUP FIX: Resolve the _default variation so we can pass its real ID to addToCart
+  // This prevents the mismatch where ProductDetail sends null and StoreCatalog sends the UUID
+  const defaultVariation = useMemo(() => {
+    if (hasVariations) return null; // User must select from visible variations
+    // Find the _default variation (hidden from UI but needed for cart consistency)
+    const defVar = product?.variations?.find(
+      (v) =>
+        v.attribute_name === "default" ||
+        v.attribute_value === '{"_default":"default"}' ||
+        v.attribute_value === "default"
+    );
+    // If no named default, use the first variation available
+    return defVar || product?.variations?.[0] || null;
+  }, [product?.variations, hasVariations]);
+
+  // The variation to actually use for cart operations
+  const effectiveVariation = selectedVariation || defaultVariation;
+
   const currentStock = hasVariations
     ? selectedVariation
       ? selectedVariation.stock
       : 0
     : (() => {
-        const defaultVar = product?.variations?.find(
-          (v) =>
-            v.attribute_name === "default" ||
-            v.attribute_value === '{"_default":"default"}' ||
-            v.attribute_value === "default"
-        );
-        return defaultVar ? defaultVar.stock : product?.stock ?? 99;
+        if (defaultVariation?.stock != null) return defaultVariation.stock;
+        return product?.stock ?? 99;
       })();
 
   const effectiveStock = product?.stock_status === "Sin stock" ? 0 : currentStock;
   const isOwnProduct = user?.id === product?.store_id;
 
-  const handleAddToCart = () => {
-    if (isOwnProduct) return;
+  // DEDUP FIX: Check cart by product_id to catch items regardless of variation_id format
+  const totalCartQtyForProduct = cartItems
+    .filter(ci => ci.product_id === product?.id)
+    .reduce((sum, ci) => sum + Number(ci.quantity), 0);
+  const isCartAtMax = effectiveStock > 0 && totalCartQtyForProduct >= effectiveStock;
+  const remainingStock = Math.max(0, effectiveStock - totalCartQtyForProduct);
+
+  const handleAddToCart = async () => {
+    if (isOwnProduct || isAdding || isCartAtMax) return;
     if (hasVariations && !selectedVariation) {
       toast.error("Por favor selecciona una variación primero.");
       return;
     }
 
-    addToCart(product, selectedVariation, quantity);
+    setIsAdding(true);
+    try {
+    // DEDUP FIX: Pass effectiveVariation (which includes _default) instead of selectedVariation (which is null for _default products)
+    const success = await addToCart(product, effectiveVariation, quantity);
 
-    let variationText = "";
-    if (selectedVariation) {
-      try {
-        const parsed = JSON.parse(selectedVariation.attribute_value);
-        variationText = `(${Object.values(parsed).join(" - ")}) `;
-      } catch {
-        variationText = `(${selectedVariation.attribute_value}) `;
+    if (success) {
+      let variationText = "";
+      if (selectedVariation) {
+        try {
+          const parsed = JSON.parse(selectedVariation.attribute_value);
+          variationText = `(${Object.values(parsed).join(" - ")}) `;
+        } catch {
+          variationText = `(${selectedVariation.attribute_value}) `;
+        }
       }
+      toast.success(
+        `Agregado a la bolsa: ${product.name} ${variationText}- ${quantity} unid.`
+      );
     }
-    toast.success(
-      `Agregado a la bolsa: ${product.name} ${variationText}- ${quantity} unid.`
-    );
+    // If success is false, CartContext already showed the error toast
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   const handleReviewAdded = async () => {
@@ -234,6 +265,14 @@ export default function ProductDetail() {
 
           {/* COLUMN 2: Product Info (40%) */}
           <div className="w-full lg:w-[40%] flex flex-col">
+            {trendingProductIds?.has(product.id) && (
+              <div className="mb-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold tracking-wider uppercase bg-orange-500 text-white shadow-sm rounded-md w-max">
+                  <span className="material-symbols-outlined text-[14px]">local_fire_department</span>
+                  Más Vendido
+                </span>
+              </div>
+            )}
             <h1 className="text-[28px] lg:text-[32px] font-bold text-gray-900 leading-tight mb-1">
               {product.name}
             </h1>
@@ -303,8 +342,8 @@ export default function ProductDetail() {
                   className="flex-1 w-full text-center font-medium text-gray-700 focus:outline-none pointer-events-none text-base bg-transparent px-2"
                 />
                 <button 
-                  onClick={() => setQuantity(Math.min(effectiveStock || 1, quantity + 1))}
-                  disabled={quantity >= effectiveStock}
+                  onClick={() => setQuantity(Math.min(remainingStock || 1, quantity + 1))}
+                  disabled={quantity >= remainingStock || remainingStock === 0}
                   className="w-12 h-full flex items-center justify-center text-gray-400 hover:text-[#2563eb] bg-[#f8f9fa] transition-colors disabled:opacity-50 disabled:hover:text-gray-400"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
@@ -318,16 +357,25 @@ export default function ProductDetail() {
               ) : (
                 <button
                   onClick={handleAddToCart}
-                  disabled={(hasVariations && !selectedVariation) || effectiveStock <= 0}
+                  disabled={(hasVariations && !selectedVariation) || effectiveStock <= 0 || isCartAtMax || isAdding}
                   className={`flex-1 w-full h-12 rounded-md font-medium text-[15px] flex items-center justify-center gap-2 transition-all shadow-sm
-                    ${effectiveStock <= 0 
-                      ? "bg-gray-200 text-gray-500 cursor-not-allowed" 
+                    ${effectiveStock <= 0 || isCartAtMax
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : isAdding
+                      ? "bg-[#2563eb] text-white cursor-wait opacity-80"
                       : "bg-[#2563eb] hover:bg-blue-700 text-white active:scale-[0.98]"}`}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                  </svg>
-                  {effectiveStock <= 0 ? "Agotado" : "Añadir a la bolsa"}
+                  {isAdding ? (
+                    <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                    </svg>
+                  )}
+                  {effectiveStock <= 0 ? "Agotado" : isCartAtMax ? "Máximo en carrito" : isAdding ? "Agregando..." : "Añadir a la bolsa"}
                 </button>
               )}
 
@@ -355,6 +403,20 @@ export default function ProductDetail() {
               <span className={`w-2 h-2 rounded-full ${effectiveStock > 0 ? "bg-[#c3ff00]" : "bg-red-500"}`}></span>
               {effectiveStock > 0 ? `Quedan ${effectiveStock} unidades en stock` : "Sin disponibilidad temporal"}
             </p>
+            {/* Amazon-style: Show warning when cart has max stock */}
+            {isCartAtMax && (
+              <p className="text-sm text-amber-600 font-medium mt-2 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 flex-shrink-0">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                </svg>
+                El vendedor solo tiene {effectiveStock} unidad{effectiveStock !== 1 ? 'es' : ''} disponible{effectiveStock !== 1 ? 's' : ''} y ya las tienes en tu carrito.
+              </p>
+            )}
+            {totalCartQtyForProduct > 0 && !isCartAtMax && (
+              <p className="text-xs text-gray-400 mt-1 ml-4">
+                Ya tienes {totalCartQtyForProduct} en tu carrito
+              </p>
+            )}
 
             {/* Utility Actions */}
             <div className="flex items-center gap-6 mt-4">

@@ -25,10 +25,17 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const metadata = sessionUser.user_metadata || {};
+      // SECURITY FIX (ALTO-7): Prioritize app_metadata (immutable by users)
+      // user_metadata.role can be modified by the user via supabase.auth.updateUser()
+      const appMeta = sessionUser.app_metadata || {};
       setUser({
         ...sessionUser,
-        role: metadata.role || "user",
+        role: appMeta.role || metadata.role || "user",
         status: metadata.status || "active",
+        createdAt: sessionUser.created_at,
+        lastNameChange: metadata.last_name_change || null,
+        phone: metadata.phone || null,
+        avatarUrl: metadata.custom_avatar_url || metadata.avatar_url || null,
         firstName: metadata.first_name || metadata.full_name?.split(" ")[0],
         lastName:
           metadata.last_name ||
@@ -103,9 +110,45 @@ export const AuthProvider = ({ children }) => {
     await authSignOut();
   };
 
+  const resetPassword = async (email) => {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/update-password`,
+    });
+    if (error) throw error;
+    return data;
+  };
+
+  const updatePassword = async (newPassword) => {
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    if (error) throw error;
+    return data;
+  };
+
+  /**
+   * Force a JWT session refresh from Supabase.
+   * This is needed after admin changes the user's role (e.g., store approval),
+   * because app_metadata changes don't propagate to existing JWT tokens.
+   */
+  const refreshSession = async () => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) throw error;
+      if (data?.session?.user) {
+        setToken(data.session.access_token);
+        await fetchProfile(data.session.user);
+      }
+      return { success: true };
+    } catch (err) {
+      console.error("Error refreshing session:", err);
+      return { success: false, error: err.message };
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, login, loginWithGoogle, register, logout }}
+      value={{ user, token, loading, login, loginWithGoogle, register, logout, resetPassword, updatePassword, refreshSession }}
     >
       {children}
     </AuthContext.Provider>

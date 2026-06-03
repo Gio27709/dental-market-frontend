@@ -1,17 +1,13 @@
 import PropTypes from "prop-types";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
+import useHomeSections from "../../hooks/useHomeSections";
 
 /* ────────────────────────────────────────────
-   Tarjeta compacta interna — estilo referencia
-   Imagen arriba, nombre, estrellas, precio
+   Tarjeta compacta interna — estilo premium
    ──────────────────────────────────────────── */
 function DealCard({ product, badge }) {
-  const imageUrl =
-    product?.images?.[0]?.url ||
-    product?.image ||
-    null;
-
+  const imageUrl = typeof product?.images?.[0] === 'string' ? product.images[0] : product?.images?.[0]?.url || product?.image || null;
   const price = product?.price ?? 0;
   const name = product?.name || "Producto";
 
@@ -21,41 +17,41 @@ function DealCard({ product, badge }) {
   return (
     <Link
       to={`/producto/${product?._id || product?.id || ""}`}
-      className="group bg-white rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-lg transition-all duration-300 p-3 flex flex-col relative overflow-hidden"
+      className="group bg-white rounded-2xl border border-gray-100 hover:border-purple-200 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 p-4 flex flex-col relative overflow-hidden"
     >
-      {/* Badge */}
+      {/* Badge Premium */}
       {badge && (
-        <span className="absolute top-2 right-2 z-10 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+        <span className="absolute top-3 right-3 z-10 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md uppercase tracking-wider">
           {badge}
         </span>
       )}
 
       {/* Imagen */}
-      <div className="bg-gray-50 rounded-lg flex items-center justify-center h-32 md:h-36 mb-3 overflow-hidden">
+      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center h-36 md:h-40 mb-4 overflow-hidden relative group-hover:from-purple-50 group-hover:to-white transition-colors duration-500">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={name}
-            className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-500"
+            className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-700 ease-out"
           />
         ) : (
-          <span className="material-symbols-rounded text-4xl text-gray-300">
+          <span className="material-symbols-outlined text-4xl text-gray-300 group-hover:text-purple-200 transition-colors duration-500">
             inventory_2
           </span>
         )}
       </div>
 
       {/* Info */}
-      <h4 className="text-sm font-medium text-gray-800 line-clamp-2 leading-snug mb-1.5 group-hover:text-blue-600 transition-colors">
+      <h4 className="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug mb-2 group-hover:text-purple-700 transition-colors">
         {name}
       </h4>
 
       {/* Estrellas */}
-      <div className="flex items-center gap-0.5 mb-2">
+      <div className="flex items-center gap-0.5 mb-3 mt-auto">
         {[1, 2, 3, 4, 5].map((star) => (
           <svg
             key={star}
-            className={`w-3.5 h-3.5 ${star <= rating ? "text-amber-400" : "text-gray-200"}`}
+            className={`w-3.5 h-3.5 ${star <= rating ? "text-amber-400 drop-shadow-sm" : "text-gray-200"}`}
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -64,10 +60,15 @@ function DealCard({ product, badge }) {
         ))}
       </div>
 
-      {/* Precio */}
-      <p className="text-base font-bold text-gray-900">
-        ${price.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-      </p>
+      {/* Precio y Acción */}
+      <div className="flex items-center justify-between">
+        <p className="text-lg font-extrabold text-gray-900 group-hover:text-purple-800 transition-colors">
+          ${price.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+        </p>
+        <div className="w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+          <span className="material-symbols-outlined text-sm font-bold">add_shopping_cart</span>
+        </div>
+      </div>
     </Link>
   );
 }
@@ -81,6 +82,19 @@ DealCard.propTypes = {
    Componente principal — Deal Of The Day
    ──────────────────────────────────────────── */
 export default function DealOfTheDay({ products }) {
+  const { sections } = useHomeSections();
+  const data = sections?.deal_of_the_day || {};
+
+  // Textos dinámicos con fallback
+  const sectionTitle = data.section_title || "Oferta del Día";
+  const gridTitle = data.grid_title || "Ofertas Destacadas";
+  const badgeText = data.badge_text || "Equipos Premium";
+  const promoHeading = data.promo_heading || "15% OFF en\nórdenes mayores\na $500";
+  const promoLines = promoHeading.split('\n');
+  const promoSubtext = data.promo_subtext || "Válido hasta agotar existencias";
+  const buttonText = data.button_text || "Comprar Ahora";
+  const buttonLink = data.button_link || "/catalogo";
+
   const available = products || [];
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -91,7 +105,7 @@ export default function DealOfTheDay({ products }) {
     ? Array.from({ length: 6 }, (_, i) => available[i % available.length])
     : [];
 
-  const badges = [null, "NEW", null, null, "NEW", null];
+  const badges = [null, "HOT", null, null, "NEW", null];
 
   const updateScrollButtons = () => {
     const el = scrollRef.current;
@@ -119,102 +133,105 @@ export default function DealOfTheDay({ products }) {
 
   // Producto destacado para el banner
   const featuredProduct = available[0];
-  const featuredImage =
-    featuredProduct?.images?.[0]?.url ||
-    featuredProduct?.image ||
+  const featuredImage = typeof featuredProduct?.images?.[0] === 'string'
+    ? featuredProduct.images[0]
+    : featuredProduct?.images?.[0]?.url || featuredProduct?.image || null;
     null;
 
   return (
-    <section className="mb-16">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
-        {/* =========== BANNER IZQUIERDO =========== */}
-        <div className="lg:col-span-4 flex flex-col">
-          {/* Título con barra inferior azul */}
-          <div className="pb-3 mb-0 border-b border-gray-200">
-            <h2 className="text-base font-bold text-gray-900 border-b-[3px] border-blue-600 pb-3 inline-block -mb-[3px]">
-              Oferta del Día
+    <section className="mb-20">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 shadow-2xl shadow-purple-900/5 rounded-2xl overflow-hidden bg-white border border-gray-100 relative z-10">
+        
+        {/* =========== BANNER IZQUIERDO (PREMIUM DARK MODE) =========== */}
+        <div className="lg:col-span-4 flex flex-col relative overflow-hidden bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 p-8 md:p-10 text-white">
+          {/* Decorative elements */}
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-purple-500/20 blur-3xl pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 rounded-full bg-pink-500/20 blur-3xl pointer-events-none"></div>
+
+          {/* Encabezado interno del banner */}
+          <div className="relative z-10 mb-8 flex justify-between items-start">
+            <h2 className="text-xl font-bold tracking-tight text-white/90">
+              {sectionTitle}
             </h2>
+            <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+              <span className="material-symbols-outlined text-sm">workspace_premium</span>
+              {badgeText}
+            </span>
           </div>
 
-          {/* Banner container */}
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-b-2xl lg:rounded-bl-2xl lg:rounded-br-none p-6 md:p-8 flex flex-col flex-1 border border-t-0 border-gray-100">
-            {/* Badge */}
-            <span className="inline-flex self-start items-center gap-1.5 bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-md mb-5">
-              <span className="material-symbols-rounded text-sm">local_offer</span>
-              Equipos Premium
-            </span>
-
-            {/* Texto promocional */}
-            <h3 className="text-2xl md:text-[28px] font-extrabold text-gray-900 leading-tight mb-2">
-              15% OFF en
-              <br />
-              órdenes mayores
-              <br />
-              a $500
+          {/* Texto promocional */}
+          <div className="relative z-10 flex flex-col flex-1">
+            <h3 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-purple-200 leading-tight mb-4 drop-shadow-sm">
+              {promoLines.map((line, i) => (
+                <span key={i} className="block">
+                  {line}
+                </span>
+              ))}
             </h3>
 
-            <p className="text-sm text-gray-500 mb-6">
-              Válido hasta agotar existencias
+            <p className="text-sm text-purple-200 font-medium mb-8 max-w-xs">
+              {promoSubtext}
             </p>
 
             {/* Botón */}
             <Link
-              to="/catalogo"
-              className="inline-flex items-center self-start gap-2 bg-white text-gray-800 font-semibold text-sm px-6 py-2.5 rounded-full border-2 border-gray-200 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all duration-300 shadow-sm group mb-6"
+              to={buttonLink}
+              className="inline-flex items-center self-start gap-2 bg-white text-purple-900 font-bold text-sm px-7 py-3 rounded-full hover:bg-purple-50 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105 transition-all duration-300 group mt-auto z-20"
             >
-              Comprar Ahora
-              <span className="material-symbols-rounded text-base group-hover:translate-x-1 transition-transform">
+              {buttonText}
+              <span className="material-symbols-outlined text-base group-hover:translate-x-1.5 transition-transform duration-300">
                 arrow_forward
               </span>
             </Link>
+          </div>
 
-            {/* Imagen del producto grande */}
-            <div className="flex justify-center mt-auto pt-4">
-              {featuredImage ? (
-                <img
-                  src={featuredImage}
-                  alt={featuredProduct?.name || "Producto"}
-                  className="max-h-48 md:max-h-56 object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500"
-                />
-              ) : (
-                <div className="w-48 h-48 bg-gray-200 rounded-xl flex items-center justify-center">
-                  <span className="material-symbols-rounded text-6xl text-gray-300">dentistry</span>
-                </div>
-              )}
-            </div>
+          {/* Imagen del producto grande */}
+          <div className="absolute bottom-[-10%] right-[-5%] w-3/5 h-3/5 opacity-80 group hover:opacity-100 transition-opacity duration-500 z-10 flex items-end justify-end">
+            {featuredImage ? (
+              <img
+                src={featuredImage}
+                alt={featuredProduct?.name || "Producto"}
+                className="max-h-full object-contain drop-shadow-2xl origin-bottom-right hover:scale-110 hover:-rotate-3 transition-transform duration-700 ease-out"
+              />
+            ) : (
+              <div className="w-40 h-40 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.3)] mb-8 mr-8">
+                <span className="material-symbols-outlined text-6xl text-white/40">dentistry</span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* =========== GRID DERECHO =========== */}
-        <div className="lg:col-span-8 flex flex-col">
+        <div className="lg:col-span-8 flex flex-col bg-gray-50/50 relative">
           {/* Encabezado con flechas */}
-          <div className="flex items-center justify-between pb-3 mb-0 border-b border-gray-200">
-            <h2 className="text-base font-bold text-gray-900 border-b-[3px] border-blue-600 pb-3 inline-block -mb-[3px]">
-              Ofertas Destacadas
+          <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100 bg-white">
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+              <span className="material-symbols-outlined text-amber-500">flash_on</span>
+              {gridTitle}
             </h2>
 
-            <div className="flex gap-1.5">
+            <div className="flex gap-2">
               <button
                 onClick={() => scroll("left")}
                 disabled={!canScrollLeft}
-                className={`w-8 h-8 flex items-center justify-center rounded-full border transition-all duration-200 ${
+                className={`w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 ${
                   canScrollLeft
-                    ? "border-gray-300 text-gray-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 active:scale-90"
-                    : "border-gray-200 text-gray-300 cursor-not-allowed"
+                    ? "bg-white border border-gray-200 text-gray-700 hover:bg-purple-600 hover:text-white hover:border-purple-600 shadow-sm active:scale-95"
+                    : "bg-gray-50 border border-gray-100 text-gray-300 cursor-not-allowed"
                 }`}
               >
-                <span className="material-symbols-rounded text-base">chevron_left</span>
+                <span className="material-symbols-outlined text-lg">chevron_left</span>
               </button>
               <button
                 onClick={() => scroll("right")}
                 disabled={!canScrollRight}
-                className={`w-8 h-8 flex items-center justify-center rounded-full border transition-all duration-200 ${
+                className={`w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 ${
                   canScrollRight
-                    ? "border-gray-300 text-gray-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 active:scale-90"
-                    : "border-gray-200 text-gray-300 cursor-not-allowed"
+                    ? "bg-white border border-gray-200 text-gray-700 hover:bg-purple-600 hover:text-white hover:border-purple-600 shadow-sm active:scale-95"
+                    : "bg-gray-50 border border-gray-100 text-gray-300 cursor-not-allowed"
                 }`}
               >
-                <span className="material-symbols-rounded text-base">chevron_right</span>
+                <span className="material-symbols-outlined text-lg">chevron_right</span>
               </button>
             </div>
           </div>
@@ -222,10 +239,10 @@ export default function DealOfTheDay({ products }) {
           {/* Grid 2 filas × 3 columnas, deslizable */}
           <div
             ref={scrollRef}
-            className="overflow-x-auto scrollbar-hide border border-t-0 border-gray-100 rounded-b-2xl lg:rounded-br-2xl lg:rounded-bl-none p-4"
+            className="overflow-x-auto scrollbar-hide p-6"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           >
-            <div className="grid grid-rows-2 grid-flow-col auto-cols-[minmax(180px,1fr)] gap-3 min-w-max">
+            <div className="grid grid-rows-2 grid-flow-col auto-cols-[minmax(200px,1fr)] gap-5 min-w-max">
               {filled.map((product, index) => (
                 <DealCard
                   key={`deal-${product?._id || index}-${index}`}

@@ -1,11 +1,21 @@
 import PropTypes from "prop-types";
 import { useState, useEffect } from "react";
 import SmallProductCard from "../SmallProductCard";
+import useHomeSections from "../../hooks/useHomeSections";
 
 // Badges rotativos para dar variedad visual
 const BADGES = ["SALE", "NEW", null, "HOT"];
 
 export default function FeaturedDealsGrid({ products }) {
+  const { sections } = useHomeSections();
+  const data = sections?.featured_deals || {};
+  const heroTitle = data.hero_title || "Oferta Estrella";
+  const catNames = data.categories || [
+     { title: "Instrumental" },
+     { title: "Biomateriales" },
+     { title: "Ortodoncia" }
+  ];
+
   const available = products || [];
   const [heroIndex, setHeroIndex] = useState(0);
 
@@ -34,9 +44,9 @@ export default function FeaturedDealsGrid({ products }) {
   const currentHero = heroCandidates[heroIndex] || heroProduct;
 
   const categories = [
-    { title: "Instrumental", items: col2 },
-    { title: "Biomateriales", items: col3 },
-    { title: "Ortodoncia", items: col4 },
+    { title: catNames[0]?.title || "Instrumental", items: col2 },
+    { title: catNames[1]?.title || "Biomateriales", items: col3 },
+    { title: catNames[2]?.title || "Ortodoncia", items: col4 },
   ];
 
   return (
@@ -45,7 +55,7 @@ export default function FeaturedDealsGrid({ products }) {
         {/* Columna 1: Oferta Estrella */}
         <div className="flex flex-col">
           <h3 className="text-lg font-bold text-gray-900 pb-2 mb-4 border-b-[3px] border-primary-500">
-            Oferta Estrella
+            {heroTitle}
           </h3>
           <div className="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 flex flex-col items-center justify-center border border-gray-200 relative overflow-hidden group">
             {/* Producto Hero Imagen Grande */}

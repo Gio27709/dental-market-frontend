@@ -1,6 +1,9 @@
 import PropTypes from "prop-types";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
+import { useAuth } from "../../context/AuthContext";
+import { useProducts } from "../../context/ProductContext";
 import toast from "react-hot-toast";
 import { formatCurrencyUSD } from "../../utils/formatters";
 
@@ -11,13 +14,52 @@ import { formatCurrencyUSD } from "../../utils/formatters";
  *  - "compact"   → Horizontal mini card for the sidebar below CartSummary
  */
 export default function SuggestedProductCard({ product, variant = "standard" }) {
-  const { addToCart } = useCart();
+  const { addToCart, items: cartItems } = useCart();
+  const { user } = useAuth();
+  const { allProducts } = useProducts();
+  const [isAdding, setIsAdding] = useState(false);
+  const isOwnProduct = user?.id === product.store_id;
+  const isAvailable = (() => {
+    if (product?.stock_status === "Sin stock") return false;
+    const variations = product?.product_variations || product?.variations || [];
+    if (variations.length > 0) return variations.some(v => v.stock > 0);
+    return product?.stock !== 0 && product?.stock !== null;
+  })();
 
-  const handleAdd = (e) => {
+  // Resolve max stock
+  const resolveProductMaxStock = () => {
+    const fullProduct = allProducts?.find(p => p.id === product.id) || product;
+    const defaultVariation = fullProduct?.variations?.[0];
+    if (defaultVariation?.stock != null) return defaultVariation.stock;
+    const defaultVar = fullProduct?.variations?.find(v =>
+      v.attribute_name === "default" ||
+      v.attribute_value === '{"_default":"default"}' ||
+      v.attribute_value === "default"
+    );
+    if (defaultVar?.stock != null) return defaultVar.stock;
+    if (fullProduct?.product_variations?.length > 0 && fullProduct.product_variations[0].stock != null) return fullProduct.product_variations[0].stock;
+    if (fullProduct?.stock != null) return fullProduct.stock;
+    return 99; // Safe cap — backend enforces actual limit
+  };
+
+  const maxStock = resolveProductMaxStock();
+  // DEDUP FIX: Search cart by product_id to catch items regardless of variation_id format
+  const totalCartQtyForProduct = cartItems
+    .filter(ci => ci.product_id === product.id)
+    .reduce((sum, ci) => sum + Number(ci.quantity), 0);
+  const isCartAtMax = maxStock > 0 && totalCartQtyForProduct >= maxStock;
+
+  const handleAdd = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart(product, product.variations?.[0] || null, 1);
-    toast.success(`"${product.name}" agregado al carrito`);
+    if (isOwnProduct || !isAvailable || isAdding || isCartAtMax) return;
+    setIsAdding(true);
+    try {
+      const success = await addToCart(product, product.variations?.[0] || null, 1);
+      if (success) toast.success(`"${product.name}" agregado al carrito`);
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   const hasImage = product.images && product.images.length > 0;
@@ -60,12 +102,28 @@ export default function SuggestedProductCard({ product, variant = "standard" }) 
         {/* Add Button */}
         <button
           onClick={handleAdd}
-          className="flex-shrink-0 p-2 bg-[#6b1e96]/10 text-[#6b1e96] rounded-lg hover:bg-[#6b1e96] hover:text-white transition-all active:scale-95"
-          title="Agregar al carrito"
+          disabled={isOwnProduct || !isAvailable || isAdding || isCartAtMax}
+          className={`flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 ${
+            isOwnProduct || !isAvailable || isCartAtMax
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : isAdding
+              ? 'bg-[#6b1e96] text-white cursor-wait'
+              : 'bg-[#6b1e96]/10 text-[#6b1e96] hover:bg-[#6b1e96] hover:text-white'
+          }`}
+          title={isCartAtMax ? "Máximo en carrito" : "Agregar al carrito"}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
+          {isAdding ? (
+            <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          ) : isCartAtMax ? (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          )}
         </button>
       </div>
     );
@@ -117,12 +175,36 @@ export default function SuggestedProductCard({ product, variant = "standard" }) 
         {/* Add to Cart */}
         <button
           onClick={handleAdd}
-          className="mt-auto w-full bg-[#6b1e96]/10 text-[#6b1e96] font-semibold py-2 px-3 rounded-lg text-sm hover:bg-[#6b1e96] hover:text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+          disabled={isOwnProduct || !isAvailable || isAdding || isCartAtMax}
+          className={`mt-auto w-full font-semibold py-2 px-3 rounded-lg text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
+            isOwnProduct || !isAvailable || isCartAtMax
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : isAdding
+              ? 'bg-[#6b1e96] text-white cursor-wait'
+              : 'bg-[#6b1e96]/10 text-[#6b1e96] hover:bg-[#6b1e96] hover:text-white'
+          }`}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          Agregar
+          {isAdding ? (
+            <>
+              <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Agregando...
+            </>
+          ) : isCartAtMax ? (
+            <>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+              Máximo
+            </>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Agregar
+            </>
+          )}
         </button>
       </div>
     </div>
@@ -140,6 +222,9 @@ SuggestedProductCard.propTypes = {
       business_name: PropTypes.string,
     }),
     variations: PropTypes.array,
+    product_variations: PropTypes.array,
+    stock: PropTypes.number,
+    stock_status: PropTypes.string,
   }).isRequired,
   variant: PropTypes.oneOf(["standard", "compact"]),
 };

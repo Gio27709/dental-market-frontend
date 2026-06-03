@@ -1,17 +1,35 @@
 import PropTypes from "prop-types";
+import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import ProductCard from "../ProductCard";
+import useHomeSections from "../../hooks/useHomeSections";
 
 export default function CatalogSection({ products, searchTerm, setSearchTerm }) {
+  const { sections } = useHomeSections();
+  const data = sections?.catalog_section || {};
+  const heading = data.heading || "Nuestros Productos";
+  const subheading = data.subheading || "Explora el inventario completo.";
+  const searchPlaceholder = data.search_placeholder || "Buscar por nombre...";
+
+  // Limitar a 10 productos. Si no hay búsqueda, se mezclan aleatoriamente para "rotar" en cada carga.
+  const displayProducts = useMemo(() => {
+    if (!products || products.length === 0) return [];
+    if (searchTerm) {
+      return products.slice(0, 10);
+    }
+    return [...products].sort(() => 0.5 - Math.random()).slice(0, 10);
+  }, [products, searchTerm]);
+
   return (
     <section>
       {/* Título de Catálogo y Búsqueda */}
       <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
-            Nuestros Productos
+            {heading}
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Explora el inventario completo.
+            {subheading}
           </p>
         </div>
 
@@ -20,7 +38,7 @@ export default function CatalogSection({ products, searchTerm, setSearchTerm }) 
           <div className="relative">
             <input
               type="text"
-              placeholder="Buscar por nombre..."
+              placeholder={searchPlaceholder}
               className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -44,7 +62,7 @@ export default function CatalogSection({ products, searchTerm, setSearchTerm }) 
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {products.length === 0 ? (
+        {displayProducts.length === 0 ? (
           <div className="col-span-full py-16 flex flex-col items-center justify-center bg-gray-50 rounded-xl border border-dashed border-gray-300">
             <svg
               className="w-12 h-12 text-gray-400 mb-4"
@@ -70,11 +88,26 @@ export default function CatalogSection({ products, searchTerm, setSearchTerm }) 
             </button>
           </div>
         ) : (
-          products.map((product) => (
+          displayProducts.map((product) => (
             <ProductCard key={product.id || product._id} product={product} />
           ))
         )}
       </div>
+
+      {/* Botón para ir a la tienda principal */}
+      {products.length > 0 && (
+        <div className="mt-12 flex justify-center">
+          <Link
+            to="/store-catalog"
+            className="bg-gradient-to-r from-[#6b1e96] to-[#531575] hover:from-[#531575] hover:to-[#40105a] text-white px-8 py-3 rounded-full font-bold text-sm tracking-wide transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+          >
+            Ver toda la tienda
+            <span className="material-symbols-outlined text-[18px]">
+              arrow_forward
+            </span>
+          </Link>
+        </div>
+      )}
     </section>
   );
 }

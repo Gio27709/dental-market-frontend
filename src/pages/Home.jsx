@@ -56,8 +56,15 @@ export default function Home() {
       {/* --- SECCIÓN: FEATURES, MARCAS Y TENDENCIAS --- */}
       <FeaturesBar />
       <BrandsTicker />
-      <TopCategoriesRow />
-      <TrendingProducts products={products} />
+      {/* --- ZONA VIP TENDENCIAS (Fase 1) --- */}
+      <div className="bg-gradient-to-b from-white via-slate-50/50 to-[#f8f9fc] rounded-[32px] p-6 sm:p-10 mb-12 border border-slate-100 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] relative overflow-hidden">
+        {/* Detalles decorativos */}
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#6b1e96] via-[#c3ff00] to-transparent opacity-70"></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#6b1e96]/5 rounded-full blur-3xl pointer-events-none"></div>
+
+        <TopCategoriesRow />
+        <TrendingProducts />
+      </div>
       <PromoBanners />
       <FeaturedDealsGrid products={products} />
       <DealOfTheDay products={products} />

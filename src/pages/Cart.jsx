@@ -59,6 +59,15 @@ export default function Cart() {
     return shuffleArray(available).slice(0, 15);
   }, [allProducts, cartProductIds]);
 
+  // STOCK FIX: Detect items that exceed available stock or are fully out of stock
+  const hasOOSItems = items.some((item) => {
+    const stock = item.variation?.stock ?? item.max_stock ?? 999;
+    return stock === 0 || item.quantity > stock;
+  });
+
+  // Detect if any items belong to a suspended store
+  const hasSuspendedItems = items.some((item) => item.store_is_suspended);
+
   const handleCheckout = () => {
     if (!user) {
       return navigate("/login?redirect=/checkout");
@@ -135,6 +144,8 @@ export default function Cart() {
             itemCount={items.reduce((sum, i) => sum + i.quantity, 0)}
             onCheckout={handleCheckout}
             showShipping={false}
+            hasOOSItems={hasOOSItems}
+            hasSuspendedItems={hasSuspendedItems}
           />
 
           {!user && (

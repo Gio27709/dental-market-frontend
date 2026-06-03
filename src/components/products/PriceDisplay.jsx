@@ -1,11 +1,11 @@
-import { useState } from "react";
 import PropTypes from "prop-types";
 import { useProducts } from "../../context/ProductContext";
+import { useCurrency } from "../../context/CurrencyContext";
 import { formatCurrencyUSD, formatCurrencyVES } from "../../utils/formatters";
 
 export default function PriceDisplay({ amountUSD, priceClassName, hideSwitcher }) {
   const { bcvRate } = useProducts();
-  const [showVES, setShowVES] = useState(false);
+  const { isVES, setCurrency } = useCurrency();
 
   // Consider an amount to be zero if missing
   const usdVal = Number(amountUSD) || 0;
@@ -15,19 +15,19 @@ export default function PriceDisplay({ amountUSD, priceClassName, hideSwitcher }
     <div className="flex flex-col gap-2">
       {/* Price Amount Header */}
       <span className={priceClassName || "text-2xl font-bold text-[#6b1e96]"}>
-        {showVES ? formatCurrencyVES(vesVal) : formatCurrencyUSD(usdVal)}
+        {isVES ? formatCurrencyVES(vesVal) : formatCurrencyUSD(usdVal)}
       </span>
 
-      {/* Currency Switcher Buttons */}
+      {/* Currency Switcher Buttons — connected to global CurrencyContext */}
       {!hideSwitcher && (
       <div className="flex bg-gray-100 p-1 rounded-lg w-max border border-gray-200">
         <button
           onClick={(e) => {
             e.preventDefault();
-            setShowVES(false);
+            setCurrency("USD");
           }}
           className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
-            !showVES
+            !isVES
               ? "bg-white text-[#6b1e96] shadow-sm"
               : "text-gray-500 hover:text-gray-700"
           }`}
@@ -37,10 +37,10 @@ export default function PriceDisplay({ amountUSD, priceClassName, hideSwitcher }
         <button
           onClick={(e) => {
             e.preventDefault();
-            setShowVES(true);
+            setCurrency("VES");
           }}
           className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
-            showVES
+            isVES
               ? "bg-white text-[#6b1e96] shadow-sm"
               : "text-gray-500 hover:text-gray-700"
           }`}

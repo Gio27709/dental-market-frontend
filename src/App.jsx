@@ -7,6 +7,8 @@ import { OrderProvider } from "./context/OrderContext";
 import { StoreProvider } from "./context/StoreContext";
 import { LocationProvider } from "./context/LocationContext";
 import { FavoriteProvider } from "./context/FavoriteContext";
+import { CurrencyProvider } from "./context/CurrencyContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import { Toaster } from "react-hot-toast";
 
 import Header from "./components/Header";
@@ -21,6 +23,7 @@ import LoadingSkeleton from "./components/LoadingSkeleton";
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
+const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
 const Cart = lazy(() => import("./pages/Cart"));
 const Account = lazy(() => import("./pages/Account"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
@@ -30,23 +33,49 @@ const OrderSuccess = lazy(() => import("./pages/OrderSuccess"));
 const AdminDashboard = lazy(() => import("./pages/Admin/AdminDashboard"));
 const PaymentApprovals = lazy(() => import("./pages/Admin/PaymentApprovals"));
 const AllOrders = lazy(() => import("./pages/Admin/AllOrders"));
+const AdminOrderDetail = lazy(() => import("./pages/Admin/AdminOrderDetail"));
 const ProductModeration = lazy(() => import("./pages/Admin/ProductModeration"));
 const StoreApplications = lazy(() => import("./pages/Admin/StoreApplications"));
+const AdminRiderApplications = lazy(() => import("./pages/Admin/AdminRiderApplications"));
+const AdminCourses = lazy(() => import("./pages/Admin/AdminCourses"));
+const AdminPosts = lazy(() => import("./pages/Admin/AdminPosts"));
 const CategoryManagement = lazy(() => import("./pages/Admin/CategoryManagement"));
 const PlatformSettings = lazy(() => import("./pages/Admin/PlatformSettings"));
+const AdminNotifications = lazy(() => import("./pages/Admin/AdminNotifications"));
+const HomeContentManager = lazy(() => import("./pages/Admin/HomeContentManager"));
+const PaymentHistory = lazy(() => import("./pages/Admin/PaymentHistory"));
+const AdminUsers = lazy(() => import("./pages/Admin/AdminUsers"));
+const AdminAnalytics = lazy(() => import("./pages/Admin/AdminAnalytics"));
+const AdminRefunds = lazy(() => import("./pages/Admin/AdminRefunds"));
+const AdminPenalties = lazy(() => import("./pages/Admin/AdminPenalties"));
+const AdminPayouts = lazy(() => import("./pages/Admin/AdminPayouts"));
 
 const Orders = lazy(() => import("./pages/Account/Orders"));
 const OrderDetail = lazy(() => import("./pages/Account/OrderDetail"));
 const Favorites = lazy(() => import("./pages/Account/Favorites"));
+const Notifications = lazy(() => import("./pages/Account/Notifications"));
+const AccountPassword = lazy(() => import("./pages/Account/AccountPassword"));
 
 const StoreDashboard = lazy(() => import("./pages/Store/StoreDashboard"));
 const StoreProducts = lazy(() => import("./pages/Store/StoreProducts"));
 const ProductForm = lazy(() => import("./pages/Store/ProductForm"));
 const StoreOrders = lazy(() => import("./pages/Store/StoreOrders"));
+const StoreRiders = lazy(() => import("./pages/Store/StoreRiders"));
 const StoreProfile = lazy(() => import("./pages/Store/StoreProfile"));
+const StorePenalties = lazy(() => import("./pages/Store/StorePenalties"));
+const StoreWallet = lazy(() => import("./pages/Store/StoreWallet"));
+const ProductStats = lazy(() => import("./pages/Store/ProductStats"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AffiliateLanding = lazy(() => import("./pages/Store/AffiliateLanding"));
 const StoreCatalog = lazy(() => import("./pages/StoreCatalog"));
+const Courses = lazy(() => import("./pages/Courses/Courses"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Promotions = lazy(() => import("./pages/Promotions"));
+const RiderLayout = lazy(() => import("./components/layout/RiderLayout"));
+const RiderDashboard = lazy(() => import("./pages/Rider/RiderDashboard"));
+const CourseDetail = lazy(() => import("./pages/Courses/CourseDetail"));
+const Blog = lazy(() => import("./pages/News/Blog"));
+const PostDetail = lazy(() => import("./pages/News/PostDetail"));
 const StorePublicProfile = lazy(() => import("./pages/StorePublicProfile"));
 const UserPublicProfile = lazy(() => import("./pages/UserPublicProfile"));
 
@@ -57,10 +86,12 @@ export default function App() {
       <LocationProvider>
         <AuthProvider>
           <ProductProvider>
+            <CurrencyProvider>
             <FavoriteProvider>
               <CartProvider>
               <OrderProvider>
                 <StoreProvider>
+                <NotificationProvider>
                   <div className="min-h-screen flex flex-col font-sans">
                   <Header />
                   <main className="flex-grow bg-gray-50">
@@ -70,9 +101,16 @@ export default function App() {
                         <Route path="/product/:id" element={<ProductDetail />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
+                        <Route path="/update-password" element={<UpdatePassword />} />
                         <Route path="/afiliate" element={<AffiliateLanding />} />
                         <Route path="/cart" element={<Cart />} />
+                        <Route path="/contacto" element={<Contact />} />
+                        <Route path="/promociones" element={<Promotions />} />
                         <Route path="/store-catalog" element={<StoreCatalog />} />
+                        <Route path="/courses" element={<Courses />} />
+                        <Route path="/courses/:id" element={<CourseDetail />} />
+                        <Route path="/news" element={<Blog />} />
+                        <Route path="/news/:id" element={<PostDetail />} />
                         <Route path="/store/:id" element={<StorePublicProfile />} />
                         <Route path="/user/:id" element={<UserPublicProfile />} />
                         {/* Account Routes (Nested Layout) */}
@@ -88,6 +126,8 @@ export default function App() {
                           <Route path="orders" element={<Orders />} />
                           <Route path="orders/:id" element={<OrderDetail />} />
                           <Route path="favorites" element={<Favorites />} />
+                          <Route path="notifications" element={<Notifications />} />
+                          <Route path="password" element={<AccountPassword />} />
                         </Route>
                         <Route
                           path="/checkout"
@@ -118,12 +158,39 @@ export default function App() {
                           }
                         >
                           <Route index element={<AdminDashboard />} />
+                          <Route path="analytics" element={<AdminAnalytics />} />
+                          <Route path="users" element={<AdminUsers />} />
                           <Route path="payment-approvals" element={<PaymentApprovals />} />
                           <Route path="orders" element={<AllOrders />} />
+                          <Route path="orders/:id" element={<AdminOrderDetail />} />
+                          <Route path="refunds" element={<AdminRefunds />} />
+                          <Route path="penalties" element={<AdminPenalties />} />
+                          <Route path="payouts" element={<AdminPayouts />} />
+                          <Route path="payment-history" element={<PaymentHistory />} />
                           <Route path="product-moderation" element={<ProductModeration />} />
                           <Route path="store-applications" element={<StoreApplications />} />
+                          <Route path="rider-applications" element={<AdminRiderApplications />} />
                           <Route path="categories" element={<CategoryManagement />} />
+                          <Route path="courses" element={<AdminCourses />} />
+                          <Route path="posts" element={<AdminPosts />} />
                           <Route path="settings" element={<PlatformSettings />} />
+                          <Route path="notifications" element={<AdminNotifications />} />
+                          <Route path="home-content" element={<HomeContentManager />} />
+                        </Route>
+
+                        {/* Rider Dashboard Routes */}
+                        <Route
+                          path="/delivery"
+                          element={
+                            <ProtectedRoute
+                              redirectTo="/login"
+                              requiredRole={["delivery", "owner"]}
+                            >
+                              <RiderLayout />
+                            </ProtectedRoute>
+                          }
+                        >
+                          <Route index element={<RiderDashboard />} />
                         </Route>
 
                         {/* Store Dashboard Routes (Nested Layout) */}
@@ -145,8 +212,16 @@ export default function App() {
                             path="products/edit/:id"
                             element={<ProductForm />}
                           />
+                          <Route
+                            path="products/:id/stats"
+                            element={<ProductStats />}
+                          />
                           <Route path="orders" element={<StoreOrders />} />
+                          <Route path="wallet" element={<StoreWallet />} />
+                          <Route path="analytics" element={<StoreDashboard />} />
+                          <Route path="riders" element={<StoreRiders />} />
                           <Route path="profile" element={<StoreProfile />} />
+                          <Route path="penalties" element={<StorePenalties />} />
                         </Route>
 
                         <Route path="*" element={<NotFound />} />
@@ -166,10 +241,12 @@ export default function App() {
                     }}
                   />
                 </div>
+                </NotificationProvider>
                 </StoreProvider>
               </OrderProvider>
             </CartProvider>
           </FavoriteProvider>
+            </CurrencyProvider>
         </ProductProvider>
         </AuthProvider>
       </LocationProvider>

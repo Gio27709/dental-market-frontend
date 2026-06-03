@@ -2,24 +2,35 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { useLocationContext } from "../hooks/useLocationContext";
 import CartDrawer from "./cart/CartDrawer";
 import LocationModal from "./LocationModal";
+import NotificationBell from "./notifications/NotificationBell";
+import useHomeSections from "../hooks/useHomeSections";
 
 export default function Header() {
   const { items, total_usd, toggleDrawer } = useCart();
   const { user } = useAuth();
-  const { buyerState } = useLocationContext();
+  const { buyerState, shouldShowPrompt, locationMethod } = useLocationContext();
   const navigate = useNavigate();
 
   // Estados visuales mapeados (Fase 2)
+  const { currency, setCurrency } = useCurrency();
   const [langOpen, setLangOpen] = useState(false);
   const [currencyOpen, setCurrencyOpen] = useState(false);
-  const [currency, setCurrency] = useState("USD");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [categoriesDrawerOpen, setCategoriesDrawerOpen] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // ─── Auto-abrir modal de ubicación en primera visita ───
+  useEffect(() => {
+    if (shouldShowPrompt && !locationModalOpen) {
+      setLocationModalOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldShowPrompt]);
 
   // Búsqueda global → navega al catálogo con el query
   const handleGlobalSearch = (e) => {
@@ -31,8 +42,27 @@ export default function Header() {
     setMobileMenuOpen(false);
   };
 
-  // LOGOUT (Fase 4: lo re-integraremos en el Sidebar)
-  // const handleLogout = async () => { ... }
+  const { sections } = useHomeSections();
+  const data = sections?.header || {};
+
+  const fbTopBar = {
+    promo_text: "Envío gratis en pedidos profesionales de más de $500.",
+    promo_link_text: "Comprar esenciales de clínica",
+    promo_link_url: "/store-catalog"
+  };
+  const topBar = data.top_bar || fbTopBar;
+
+  const brandName = data.brand_name || "Dentix";
+
+  const fbNavLinks = [
+    { text: "Inicio", url: "/" },
+    { text: "Tienda", url: "/store-catalog" },
+    { text: "Ortodoncia", url: "#" },
+    { text: "Esterilización", url: "#" },
+    { text: "Contacto", url: "#" },
+    { text: "Afíliate con nosotros", url: "/afiliate" }
+  ];
+  const navLinks = data.nav_links || fbNavLinks;
 
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -55,21 +85,30 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[40px] md:h-[32px] flex justify-between items-center">
           <div className="top-left">
             <p className="m-0 text-white">
-              Envío gratis en pedidos profesionales de más de $500.{" "}
+              {topBar.promo_text}{" "}
               <Link
-                to="#"
+                to={topBar.promo_link_url}
                 className="text-gray-300 underline hover:text-white transition-colors"
               >
-                Comprar esenciales de clínica
+                {topBar.promo_link_text}
               </Link>
             </p>
           </div>
           <div className="top-right">
             <ul className="flex items-center space-x-4 m-0 p-0 list-none">
               <li>
-                <Link to="#" className="hover:text-white transition-colors">
+                <button
+                  onClick={() => {
+                    if (user) {
+                      navigate("/account/orders");
+                    } else {
+                      navigate("/login?redirect=/account/orders");
+                    }
+                  }}
+                  className="hover:text-white transition-colors cursor-pointer bg-transparent border-none p-0 text-inherit font-inherit"
+                >
                   Rastreo de pedido
-                </Link>
+                </button>
               </li>
               <li className="w-px h-3 bg-gray-500"></li>
 
@@ -200,7 +239,7 @@ export default function Header() {
                 </svg>
               </div>
               <span className="text-2xl md:text-xl font-bold tracking-widest text-white uppercase">
-                Dentix
+                {brandName}
               </span>
             </Link>
 
@@ -219,6 +258,11 @@ export default function Header() {
                 <span className="whitespace-nowrap truncate max-w-[120px]">
                   {buyerState || "Venezuela"}
                 </span>
+                {locationMethod === "auto" && buyerState && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 text-[#c3ff00] flex-shrink-0" title="Ubicación detectada por GPS">
+                    <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
+                  </svg>
+                )}
               </div>
             </div>
           </div>
@@ -286,6 +330,51 @@ export default function Header() {
               </button>
             </div>
 
+            {/* Action Item: Rider Dashboard (Delivery role only) */}
+            {user?.role === "delivery" && (
+              <button
+                onClick={() => navigate("/delivery")}
+                className="relative flex items-center gap-2 justify-center outline-none bg-transparent border-none p-0 cursor-pointer hover:text-gray-200 transition-colors group"
+                title="Mis Entregas"
+              >
+                <span className="material-symbols-outlined text-[22px] md:text-[20px] text-[#c3ff00] group-hover:text-white transition-colors">two_wheeler</span>
+                <span className="font-medium text-xs hidden lg:block tracking-wide text-[#c3ff00] group-hover:text-white transition-colors">
+                  Mis Entregas
+                </span>
+              </button>
+            )}
+
+            {/* Action Item: Store Dashboard (Store role only) */}
+            {user?.role === "store" && (
+              <button
+                onClick={() => navigate("/store")}
+                className="relative flex items-center gap-2 justify-center outline-none bg-transparent border-none p-0 cursor-pointer hover:text-gray-200 transition-colors group"
+                title="Mi Tienda"
+              >
+                <span className="material-symbols-outlined text-[22px] md:text-[20px] text-[#c3ff00] group-hover:text-white transition-colors">storefront</span>
+                <span className="font-medium text-xs hidden lg:block tracking-wide text-[#c3ff00] group-hover:text-white transition-colors">
+                  Mi Tienda
+                </span>
+              </button>
+            )}
+
+            {/* Action Item: Admin Dashboard (Admin or Owner role) */}
+            {(user?.role === "admin" || user?.role === "owner") && (
+              <button
+                onClick={() => navigate("/admin")}
+                className="relative flex items-center gap-2 justify-center outline-none bg-transparent border-none p-0 cursor-pointer hover:text-gray-200 transition-colors group"
+                title="Panel Admin"
+              >
+                <span className="material-symbols-outlined text-[22px] md:text-[20px] text-[#c3ff00] group-hover:text-white transition-colors">admin_panel_settings</span>
+                <span className="font-medium text-xs hidden lg:block tracking-wide text-[#c3ff00] group-hover:text-white transition-colors">
+                  Panel Admin
+                </span>
+              </button>
+            )}
+
+            {/* Action Item: Notification Bell */}
+            <NotificationBell />
+
             {/* Action Item: Cart */}
             <div
               className="relative cursor-pointer hover:text-gray-200 transition-colors flex items-center gap-2"
@@ -350,36 +439,13 @@ export default function Header() {
 
           <nav className="flex-1 ml-10">
             <ul className="flex items-center space-x-6 text-[12px] font-bold tracking-wide text-white uppercase">
-              <li>
-                <Link to="/" className="hover:text-[#c3ff00] transition-colors">
-                  Inicio
-                </Link>
-              </li>
-              <li>
-                <Link to="/store-catalog" className="hover:text-[#c3ff00] transition-colors">
-                  Tienda
-                </Link>
-              </li>
-              <li>
-                <Link to="#" className="hover:text-[#c3ff00] transition-colors">
-                  Ortodoncia
-                </Link>
-              </li>
-              <li>
-                <Link to="#" className="hover:text-[#c3ff00] transition-colors">
-                  Esterilización
-                </Link>
-              </li>
-              <li>
-                <Link to="#" className="hover:text-[#c3ff00] transition-colors">
-                  Contacto
-                </Link>
-              </li>
-              <li>
-                <Link to="/afiliate" className="hover:text-[#c3ff00] transition-colors">
-                  Afíliate con nosotros
-                </Link>
-              </li>
+              {navLinks.map((link, idx) => (
+                <li key={idx}>
+                  <Link to={link.url} className="hover:text-[#c3ff00] transition-colors">
+                    {link.text}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </nav>
         </div>
@@ -403,7 +469,7 @@ export default function Header() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                   </svg>
                 </div>
-                <span className="text-lg font-bold tracking-widest text-white uppercase">Dentix</span>
+                <span className="text-lg font-bold tracking-widest text-white uppercase">{brandName}</span>
               </Link>
               <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
@@ -431,30 +497,14 @@ export default function Header() {
             {/* Navigation Links */}
             <nav className="flex-1 overflow-y-auto py-2">
               <div className="px-3 space-y-0.5">
-                <Link to="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-gray-50 font-medium text-sm transition-colors">
-                  <span className="material-symbols-outlined text-gray-400" style={{fontSize: '20px'}}>home</span>
-                  Inicio
-                </Link>
-                <Link to="/store-catalog" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-gray-50 font-medium text-sm transition-colors">
-                  <span className="material-symbols-outlined text-gray-400" style={{fontSize: '20px'}}>storefront</span>
-                  Tienda
-                </Link>
-                <Link to="#" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-gray-50 font-medium text-sm transition-colors">
-                  <span className="material-symbols-outlined text-gray-400" style={{fontSize: '20px'}}>grid_view</span>
-                  Ortodoncia
-                </Link>
-                <Link to="#" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-gray-50 font-medium text-sm transition-colors">
-                  <span className="material-symbols-outlined text-gray-400" style={{fontSize: '20px'}}>clean_hands</span>
-                  Esterilización
-                </Link>
-                <Link to="#" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-gray-50 font-medium text-sm transition-colors">
-                  <span className="material-symbols-outlined text-gray-400" style={{fontSize: '20px'}}>call</span>
-                  Contacto
-                </Link>
-                <Link to="/afiliate" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl text-[#6b1e96] bg-[#6b1e96]/5 hover:bg-[#6b1e96]/10 font-semibold text-sm transition-colors">
-                  <span className="material-symbols-outlined text-[#6b1e96]" style={{fontSize: '20px'}}>storefront</span>
-                  Afíliate con nosotros
-                </Link>
+                {navLinks.map((link, idx) => (
+                  <Link key={idx} to={link.url} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-gray-50 font-medium text-sm transition-colors">
+                    <span className="material-symbols-outlined text-gray-400" style={{fontSize: '20px'}}>
+                      {idx === 0 ? "home" : idx === navLinks.length - 1 ? "storefront" : "label"}
+                    </span>
+                    {link.text}
+                  </Link>
+                ))}
               </div>
 
               {/* Divider + Categories */}
@@ -484,6 +534,24 @@ export default function Header() {
             <div className="border-t border-gray-100 p-4">
               {user ? (
                 <div className="space-y-2">
+                  {user?.role === "delivery" && (
+                    <Link to="/delivery" onClick={() => setMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#f3e8ff] text-[#6b1e96] text-sm font-bold hover:bg-[#e9d5ff] transition-colors">
+                      <span className="material-symbols-outlined text-[20px]">two_wheeler</span>
+                      Mis Entregas
+                    </Link>
+                  )}
+                  {user?.role === "store" && (
+                    <Link to="/store" onClick={() => setMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#e0f2fe] text-[#0369a1] text-sm font-bold hover:bg-[#bae6fd] transition-colors">
+                      <span className="material-symbols-outlined text-[20px]">storefront</span>
+                      Mi Tienda
+                    </Link>
+                  )}
+                  {(user?.role === "admin" || user?.role === "owner") && (
+                    <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#fee2e2] text-[#b91c1c] text-sm font-bold hover:bg-[#fecaca] transition-colors">
+                      <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+                      Panel Admin
+                    </Link>
+                  )}
                   <Link to="/account" onClick={() => setMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-700 text-sm font-medium hover:bg-gray-100 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
@@ -519,7 +587,7 @@ export default function Header() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                   </svg>
                 </div>
-                <span className="text-lg font-bold tracking-widest text-white uppercase">Dentix</span>
+                <span className="text-lg font-bold tracking-widest text-white uppercase">{brandName}</span>
               </div>
               <button onClick={() => setCategoriesDrawerOpen(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">

@@ -11,7 +11,6 @@ export const PAYMENT_METHODS = {
   transferencia: { label: "Transferencia Bancaria", icon: "🏦" },
   pago_movil: { label: "Pago Móvil", icon: "📱" },
   zelle: { label: "Zelle", icon: "💵" },
-  efectivo: { label: "Efectivo", icon: "💰" },
 };
 
 export const BANK_DATA = {
@@ -36,10 +35,13 @@ export const ORDER_STATUS = {
   under_review: { label: "En revisión", color: "yellow" },
   approved: { label: "Pago aprobado", color: "blue" },
   processing: { label: "En proceso", color: "blue" },
-  shipped: { label: "Enviado", color: "green" },
+  shipped: { label: "Enviado", color: "indigo" },
   delivered: { label: "Entregado", color: "emerald" },
   cancelled: { label: "Cancelado", color: "red" },
   rejected: { label: "Rechazado", color: "red" },
+  failed: { label: "Cancelado", color: "red" },
+  expired: { label: "Plazo Vencido", color: "red" },
+  returned: { label: "Devuelto", color: "yellow" },
 };
 
 export const CARRIER_ICONS = {
@@ -48,3 +50,15 @@ export const CARRIER_ICONS = {
   tealca: { label: "Tealca", icon: "🟠" },
   default: { label: "Envío", icon: "📦" },
 };
+
+export const COUNTRY_CODES = [
+  { code: "+58",  flag: "🇻🇪", name: "Venezuela",  minDigits: 10, maxDigits: 10 },
+  { code: "+57",  flag: "🇨🇴", name: "Colombia",   minDigits: 10, maxDigits: 10 },
+  { code: "+56",  flag: "🇨🇱", name: "Chile",      minDigits: 9,  maxDigits: 9  },
+  { code: "+54",  flag: "🇦🇷", name: "Argentina",  minDigits: 10, maxDigits: 10 },
+  { code: "+52",  flag: "🇲🇽", name: "México",     minDigits: 10, maxDigits: 10 },
+  { code: "+55",  flag: "🇧🇷", name: "Brasil",     minDigits: 10, maxDigits: 11 },
+  { code: "+51",  flag: "🇵🇪", name: "Perú",       minDigits: 9,  maxDigits: 9  },
+  { code: "+593", flag: "🇪🇨", name: "Ecuador",    minDigits: 9,  maxDigits: 9  },
+  { code: "+1",   flag: "🇺🇸", name: "USA",        minDigits: 10, maxDigits: 10 },
+];

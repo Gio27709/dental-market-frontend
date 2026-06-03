@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../../context/StoreContext";
 import { useProducts } from "../../context/ProductContext";
 import { getCategoriesAPI, getBrandsAPI } from "../../services/api";
+import api from "../../services/api";
 import toast from "react-hot-toast";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -27,9 +28,9 @@ export default function ProductForm() {
     description: "",
     category_id: "",
     brand_id: "",
-    price: "",
     compare_at_price: "",
     cost_price: "",
+    delivery_fee: "",
     images: [],
     variations: [],
     status: "Activo",
@@ -44,6 +45,9 @@ export default function ProductForm() {
   // State for the color picker
   const [pickerColors, setPickerColors] = useState({});
 
+  // Store fee percentage (loaded from platform settings)
+  const [storeFeePercentage, setStoreFeePercentage] = useState(null);
+
   useEffect(() => {
     fetchProfile();
     // Load real categories from DB
@@ -54,6 +58,14 @@ export default function ProductForm() {
     getBrandsAPI()
       .then((res) => setBrands(res.data.data || []))
       .catch(() => console.error("Error loading brands"));
+
+    // Fetch platform store_fee for info banner
+    api.get("/admin/settings")
+      .then((res) => {
+        const fee = res.data?.data?.store_fee?.percentage;
+        if (fee !== undefined) setStoreFeePercentage(Number(fee));
+      })
+      .catch(() => console.error("Error loading platform fees"));
 
     if (isEditing) {
       setFetchingProduct(true);
@@ -143,6 +155,7 @@ export default function ProductForm() {
             price: product.price || "",
             compare_at_price: product.compare_at_price || "",
             cost_price: product.cost_price || "",
+            delivery_fee: product.delivery_fee || "",
             images: product.images || [],
             hasVariations: !isDefault,
             simpleStock: isDefault && product.variations?.length ? product.variations[0].stock : 0,
@@ -307,6 +320,7 @@ export default function ProductForm() {
       price: parseFloat(form.price),
       compare_at_price: form.compare_at_price ? parseFloat(form.compare_at_price) : "",
       cost_price: form.cost_price ? parseFloat(form.cost_price) : "",
+      delivery_fee: form.delivery_fee ? parseFloat(form.delivery_fee) : 0,
       images: form.images,
       status: form.status,
       variations: form.hasVariations
@@ -352,90 +366,603 @@ export default function ProductForm() {
 
   if (fetchingProduct) {
     return (
-      <div className="p-8 text-center text-gray-500">
-        Cargando datos del producto...
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
+        <div className="w-12 h-12 border-4 border-purple-500/10 border-t-[#6b1e96] rounded-full animate-spin mb-4" />
+        <p className="text-sm font-semibold text-gray-500 animate-pulse">Cargando datos del producto...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold text-gray-900 mb-1">
-        {isEditing ? "Editar Producto" : "Nuevo Producto"}
-      </h2>
-      <p className="text-sm text-gray-500 mb-6">
-        {isEditing
-          ? "Modifica los detalles, estado y variaciones matrix de tu producto."
-          : "Completa los datos de tu producto para publicarlo o guardarlo como borrador."}
-      </p>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Info & Availability */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="md:col-span-3 bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-            <h3 className="font-semibold text-gray-900">1. Información Básica</h3>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre *
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500/20 text-sm"
-              placeholder="Ej: Kit de Blanqueamiento Dental"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Descripción *
-            </label>
-            <div className="bg-white rounded-lg">
-              <ReactQuill
-                theme="snow"
-                value={form.description}
-                onChange={handleDescriptionChange}
-                modules={quillModules}
-                placeholder="Describe los beneficios, características y componentes principales de tu producto..."
-                className="h-48 mb-12" // mb-12 para compensar la altura de la toolbar de quill y su caja inferior
-              />
-            </div>
-            {/* Validacion invisible si el campo esta 'vacio' (solo tags p) */}
-            <input type="hidden" required value={form.description.replace(/<[^>]*>?/gm, '').trim() || ""} />
-          </div>
-
-        </div>
-          
-        <div className="md:col-span-1 space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-5 h-fit">
-            <h3 className="font-semibold text-gray-900 mb-4">Disponibilidad</h3>
-            <select
-              name="status"
-              value={form.status}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500/20 text-sm font-medium
-                ${form.status === 'Activo' ? 'text-green-700 bg-green-50' : form.status === 'Borrador' ? 'text-gray-700 bg-gray-50' : 'text-red-700 bg-red-50'}`}
+    <div className="max-w-6xl mx-auto space-y-6 pb-12">
+      {/* ── HEADER BANNER ── */}
+      <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-r from-[#531575] via-[#6b1e96] to-[#8b5cf6] p-6 sm:p-8 text-white shadow-lg">
+        {/* Decorative background glow */}
+        <div className="absolute right-0 top-0 -mt-4 -mr-4 w-56 h-56 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+        <div className="absolute left-1/3 bottom-0 -mb-8 w-44 h-44 rounded-full bg-white/5 blur-2xl pointer-events-none" />
+        
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+          <div className="space-y-1">
+            <button
+              onClick={() => navigate("/store/products")}
+              className="inline-flex items-center gap-1.5 text-xs text-purple-200 hover:text-white font-semibold transition-colors mb-2 group"
             >
-              <option value="Borrador">Borrador</option>
-              <option value="Activo">Activo</option>
-              <option value="Sin stock">Sin stock</option>
-            </select>
-            <p className="text-xs text-gray-500 mt-3 leading-relaxed">
-              {form.status === "Borrador" && "El producto no será visible para los clientes."}
-              {form.status === "Activo" && "El producto estará publicado y visible en la tienda."}
-              {form.status === "Sin stock" && "El producto se mostrará como agotado y no podrá comprarse."}
+              <span className="transition-transform group-hover:-translate-x-1">←</span> Volver a Productos
+            </button>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              {isEditing ? "Editar Producto" : "Nuevo Producto"}
+            </h2>
+            <p className="text-sm text-purple-100 max-w-xl">
+              {isEditing
+                ? "Modifica y perfecciona los detalles, precios y variaciones de tu artículo en catálogo."
+                : "Completa la ficha técnica para añadir un nuevo producto estrella a tu tienda."}
             </p>
           </div>
+          {isEditing && (
+            <div className={`px-4 py-2 rounded-xl text-sm font-bold shadow-sm self-start sm:self-center
+              ${form.status === 'Activo' ? 'bg-[#c3ff00] text-[#1a0a2e]' : form.status === 'Borrador' ? 'bg-white/15 text-white backdrop-blur-md' : 'bg-red-500 text-white'}`}
+            >
+              ● {form.status}
+            </div>
+          )}
+        </div>
+      </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-5 h-fit">
-            <h3 className="font-semibold text-gray-900 mb-4">Clasificación</h3>
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* COLUMNA PRINCIPAL (70% - izquierda) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Card 1: Información Básica */}
+          <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 space-y-5">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-50">
+              <span className="text-2xl">📝</span>
+              <div>
+                <h3 className="font-bold text-gray-900 text-base">1. Información Básica</h3>
+                <p className="text-xs text-gray-400">Nombre comercial y descripción del producto</p>
+              </div>
+            </div>
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Nombre del Producto *
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] text-sm transition-all placeholder:text-slate-400"
+                  placeholder="Ej: Kit de Blanqueamiento Dental Pro"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Descripción Detallada *
+                </label>
+                <div className="rounded-xl border border-slate-200 overflow-hidden focus-within:ring-4 focus-within:ring-purple-500/10 focus-within:border-[#6b1e96] transition-all">
+                  <ReactQuill
+                    theme="snow"
+                    value={form.description}
+                    onChange={handleDescriptionChange}
+                    modules={quillModules}
+                    placeholder="Describe los beneficios, características y componentes principales de tu producto..."
+                    className="h-48"
+                  />
+                </div>
+                {/* Spacer block to prevent quill toolbar overlap */}
+                <div className="h-12" />
+                <input type="hidden" required value={form.description.replace(/<[^>]*>?/gm, '').trim() || ""} />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Precios e Inventario */}
+          <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 space-y-5">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-50">
+              <span className="text-2xl">💰</span>
+              <div>
+                <h3 className="font-bold text-gray-900 text-base">2. Precios e Inventario Financiero</h3>
+                <p className="text-xs text-gray-400">Precios de venta, comparación y costos operativos</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Precio Venta (USD) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm">$</span>
+                  <input
+                    type="number"
+                    name="price"
+                    value={form.price}
+                    onChange={handleChange}
+                    required
+                    min="0.01"
+                    step="0.01"
+                    className="w-full pl-9 pr-4 py-3 border border-slate-200 border-l-4 border-l-purple-600 rounded-xl focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] text-sm font-semibold transition-all placeholder:text-slate-400 text-gray-950"
+                    placeholder="25.00"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Precio Comparación (USD)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm">$</span>
+                  <input
+                    type="number"
+                    name="compare_at_price"
+                    value={form.compare_at_price}
+                    onChange={handleChange}
+                    min="0"
+                    step="0.01"
+                    className="w-full pl-9 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] text-sm font-semibold transition-all placeholder:text-slate-400 text-gray-800"
+                    placeholder="Ej. 35.00"
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">Se muestra tachado (descuento).</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Costo por Artículo (USD)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm">$</span>
+                  <input
+                    type="number"
+                    name="cost_price"
+                    value={form.cost_price}
+                    onChange={handleChange}
+                    min="0"
+                    step="0.01"
+                    className="w-full pl-9 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] text-sm font-semibold transition-all placeholder:text-slate-400 text-gray-800"
+                    placeholder="Ej. 15.00"
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">Privado. Solo para tus métricas.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Tarifa Envío Local (USD)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm">$</span>
+                  <input
+                    type="number"
+                    name="delivery_fee"
+                    value={form.delivery_fee}
+                    onChange={handleChange}
+                    min="0"
+                    step="0.01"
+                    className="w-full pl-9 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] text-sm font-semibold transition-all placeholder:text-slate-400 text-gray-800"
+                    placeholder="Ej. 3.00 (opcional)"
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">Costo al ofrecer envío en tu ciudad.</p>
+              </div>
+            </div>
+
+            {/* Store Fee Info Banner */}
+            {storeFeePercentage !== null && storeFeePercentage > 0 && (
+              <div className="flex items-start gap-3.5 p-4 rounded-2xl bg-purple-50/50 border border-purple-100 mt-2">
+                <span className="text-xl mt-0.5">ℹ️</span>
+                <div>
+                  <p className="text-xs font-bold text-[#6b1e96] uppercase tracking-wider">Comisión de la Plataforma ({storeFeePercentage}%)</p>
+                  <p className="text-xs text-purple-950 mt-1 leading-relaxed">
+                    DentalMarket aplica una comisión del {storeFeePercentage}% sobre las ventas. 
+                    {form.price && parseFloat(form.price) > 0 && (
+                      <span> Si vendes a <strong>${parseFloat(form.price).toFixed(2)}</strong>, recibirás aproximadamente <strong>${(parseFloat(form.price) * (1 - storeFeePercentage / 100)).toFixed(2)}</strong>.</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Card 3: Imágenes Galería */}
+          <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 space-y-5">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-50">
+              <span className="text-2xl">📸</span>
+              <div>
+                <h3 className="font-bold text-gray-900 text-base">3. Imágenes Galería</h3>
+                <p className="text-xs text-gray-400">Imágenes del producto. Se requiere al menos una imagen para activar el producto.</p>
+              </div>
+            </div>
+
+            {/* Upload Area & Thumbnails Layout */}
+            <div className="space-y-4">
+              {form.images.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3.5">
+                  {form.images.map((url, i) => (
+                    <div
+                      key={i}
+                      className="relative aspect-square rounded-xl overflow-hidden border border-slate-100 group shadow-sm bg-slate-50"
+                    >
+                      <img
+                        src={url}
+                        alt={`Producto ${i + 1}`}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(i)}
+                        className="absolute inset-0 bg-black/60 backdrop-blur-[1px] text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-sm font-bold"
+                      >
+                        <span className="px-2.5 py-1.5 bg-red-600 rounded-lg hover:bg-red-700 active:scale-95 transition-all shadow-md">
+                          Eliminar
+                        </span>
+                      </button>
+                      {i === 0 && (
+                        <span className="absolute top-1.5 left-1.5 px-2 py-0.5 bg-[#6b1e96] text-white text-[9px] font-extrabold uppercase rounded shadow-sm">
+                          Principal
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <label className={`w-full flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-200
+                ${uploading ? 'border-purple-300 bg-purple-50/10' : 'border-slate-300 bg-slate-50/50 hover:border-purple-400 hover:bg-purple-50/20'}`}
+              >
+                <div className="flex flex-col items-center justify-center text-center space-y-2">
+                  {uploading ? (
+                    <>
+                      <div className="w-8 h-8 border-2 border-purple-500/10 border-t-purple-600 rounded-full animate-spin" />
+                      <span className="text-xs font-semibold text-purple-700">Subiendo imagen a la nube...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-3xl">📤</span>
+                      <span className="text-sm font-semibold text-gray-700">Añadir imagen a la galería</span>
+                      <span className="text-[11px] text-gray-400">Recomendado: Formatos JPG, PNG o WebP en formato cuadrado</span>
+                    </>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Card 4: Variaciones Switch Card */}
+          <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm p-6">
+            <label className="flex items-start gap-4 cursor-pointer select-none group">
+              <div className="flex items-center h-5 mt-1">
+                <input
+                  type="checkbox"
+                  name="hasVariations"
+                  checked={form.hasVariations}
+                  onChange={(e) => setForm(prev => ({ ...prev, hasVariations: e.target.checked }))}
+                  className="w-5 h-5 text-purple-600 rounded-lg border-slate-300 focus:ring-purple-500/20 focus:ring-4 transition-all"
+                />
+              </div>
+              <div>
+                <span className="block font-bold text-gray-900 text-sm group-hover:text-[#6b1e96] transition-colors">
+                  Este producto tiene múltiples opciones
+                </span>
+                <span className="block text-xs text-gray-400 mt-0.5 leading-relaxed">
+                  Actívalo si vendes variaciones de este artículo (ej. diferentes tonos de resinas, tallas de guantes, sabores o capacidades).
+                </span>
+              </div>
+            </label>
+          </div>
+
+          {form.hasVariations ? (
+            <>
+              {/* Option Matrix Builder */}
+              <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 space-y-5 relative">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-50">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">⚙️</span>
+                    <div>
+                      <h3 className="font-bold text-gray-900 text-base">4. Opciones de Variación</h3>
+                      <p className="text-xs text-gray-400">Define los atributos y genera la matriz Shopify-style</p>
+                    </div>
+                  </div>
+
+                  {/* Tooltip */}
+                  <div className="relative group">
+                    <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold cursor-help hover:bg-purple-100 hover:text-purple-600 transition-all">
+                      ?
+                    </div>
+                    {/* TOOLTIP CONTENT */}
+                    <div className="absolute right-0 bottom-full mb-2 w-72 p-3.5 bg-gray-955 text-white text-xs rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                      <p className="font-bold mb-1.5 text-purple-400">Cómo configurar variaciones:</p>
+                      <ul className="space-y-1 text-gray-300 list-disc pl-4 leading-relaxed">
+                        <li>Crea una categoría de opción (Ej. <strong>Tono</strong> o <strong>Capacidad</strong>).</li>
+                        <li>Ingresa los valores y presiona <strong>Enter</strong> o <strong>Coma</strong> para guardarlos (Ej. <span className="text-white">A2, A3, B1</span>).</li>
+                        <li>Las variaciones se cruzarán automáticamente.</li>
+                      </ul>
+                      <div className="absolute right-3.5 bottom-0 shadow-lg translate-y-full border-[6px] border-transparent border-t-gray-955"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {options.map((opt, i) => {
+                    const isColorOption = opt.name.trim().toLowerCase() === "color" || opt.name.trim().toLowerCase() === "tono";
+                    const currentColor = pickerColors[i] || "#000000";
+
+                    return (
+                      <div key={i} className="border border-slate-100 rounded-2xl p-4 bg-slate-50/30 space-y-3">
+                        <div className="flex justify-between items-center">
+                          <div className="w-1/2">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Nombre Opción {i + 1}</label>
+                            <input
+                              type="text"
+                              value={opt.name}
+                              onChange={(e) => handleOptionChange(i, "name", e.target.value)}
+                              placeholder="Ej. Tono, Tamaño, Capacidad"
+                              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] bg-white transition-all font-semibold"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeOption(i)}
+                            className="text-xs text-red-500 hover:text-red-700 font-bold px-3 py-1.5 rounded-lg hover:bg-red-50 active:scale-95 transition-all mt-4"
+                          >
+                            Eliminar Opción
+                          </button>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Valores de Opción</label>
+                          <div className="w-full flex flex-wrap items-center gap-2 p-2 border border-slate-200 rounded-xl bg-white focus-within:ring-4 focus-within:ring-purple-500/10 focus-within:border-[#6b1e96] transition-all min-h-[46px]">
+                            {opt.values.map((rawVal, vIdx) => {
+                              const valName = rawVal.includes('|') ? rawVal.split('|')[0] : rawVal;
+                              const valHex = rawVal.includes('|') ? rawVal.split('|')[1] : null;
+
+                              return (
+                                <span key={vIdx} className="flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 border border-purple-100/50 text-purple-950 text-xs font-bold rounded-lg shadow-sm">
+                                  {valHex && <span className="w-3 h-3 rounded-full border border-purple-200 shadow-sm" style={{ backgroundColor: valHex }}></span>}
+                                  {valName}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                       const newValues = opt.values.filter((_, idx) => idx !== vIdx);
+                                       handleOptionChange(i, "values", newValues);
+                                    }}
+                                    className="text-purple-400 hover:text-purple-700 font-bold ml-1 transition-colors"
+                                  >
+                                    ✕
+                                  </button>
+                                </span>
+                              );
+                            })}
+                            
+                            {isColorOption && (
+                              <input 
+                                type="color" 
+                                title="Selecciona color visual (opcional)"
+                                value={currentColor}
+                                onChange={(e) => setPickerColors(prev => ({...prev, [i]: e.target.value}))}
+                                className="w-6 h-6 p-0 border-0 rounded-md cursor-pointer bg-transparent"
+                              />
+                            )}
+
+                            <input
+                              type="text"
+                              placeholder={opt.values.length === 0 ? "Escribe un valor y presiona Enter o Coma" : "+ Agregar..."}
+                              className="flex-1 min-w-[150px] px-2 py-1 outline-none text-sm bg-transparent placeholder-gray-400"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ',') {
+                                  e.preventDefault();
+                                  const textVal = e.target.value.trim().replace(/,$/, '');
+                                  if (textVal) {
+                                    const finalVal = isColorOption ? `${textVal}|${currentColor}` : textVal;
+                                    if (!opt.values.includes(finalVal)) {
+                                      handleOptionChange(i, "values", [...opt.values, finalVal]);
+                                    }
+                                  }
+                                  e.target.value = "";
+                                }
+                              }}
+                              onBlur={(e) => {
+                                  const textVal = e.target.value.trim().replace(/,$/, '');
+                                  if (textVal) {
+                                    const finalVal = isColorOption ? `${textVal}|${currentColor}` : textVal;
+                                    if (!opt.values.includes(finalVal)) {
+                                      handleOptionChange(i, "values", [...opt.values, finalVal]);
+                                    }
+                                  }
+                                  e.target.value = "";
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )})}
+                </div>
+
+                <div className="pt-2">
+                   <button
+                     type="button"
+                     onClick={addOption}
+                     className="text-xs font-bold text-gray-700 hover:text-[#6b1e96] border border-slate-200 bg-white px-4 py-2.5 rounded-xl shadow-sm hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all inline-flex items-center gap-1.5"
+                   >
+                     <span>➕</span> Agregar otra opción (ej. Tamaño)
+                   </button>
+                </div>
+              </div>
+
+              {/* Matrix Result Table */}
+              {form.variations.length > 0 && (
+                <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                    <h4 className="font-bold text-gray-800 text-xs tracking-wider uppercase">Matriz de Variaciones Autogenerada</h4>
+                    <span className="px-2.5 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-extrabold rounded-full uppercase">
+                      {form.variations.length} Combinaciones
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                      <thead className="text-[10px] font-bold text-gray-400 bg-slate-50/30 uppercase tracking-wider border-b border-slate-100">
+                        <tr>
+                          <th className="py-3 px-4 font-semibold">Variación</th>
+                          <th className="py-3 px-3 font-semibold w-40">Precio (USD)</th>
+                          <th className="py-3 px-3 font-semibold w-32">Inventario</th>
+                          <th className="py-3 px-4 font-semibold w-48">SKU Código</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-gray-800">
+                        {form.variations.map((v, i) => {
+                          let parsedCombo = {};
+                          let label = v.attribute_value;
+                          try {
+                            parsedCombo = JSON.parse(v.attribute_value);
+                            label = Object.entries(parsedCombo)
+                              .map(([, val]) => typeof val === 'string' && val.includes('|') ? val.split('|')[0] : `${val}`)
+                              .join(" / ");
+                          } catch {
+                            // Legacy values fallback
+                          }
+
+                          return (
+                            <tr key={i} className="hover:bg-slate-50/40 transition-colors">
+                              <td className="py-3.5 px-4 font-bold text-gray-900">
+                                  <div className="flex items-center gap-3">
+                                     <div className="w-10 h-10 flex-shrink-0 rounded-lg border border-slate-150 bg-slate-50 flex items-center justify-center text-gray-400 text-xs overflow-hidden shadow-inner">
+                                        {form.images.length > 0 ? (
+                                          <img src={form.images[0]} alt="Variante" loading="lazy" className="w-full h-full object-cover" />
+                                        ) : '📷'}
+                                     </div>
+                                     <span className="text-gray-900 font-semibold">{label}</span>
+                                  </div>
+                              </td>
+                              <td className="py-3 px-3">
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">$</span>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={v.v_price ?? (parseFloat(form.price) + parseFloat(v.price_modifier || 0))}
+                                      onChange={(e) =>
+                                        handleVariationFieldChange(i, "v_price", e.target.value)
+                                      }
+                                      className="w-full pl-7 pr-2 py-2 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] bg-white transition-all"
+                                    />
+                                </div>
+                              </td>
+                              <td className="py-3 px-3">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={v.stock}
+                                  onChange={(e) =>
+                                    handleVariationFieldChange(i, "stock", e.target.value)
+                                  }
+                                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] bg-white transition-all text-center"
+                                />
+                              </td>
+                              <td className="py-3 px-4">
+                                <input
+                                  type="text"
+                                  value={v.sku}
+                                  onChange={(e) =>
+                                    handleVariationFieldChange(i, "sku", e.target.value)
+                                  }
+                                  placeholder="Ej. SKU-A2"
+                                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] bg-white transition-all font-mono font-semibold"
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 space-y-5">
+              <div className="flex items-center gap-3 pb-3 border-b border-slate-50">
+                <span className="text-2xl">📦</span>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-base">4. Inventario Simple</h3>
+                  <p className="text-xs text-gray-400">Stock y SKU para producto sin variaciones</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Stock Disponible *</label>
+                  <input
+                    type="number"
+                    name="simpleStock"
+                    value={form.simpleStock}
+                    onChange={handleChange}
+                    min="0"
+                    required
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] text-sm font-semibold transition-all"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">SKU (Opcional)</label>
+                  <input
+                    type="text"
+                    name="simpleSku"
+                    value={form.simpleSku}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] text-sm font-semibold transition-all font-mono"
+                    placeholder="Ej: KIT-001"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* COLUMNA LATERAL (30% - derecha - sticky) */}
+        <div className="space-y-6">
+          {/* Disponibilidad */}
+          <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 space-y-4 lg:sticky lg:top-6">
+            <h3 className="font-bold text-gray-900 text-sm tracking-wide uppercase pb-3 border-b border-slate-50">Disponibilidad</h3>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Estado en Catálogo</label>
+              <select
+                name="status"
+                value={form.status}
+                onChange={handleChange}
+                className={`w-full px-3 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] text-sm font-bold transition-all
+                  ${form.status === 'Activo' ? 'text-green-700 bg-green-50/50 border-green-200' : form.status === 'Borrador' ? 'text-slate-700 bg-slate-50/80 border-slate-200' : 'text-red-700 bg-red-50/50 border-red-200'}`}
+              >
+                <option value="Borrador">📁 Borrador</option>
+                <option value="Activo">🟢 Activo</option>
+                <option value="Sin stock">🔴 Sin stock</option>
+              </select>
+              <p className="text-[11px] text-gray-400 mt-2.5 leading-relaxed">
+                {form.status === "Borrador" && "El producto no se publicará y no será visible para los clientes. Úsalo para planificar."}
+                {form.status === "Activo" && "El producto estará publicado, disponible para compra y visible en DentalMarket."}
+                {form.status === "Sin stock" && "El producto se mostrará como agotado para la compra pero seguirá visible."}
+              </p>
+            </div>
+          </div>
+
+          {/* Clasificación */}
+          <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 space-y-4 lg:sticky lg:top-[220px]">
+            <h3 className="font-bold text-gray-900 text-sm tracking-wide uppercase pb-3 border-b border-slate-50">Clasificación</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">
                   Categoría Principal *
                 </label>
                 <select
@@ -443,7 +970,7 @@ export default function ProductForm() {
                   value={form.category_id}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500/20"
+                  className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] bg-white transition-all font-semibold"
                 >
                   <option value="">Seleccionar categoría...</option>
                   {categories.map((cat) => (
@@ -463,442 +990,56 @@ export default function ProductForm() {
                 </select>
               </div>
 
-              {/* Marca (opcional) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">
                   Marca
                 </label>
                 <select
                   name="brand_id"
                   value={form.brand_id}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500/20"
+                  className="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] bg-white transition-all font-semibold"
                 >
                   <option value="">Sin marca asignada</option>
                   {brands.map((b) => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-400 mt-1">Fabricante del producto (opcional)</p>
+                <p className="text-[10px] text-gray-400 mt-1">Fabricante o laboratorio del producto.</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-        {/* Financial Prices Block */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-          <h3 className="font-semibold text-gray-900">2. Precios e Inventario Financiero</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Precio USD (Venta) *
-              </label>
-              <div className="relative w-full">
-                <input
-                  type="number"
-                  name="price"
-                  value={form.price}
-                  onChange={handleChange}
-                  required
-                  min="0.01"
-                  step="0.01"
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 border-l-4 border-l-primary-500 rounded-lg text-sm focus:ring-2 focus:ring-primary-500/20"
-                  placeholder="25.00"
-                />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Precio de Comparación
-              </label>
-              <div className="relative w-full">
-                <input
-                  type="number"
-                  name="compare_at_price"
-                  value={form.compare_at_price}
-                  onChange={handleChange}
-                  min="0"
-                  step="0.01"
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500/20"
-                  placeholder="Ej. 35.00"
-                />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Se muestra tachado (descuento).</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Costo por Artículo
-              </label>
-              <div className="relative w-full">
-                <input
-                  type="number"
-                  name="cost_price"
-                  value={form.cost_price}
-                  onChange={handleChange}
-                  min="0"
-                  step="0.01"
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500/20"
-                  placeholder="Ej. 15.00"
-                />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Privado. Solo para tus métricas.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Images */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-          <h3 className="font-semibold text-gray-900">3. Imágenes Galería</h3>
-
-          {form.images.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {form.images.map((url, i) => (
-                <div
-                  key={i}
-                  className="relative w-20 h-20 rounded-lg overflow-hidden border group"
-                >
-                  <img
-                    src={url}
-                    alt={`Img ${i + 1}`}
-                    loading="lazy"
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(i)}
-                    className="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-xs font-bold"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <label className="inline-flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:border-primary-400 hover:text-primary-600 transition cursor-pointer bg-gray-50">
-            {uploading ? "Subiendo..." : "📷 Añadir Imagen"}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              disabled={uploading}
-              className="hidden"
-            />
-          </label>
-        </div>
-        {/* Toggle Variations */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              name="hasVariations"
-              checked={form.hasVariations}
-              onChange={(e) => setForm(prev => ({ ...prev, hasVariations: e.target.checked }))}
-              className="w-5 h-5 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
-            />
-            <span className="font-semibold text-gray-900">
-              Este producto tiene múltiples opciones (Ej. Tallas, Colores, Sabores)
-            </span>
-          </label>
-        </div>
-
-        {form.hasVariations ? (
-          <>
-            {/* Option Matrix Builder */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4 relative z-10">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-gray-900">
-                    4. Opciones de Variación
-                  </h3>
-
-                  {/* Tooltip */}
-                  <div className="relative group flex items-center">
-                    <div className="w-5 h-5 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-xs font-bold cursor-help hover:bg-primary-100 hover:text-primary-600 transition-colors">
-                      ?
-                    </div>
-                    {/* TOOLTIP CONTENT */}
-                    <div className="absolute left-1/2 bottom-full mb-2 -translate-x-1/2 w-72 p-3.5 bg-gray-900 text-white text-xs rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
-                      <p className="font-semibold mb-2 text-primary-400">
-                        Cómo usar las Variaciones Avanzadas:
-                      </p>
-                      <ul className="space-y-1.5 text-gray-300 list-disc pl-4">
-                        <li>
-                          Crea opciones de la misma categoría (Ej.{" "}
-                          <strong>Talla</strong> o <strong>Presentación</strong>).
-                        </li>
-                        <li>
-                          Agrega todos los valores en el mismo campo,{" "}
-                          <strong>separados por comas</strong> (Ej.{" "}
-                          <span className="text-white">Blanco, Negro, Azul</span>).
-                        </li>
-                        <li>
-                          Usa el botón abajo y el sistema cruzará todo
-                          matemáticamente por ti.
-                        </li>
-                      </ul>
-                      <div className="absolute left-1/2 bottom-0 shadow-lg -translate-x-1/2 translate-y-full border-[6px] border-transparent border-t-gray-900"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {options.map((opt, i) => {
-                  const isColorOption = opt.name.trim().toLowerCase() === "color" || opt.name.trim().toLowerCase() === "color";
-                  const currentColor = pickerColors[i] || "#000000";
-
-                  return (
-                    <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white">
-                      <div className="flex justify-between items-center mb-4">
-                      <div className="w-1/3 mr-4">
-                        <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Opción {i + 1}</label>
-                        <input
-                          type="text"
-                          value={opt.name}
-                          onChange={(e) => handleOptionChange(i, "name", e.target.value)}
-                          placeholder="Ej. Tamaño o Color"
-                          className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeOption(i)}
-                        className="text-sm text-gray-500 hover:text-primary-600 font-medium transition-colors"
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                    
-                    <div>
-                      <div className="w-full flex flex-wrap items-center gap-2 p-1.5 border border-gray-300 rounded-md bg-white focus-within:ring-1 focus-within:ring-primary-500">
-                        {opt.values.map((rawVal, vIdx) => {
-                          const valName = rawVal.includes('|') ? rawVal.split('|')[0] : rawVal;
-                          const valHex = rawVal.includes('|') ? rawVal.split('|')[1] : null;
-
-                          return (
-                            <span key={vIdx} className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 border border-gray-200 text-gray-700 text-sm rounded-md shadow-sm">
-                              {valHex && <span className="w-3.5 h-3.5 rounded-full border border-gray-300" style={{ backgroundColor: valHex }}></span>}
-                              {valName}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                   const newValues = opt.values.filter((_, idx) => idx !== vIdx);
-                                   handleOptionChange(i, "values", newValues);
-                                }}
-                                className="text-gray-400 hover:text-gray-700 font-medium focus:outline-none"
-                              >
-                                ✕
-                              </button>
-                            </span>
-                          );
-                        })}
-                        
-                        {isColorOption && (
-                          <input 
-                            type="color" 
-                            title="Selecciona el color exacto"
-                            value={currentColor}
-                            onChange={(e) => setPickerColors(prev => ({...prev, [i]: e.target.value}))}
-                            className="w-7 h-7 p-0 border-0 rounded cursor-pointer bg-transparent"
-                          />
-                        )}
-
-                        <input
-                          type="text"
-                          placeholder={opt.values.length === 0 ? "Escribe y presiona Enter o Coma" : (isColorOption ? "Nombre color..." : "Agregar...")}
-                          className="flex-1 min-w-[150px] px-2 py-1 outline-none text-sm bg-transparent placeholder-gray-400"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ',') {
-                              e.preventDefault();
-                              const textVal = e.target.value.trim().replace(/,$/, '');
-                              if (textVal) {
-                                const finalVal = isColorOption ? `${textVal}|${currentColor}` : textVal;
-                                if (!opt.values.includes(finalVal)) {
-                                  handleOptionChange(i, "values", [...opt.values, finalVal]);
-                                }
-                              }
-                              e.target.value = "";
-                            }
-                          }}
-                          onBlur={(e) => {
-                              const textVal = e.target.value.trim().replace(/,$/, '');
-                              if (textVal) {
-                                const finalVal = isColorOption ? `${textVal}|${currentColor}` : textVal;
-                                if (!opt.values.includes(finalVal)) {
-                                  handleOptionChange(i, "values", [...opt.values, finalVal]);
-                                }
-                              }
-                              e.target.value = "";
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )})}
-              </div>
-
-              <div className="pt-2">
-                 <button
-                   type="button"
-                   onClick={addOption}
-                   className="text-sm text-gray-700 font-medium hover:text-gray-900 border border-gray-300 bg-white px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 transition-colors inline-block"
-                 >
-                   Agregar otra opción
-                 </button>
-              </div>
-            </div>
-
-            {/* Matrix Result Table */}
-            {form.variations.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 mt-6 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-gray-200 bg-gray-50/50">
-                    <h3 className="font-semibold text-gray-800 text-sm tracking-wide uppercase">VISTA PREVIA</h3>
-                </div>
-                <div className="overflow-x-auto p-4">
-                  <table className="w-full text-left text-sm whitespace-nowrap">
-                    <thead className="text-gray-500 border-b border-gray-100">
-                      <tr>
-                        <th className="font-medium pb-3 pr-4">variante</th>
-                        <th className="font-medium pb-3 px-3 w-36">Precio</th>
-                        <th className="font-medium pb-3 px-3 w-32">Cantidad</th>
-                        <th className="font-medium pb-3 pl-3 w-40">Código SKU</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {form.variations.map((v, i) => {
-                        let parsedCombo = {};
-                        let label = v.attribute_value;
-                        try {
-                          parsedCombo = JSON.parse(v.attribute_value);
-                          label = Object.entries(parsedCombo)
-                            .map(([, val]) => typeof val === 'string' && val.includes('|') ? val.split('|')[0] : `${val}`)
-                            .join(" / ");
-                        } catch {
-                          // Silently fall back to raw value for legacy records
-                        }
-
-                        return (
-                          <tr key={i} className="hover:bg-gray-50 transition-colors">
-                            <td className="py-3 pr-4 font-medium text-gray-900 border-l-2 border-transparent">
-                                <div className="flex items-center gap-3">
-                                   <div className="w-9 h-9 flex-shrink-0 rounded border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-400 text-xs overflow-hidden shadow-sm">
-                                      {form.images.length > 0 ? (
-                                        <img src={form.images[0]} alt="Variante" loading="lazy" className="w-full h-full object-cover" />
-                                      ) : '📷'}
-                                   </div>
-                                   {label}
-                                </div>
-                            </td>
-                            <td className="py-3 px-3">
-                              <div className="relative">
-                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={v.v_price ?? (parseFloat(form.price) + parseFloat(v.price_modifier || 0))}
-                                    onChange={(e) =>
-                                      handleVariationFieldChange(i, "v_price", e.target.value)
-                                    }
-                                    className="w-full pl-7 pr-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-                                  />
-                              </div>
-                            </td>
-                            <td className="py-3 px-3">
-                              <input
-                                type="number"
-                                min="0"
-                                value={v.stock}
-                                onChange={(e) =>
-                                  handleVariationFieldChange(i, "stock", e.target.value)
-                                }
-                                className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-                              />
-                            </td>
-                            <td className="py-3 pl-3 border-r-2 border-transparent">
-                              <input
-                                type="text"
-                                value={v.sku}
-                                onChange={(e) =>
-                                  handleVariationFieldChange(i, "sku", e.target.value)
-                                }
-                                placeholder="Ej. REF01"
-                                className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-                              />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-            {/* Simple Inventory */}
-            <h3 className="font-semibold text-gray-900">4. Inventario</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Stock Disponible *</label>
-                <input
-                  type="number"
-                  name="simpleStock"
-                  value={form.simpleStock}
-                  onChange={handleChange}
-                  min="0"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500/20 text-sm"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">SKU (Opcional)</label>
-                <input
-                  type="text"
-                  name="simpleSku"
-                  value={form.simpleSku}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500/20 text-sm"
-                  placeholder="Ej: KIT-001"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Submit */}
-        <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
+        {/* ── BOTONES DE ACCIÓN FLOTANTES / BOTTOM ── */}
+        <div className="lg:col-span-3 flex flex-col sm:flex-row items-center gap-3 pt-6 border-t border-slate-100 mt-4">
           <button
             type="submit"
             disabled={loading || uploading || (form.hasVariations && form.variations.length === 0)}
-            className="px-6 py-2.5 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition disabled:opacity-50 text-sm"
+            className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-[#531575] to-[#6b1e96] text-[#c3ff00] font-extrabold rounded-xl hover:shadow-lg active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none text-sm uppercase tracking-wider"
           >
-            {loading
-              ? "Guardando..."
-              : isEditing
-                ? "Guardar Cambios"
-                : "Crear Producto"}
+            {loading ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Guardando...</span>
+              </div>
+            ) : isEditing ? (
+              "Guardar Cambios"
+            ) : (
+              "Crear Producto"
+            )}
           </button>
           <button
             type="button"
             onClick={() => navigate("/store/products")}
-            className="px-4 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm"
+            className="w-full sm:w-auto px-6 py-3.5 bg-white border border-slate-200 text-gray-700 font-bold rounded-xl hover:bg-slate-50 active:scale-95 transition-all text-sm uppercase tracking-wider"
           >
             Cancelar
           </button>
+          
           {form.hasVariations && form.variations.length === 0 && (
-            <span className="text-xs text-red-500 ml-auto">
-              Genera al menos 1 variación para continuar.
+            <span className="text-xs text-red-500 ml-auto font-bold animate-pulse">
+              ⚠️ Genera al menos 1 variación para habilitar el guardado.
             </span>
           )}
         </div>

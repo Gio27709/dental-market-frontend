@@ -12,16 +12,34 @@ import {
   shipOrderItemAPI,
   getMyOrders,
   cancelAbandonedOrderAPI,
+  cancelOrderItemAPI,
+  storeCancelOrderAPI,
+  getStoreStatsAPI,
 } from "../services/api";
 
 const StoreContext = createContext();
 
 export const useStore = () => useContext(StoreContext);
 
+// Helper: Invalidate ALL product cache entries regardless of buyer_state suffix
+// The ProductContext stores cache as "dental_market_products_cache_{state}"
+// so a simple removeItem("dental_market_products_cache") never matches.
+const invalidateProductCache = () => {
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith("dental_market_products_cache")) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach((k) => localStorage.removeItem(k));
+};
+
 export const StoreProvider = ({ children }) => {
   const [storeProfile, setStoreProfile] = useState(null);
   const [myProducts, setMyProducts] = useState([]);
   const [storeOrders, setStoreOrders] = useState([]);
+  const [storeStats, setStoreStats] = useState({ pendingOrders: 0, pendingPenalties: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -38,6 +56,17 @@ export const StoreProvider = ({ children }) => {
       return { success: false, error: msg };
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const fetchStoreStats = useCallback(async () => {
+    try {
+      const response = await getStoreStatsAPI();
+      if (response.data?.success) {
+        setStoreStats(response.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching store stats:", err);
     }
   }, []);
 
@@ -81,7 +110,7 @@ export const StoreProvider = ({ children }) => {
       const newProduct = response.data.data;
       setMyProducts((prev) => [newProduct, ...prev]);
       // Invalidate global catalog cache so changes appear immediately
-      localStorage.removeItem("dental_market_products_cache");
+      invalidateProductCache();
       return { success: true, data: newProduct };
     } catch (err) {
       const msg = err.response?.data?.error || "Error al crear producto";
@@ -101,7 +130,7 @@ export const StoreProvider = ({ children }) => {
       // but for now re-fetching the list ensures all variations are perfectly synced
       await fetchMyProducts();
       // Invalidate global catalog cache so changes appear immediately
-      localStorage.removeItem("dental_market_products_cache");
+      invalidateProductCache();
       return { success: true };
     } catch (err) {
       const msg = err.response?.data?.error || "Error al actualizar producto";
@@ -132,7 +161,7 @@ export const StoreProvider = ({ children }) => {
       await deleteProductAPI(id);
       setMyProducts((prev) => prev.filter((p) => p.id !== id));
       // Invalidate global catalog cache so changes appear immediately
-      localStorage.removeItem("dental_market_products_cache");
+      invalidateProductCache();
       return { success: true };
     } catch (err) {
       return {
@@ -164,8 +193,9 @@ export const StoreProvider = ({ children }) => {
     setLoading(true);
     try {
       await shipOrderItemAPI(itemId, trackingData);
-      // Refresh orders
+      // Refresh orders and stats
       await fetchStoreOrders();
+      await fetchStoreStats();
       return { success: true };
     } catch (err) {
       return {
@@ -181,7 +211,9 @@ export const StoreProvider = ({ children }) => {
     setLoading(true);
     try {
       await cancelAbandonedOrderAPI(orderId);
+      // Refresh orders and stats
       await fetchStoreOrders();
+      await fetchStoreStats();
       return { success: true };
     } catch (err) {
       return {
@@ -193,13 +225,53 @@ export const StoreProvider = ({ children }) => {
     }
   };
 
+  // Cancel a specific item (store out of stock)
+  const cancelItem = async (itemId, reason) => {
+    setLoading(true);
+    try {
+      const res = await cancelOrderItemAPI(itemId, reason);
+      // Refresh orders and stats
+      await fetchStoreOrders();
+      await fetchStoreStats();
+      return { success: true, data: res.data };
+    } catch (err) {
+      return {
+        success: false,
+        error: err.response?.data?.error || err.message || "Error al cancelar el ítem",
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cancel all store items in an order
+  const cancelStoreOrder = async (orderId, reason) => {
+    setLoading(true);
+    try {
+      const res = await storeCancelOrderAPI(orderId, reason);
+      // Refresh orders and stats
+      await fetchStoreOrders();
+      await fetchStoreStats();
+      return { success: true, data: res.data };
+    } catch (err) {
+      return {
+        success: false,
+        error: err.response?.data?.error || err.message || "Error al cancelar la orden",
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value = {
     storeProfile,
     myProducts,
     storeOrders,
+    storeStats,
     loading,
     error,
     fetchProfile,
+    fetchStoreStats,
     updateProfile,
     fetchMyProducts,
     createProduct,
@@ -209,6 +281,8 @@ export const StoreProvider = ({ children }) => {
     fetchStoreOrders,
     shipItem,
     cancelAbandonedStoreOrder,
+    cancelItem,
+    cancelStoreOrder,
   };
 
   return (

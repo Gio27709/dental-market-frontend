@@ -1,30 +1,43 @@
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
-import { formatCurrencyUSD } from "../utils/formatters";
+import { formatCurrencyUSD, formatCurrencyVES } from "../utils/formatters";
+import { useCurrency } from "../context/CurrencyContext";
+import { useProducts } from "../context/ProductContext";
 
 export default function RelatedProductCard({ product, badge }) {
+  const { isVES } = useCurrency();
+  const { bcvRate, trendingProductIds } = useProducts();
+  const isTrending = trendingProductIds?.has(product.id);
   const hasImage = product.images && product.images.length > 0;
   const price = Number(product.price) || 0;
   // Simula un precio original más alto para mostrar tachado si no hay uno real
   const originalPrice = product.compare_at_price || Math.round(price * 1.35 * 100) / 100;
+
+  const formatPrice = (amount) => {
+    if (isVES) return formatCurrencyVES(amount * Number(bcvRate || 1));
+    return formatCurrencyUSD(amount);
+  };
 
   return (
     <Link
       to={`/product/${product.id}`}
       className="flex flex-col bg-white rounded-md border border-gray-200 p-4 hover:shadow-md transition-shadow group relative min-h-[300px]"
     >
-      {/* Badge (SALE / NEW) */}
-      {badge && (
+      {/* Badge (SALE / NEW / HOT) */}
+      {(badge || isTrending) && (
         <span
-          className={`absolute top-3 left-3 px-2 py-0.5 text-[10px] font-bold uppercase rounded text-white z-10 ${
+          className={`absolute top-3 left-3 px-2 py-0.5 text-[10px] font-bold uppercase rounded text-white z-10 flex items-center gap-0.5 ${
             badge === "SALE"
               ? "bg-[#ef4444]" // red
               : badge === "NEW"
               ? "bg-[#2563eb]" // blue
+              : isTrending
+              ? "bg-orange-500" // orange
               : "bg-emerald-500"
           }`}
         >
-          {badge}
+          {isTrending && !badge && <span className="material-symbols-outlined text-[11px] leading-none">local_fire_department</span>}
+          {badge || "HOT"}
         </span>
       )}
 
@@ -71,11 +84,11 @@ export default function RelatedProductCard({ product, badge }) {
         {/* Precios ajustados a la imagen */}
         <div className="flex items-baseline gap-2 mt-auto">
           <span className="text-[16px] font-medium text-[#2563eb]">
-            {formatCurrencyUSD(price)}
+            {formatPrice(price)}
           </span>
           {originalPrice > price && (
             <span className="text-[12px] text-gray-400 line-through">
-              {formatCurrencyUSD(originalPrice)}
+              {formatPrice(originalPrice)}
             </span>
           )}
         </div>

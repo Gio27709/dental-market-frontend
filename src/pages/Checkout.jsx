@@ -5,6 +5,7 @@ import { useOrder } from "../context/OrderContext";
 import CheckoutForm from "../components/orders/CheckoutForm";
 import CheckoutSummary from "../components/orders/CheckoutSummary";
 import PaymentProofUploader from "../components/orders/PaymentProofUploader";
+import api from "../services/api";
 import toast from "react-hot-toast";
 
 export default function Checkout() {
@@ -20,10 +21,25 @@ export default function Checkout() {
 
   const [step, setStep] = useState(1);
   const [createdOrderId, setCreatedOrderId] = useState(null);
+  const [createdOrders, setCreatedOrders] = useState([]);
+  const [orderGroupId, setOrderGroupId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false); // Bug 5: double-click guard
+  const [deliveryType, setDeliveryType] = useState("shipping");
+  const [buyerFeePercentage, setBuyerFeePercentage] = useState(0);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
 
   // Bug 2: Immediate ref flag to prevent redirect after cart is cleared post-order
   const orderCreatedRef = useRef(false);
+
+  // Fetch buyer_fee from platform settings
+  useEffect(() => {
+    api.get("/admin/settings")
+      .then((res) => {
+        const fee = res.data?.data?.buyer_fee?.percentage;
+        if (fee !== undefined) setBuyerFeePercentage(Number(fee));
+      })
+      .catch(() => console.error("Error loading buyer fee"));
+  }, []);
 
   // If cart is empty and we haven't just created an order, redirect back
   useEffect(() => {
@@ -38,6 +54,14 @@ export default function Checkout() {
     // Bug 5: Prevent duplicate submissions from rapid clicks
     if (isSubmitting) return;
     setIsSubmitting(true);
+
+    // ESCROW SAFETY CHECK: Block creation of orders from suspended stores
+    const hasSuspended = items.some((item) => item.store_is_suspended);
+    if (hasSuspended) {
+      toast.error("No puedes realizar el pedido: tienes productos de una tienda suspendida. Regresa al carrito y retíralos.");
+      setIsSubmitting(false);
+      return;
+    }
 
     // Validate variation_id integrity before sending to backend
     for (const item of items) {
@@ -74,6 +98,24 @@ export default function Checkout() {
       contact_phone: formData.phone,
       payment_method: formData.payment_method,
       notes: formData.notes,
+      delivery_type: formData.delivery_type,
+      // Multi-store: per-store delivery types map
+      ...(formData.delivery_types && { delivery_types: formData.delivery_types }),
+      destination_state: formData.destination_state || null,
+      destination_city: formData.destination_city || null,
+      ...(formData.delivery_type === "local_delivery" && {
+        delivery_address: formData.address,
+        delivery_reference: formData.delivery_reference || null,
+        delivery_lat: formData.delivery_lat || null,
+        delivery_lng: formData.delivery_lng || null,
+      }),
+      // Multi-store mixed: if any store uses local_delivery, pass coords
+      ...(formData.delivery_types && Object.values(formData.delivery_types).some(t => t === "local_delivery") && {
+        delivery_address: formData.address,
+        delivery_reference: formData.delivery_reference || null,
+        delivery_lat: formData.delivery_lat || null,
+        delivery_lng: formData.delivery_lng || null,
+      })
     };
 
     const result = await createOrder(orderPayload);
@@ -82,7 +124,12 @@ export default function Checkout() {
       // Bug 2: Set the ref BEFORE clearing cart to prevent useEffect redirect
       orderCreatedRef.current = true;
 
+      // Multi-store: store all created order info
+      const allOrders = result.orders || [result.order];
+      setCreatedOrders(allOrders);
       setCreatedOrderId(result.order.id);
+      setOrderGroupId(result.order_group_id || result.order.id);
+      setSelectedPaymentMethod(formData.payment_method || "");
 
       // Bug 4: Clear checkout form data from sessionStorage
       sessionStorage.removeItem("checkout_form_data");
@@ -92,8 +139,11 @@ export default function Checkout() {
         clearCart();
       }
 
+      const orderCount = allOrders.length;
       toast.success(
-        `¡Orden ${result.order.id.split("-")[0]} creada exitosamente!`,
+        orderCount > 1
+          ? `¡Se crearon ${orderCount} órdenes exitosamente! (una por tienda)`
+          : `¡Orden ${result.order.id.split("-")[0]} creada exitosamente!`,
       );
       // Move to step 2 (Upload Proof)
       setStep(2);
@@ -105,11 +155,11 @@ export default function Checkout() {
 
   const handleProofUploaded = () => {
     toast.success("¡Hemos recibido tu comprobante!");
-    navigate(`/order-success/${createdOrderId}`);
+    navigate(`/order-success/${orderGroupId}`);
   };
 
   const handleSkipProof = () => {
-    navigate(`/order-success/${createdOrderId}`);
+    navigate(`/order-success/${orderGroupId}`);
   };
 
   if (cartLoading && step === 1) {
@@ -122,37 +172,110 @@ export default function Checkout() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Premium Breadcrumb Stepper */}
-      <div className="mb-8 overflow-x-auto pb-2 custom-scrollbar">
-        <nav aria-label="Progress" className="hidden sm:flex items-center text-sm font-medium whitespace-nowrap">
-          <ol className="flex items-center space-x-2 md:space-x-4">
-            <li className="flex items-center">
-              <span className={step === 1 ? "text-[#6b1e96] font-bold" : "text-gray-400 font-medium transition-colors"}>
-                Información y Pago
-              </span>
-              <span className="material-symbols-outlined mx-2 md:mx-4 text-gray-300 text-sm">chevron_right</span>
+      {/* Premium Stepper */}
+      <div className="mb-10 bg-white rounded-2xl border border-slate-100/80 shadow-xs p-5 md:p-6">
+        <nav aria-label="Progress">
+          <ol className="flex items-center justify-between w-full max-w-3xl mx-auto">
+            {/* Step 1 */}
+            <li className="flex items-center flex-1 relative last:flex-initial">
+              <div className="flex items-center gap-3 z-10">
+                <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                  step === 1
+                    ? "bg-[#6b1e96] text-white shadow-md shadow-purple-500/20 ring-4 ring-purple-100"
+                    : step > 1
+                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/10"
+                    : "bg-slate-100 text-slate-400 border border-slate-200"
+                }`}>
+                  {step > 1 ? (
+                    <span className="material-symbols-outlined text-sm font-bold">check</span>
+                  ) : "1"}
+                </span>
+                <span className={`text-sm font-bold transition-colors hidden sm:inline ${
+                  step === 1 ? "text-[#6b1e96]" : step > 1 ? "text-slate-700" : "text-slate-400"
+                }`}>
+                  Información y Pago
+                </span>
+              </div>
+              <div className="flex-1 h-0.5 mx-4 bg-slate-100 hidden sm:block">
+                <div className={`h-full transition-all duration-500 ${
+                  step > 1 ? "bg-emerald-500 w-full" : "bg-slate-100 w-0"
+                }`} />
+              </div>
             </li>
-            <li className="flex items-center">
-              <span className={step === 2 ? "text-[#6b1e96] font-bold" : "text-gray-400 font-medium transition-colors"}>
-                Comprobante
-              </span>
-              <span className="material-symbols-outlined mx-2 md:mx-4 text-gray-300 text-sm">chevron_right</span>
+
+            {/* Step 2 */}
+            <li className="flex items-center flex-1 relative last:flex-initial">
+              <div className="flex items-center gap-3 z-10">
+                <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                  step === 2
+                    ? "bg-[#6b1e96] text-white shadow-md shadow-purple-500/20 ring-4 ring-purple-100"
+                    : step > 2
+                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/10"
+                    : "bg-slate-100 text-slate-400 border border-slate-200"
+                }`}>
+                  {step > 2 ? (
+                    <span className="material-symbols-outlined text-sm font-bold">check</span>
+                  ) : "2"}
+                </span>
+                <span className={`text-sm font-bold transition-colors hidden sm:inline ${
+                  step === 2 ? "text-[#6b1e96]" : step > 2 ? "text-slate-700" : "text-slate-400"
+                }`}>
+                  Comprobante
+                </span>
+              </div>
+              <div className="flex-1 h-0.5 mx-4 bg-slate-100 hidden sm:block">
+                <div className={`h-full transition-all duration-500 ${
+                  step > 2 ? "bg-emerald-500 w-full" : "bg-slate-100 w-0"
+                }`} />
+              </div>
             </li>
-            <li className="flex items-center">
-              <span className="text-gray-400 font-medium transition-colors">
-                Confirmación
-              </span>
+
+            {/* Step 3 */}
+            <li className="flex items-center z-10">
+              <div className="flex items-center gap-3">
+                <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                  step === 3
+                    ? "bg-[#6b1e96] text-white shadow-md shadow-purple-500/20 ring-4 ring-purple-100"
+                    : "bg-slate-100 text-slate-400 border border-slate-200"
+                }`}>
+                  3
+                </span>
+                <span className={`text-sm font-bold transition-colors hidden sm:inline ${
+                  step === 3 ? "text-[#6b1e96]" : "text-slate-400"
+                }`}>
+                  Confirmación
+                </span>
+              </div>
             </li>
           </ol>
+
+          {/* Label under icon for mobile */}
+          <div className="mt-4 text-center sm:hidden">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Paso {step} de 3</span>
+            <p className="text-sm font-black text-[#6b1e96] mt-0.5">
+              {step === 1 ? "Información y Pago" : step === 2 ? "Subir Comprobante" : "Confirmación"}
+            </p>
+          </div>
         </nav>
-        {/* Mobile Stepper */}
-        <div className="sm:hidden flex items-center gap-2 text-sm font-bold text-[#6b1e96]">
-          <span className="bg-[#6b1e96] text-[#c3ff00] w-6 h-6 flex items-center justify-center rounded-full text-xs">
-            {step}
-          </span>
-          <span>{step === 1 ? "Información y Pago" : step === 2 ? "Subir Comprobante" : "Confirmación"}</span>
-        </div>
       </div>
+
+      {step === 1 && items && items.some(item => item.store_is_suspended) && (
+        <div className="mb-8 p-5 bg-gradient-to-r from-red-50 to-rose-50/50 border border-red-100 rounded-2xl flex items-start gap-4 text-red-800 shadow-xs animate-pulse">
+          <span className="material-symbols-outlined text-red-500 text-[26px] mt-0.5">warning</span>
+          <div className="text-sm flex-1">
+            <p className="font-black text-red-950 text-base">Carrito con Tienda Suspendida</p>
+            <p className="mt-1 font-medium text-red-800 leading-relaxed">
+              No puedes completar el checkout porque uno o más artículos pertenecen a una tienda que se encuentra suspendida por demoras críticas en despachos. Regresa al carrito y retíralos para poder continuar de forma segura.
+            </p>
+            <button 
+              onClick={() => navigate("/cart")}
+              className="mt-4 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-5 py-3 rounded-xl transition-all shadow-md shadow-red-600/10 hover:shadow-lg hover:shadow-red-600/20 active:scale-98"
+            >
+              Regresar al Carrito
+            </button>
+          </div>
+        </div>
+      )}
 
       {step === 1 && items && items.length > 0 && (
         <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -162,6 +285,7 @@ export default function Checkout() {
               cartItems={items}
               onSubmit={handleCreateOrder}
               loading={orderLoading || isSubmitting}
+              onDeliveryTypeChange={setDeliveryType}
             />
           </div>
 
@@ -171,6 +295,8 @@ export default function Checkout() {
               cartItems={items}
               total_usd={total_usd}
               total_ves={total_ves}
+              deliveryType={deliveryType}
+              buyerFeePercentage={buyerFeePercentage}
             />
           </div>
         </div>
@@ -182,17 +308,29 @@ export default function Checkout() {
             <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
               ¡Casi listo! 🎉
             </h2>
-            <p className="mt-4 text-lg text-gray-500">
-              Tu orden ha sido reservada bajo el código{" "}
-              <span className="font-mono bg-gray-100 px-2 py-1 rounded text-primary-600">
-                {createdOrderId.split("-")[0]}
-              </span>
-              .
-            </p>
+            {createdOrders.length > 1 ? (
+              <div className="mt-4">
+                <p className="text-lg text-gray-500 mb-2">
+                  Tu pedido incluye productos de <span className="font-bold text-[#6b1e96]">{createdOrders.length} tiendas</span> distintas.
+                </p>
+                <p className="text-sm text-gray-400">
+                  Cada tienda preparará su envío por separado, pero solo necesitas <strong className="text-gray-600">un comprobante de pago</strong> que cubre el total.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-4 text-lg text-gray-500">
+                Tu orden ha sido reservada bajo el código{" "}
+                <span className="font-mono bg-gray-100 px-2 py-1 rounded text-primary-600">
+                  {createdOrderId.split("-")[0]}
+                </span>
+                .
+              </p>
+            )}
           </div>
 
           <PaymentProofUploader
             orderId={createdOrderId}
+            paymentMethod={selectedPaymentMethod}
             onUploadComplete={handleProofUploaded}
           />
 

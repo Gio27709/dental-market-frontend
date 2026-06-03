@@ -1,19 +1,17 @@
 import { useEffect, useState } from "react";
 import { useOrder } from "../../context/OrderContext";
 import PaymentApprovalQueue from "../../components/admin/PaymentApprovalQueue";
-import PaymentProofViewer from "../../components/admin/PaymentProofViewer";
+import PaymentReviewSlideOver from "../../components/admin/PaymentReviewSlideOver";
 import toast from "react-hot-toast";
+import { useAdminStats } from "../../context/AdminStatsContext";
 
 export default function PaymentApprovals() {
   const { orders, fetchOrders, approvePayment, rejectPayment, loading } =
     useOrder();
+  const { refreshStats } = useAdminStats();
 
-  // Modal states
-  const [activeProofUrl, setActiveProofUrl] = useState(null);
-
-  // Rejection logic states
-  const [rejectingOrderId, setRejectingOrderId] = useState(null);
-  const [rejectionReason, setRejectionReason] = useState("");
+  // Active review state
+  const [activeOrder, setActiveOrder] = useState(null);
 
   useEffect(() => {
     // Only fetch orders that are awaiting payment validation
@@ -21,57 +19,42 @@ export default function PaymentApprovals() {
     fetchOrders({ payment_status: "under_review", admin_view: "true" });
   }, [fetchOrders]);
 
-  const handleViewProof = (url) => {
-    setActiveProofUrl(url);
+  const handleReviewOrder = (order) => {
+    setActiveOrder(order);
   };
 
-  const handleCloseViewer = () => {
-    setActiveProofUrl(null);
-  };
-
-  const handleApprove = async (orderId) => {
-    if (
-      !window.confirm(
-        "¿Estás seguro de que deseas APROBAR este pago de Escrow y enviar la orden?",
-      )
-    )
-      return;
-
+  const confirmApprove = async (orderId) => {
     const res = await approvePayment(orderId);
     if (res.success) {
+      const count = res.approved_count || 1;
       toast.success(
-        `Pago de la orden ${orderId.split("-")[0].toUpperCase()} aprobado con éxito.`,
+        count > 1
+          ? `Pago aprobado con éxito. ${count} órdenes del grupo pasaron a procesamiento.`
+          : `Pago de la orden ${orderId.split("-")[0].toUpperCase()} aprobado con éxito.`
       );
-      fetchOrders({ payment_status: "under_review", admin_view: "true" }); // Refresh queue con vista admin
+      setActiveOrder(null);
+      fetchOrders({ payment_status: "under_review", admin_view: "true" });
+      refreshStats();
     } else {
       toast.error(res.error || "No se pudo aprobar la orden.");
     }
   };
 
-  const initReject = (orderId) => {
-    setRejectingOrderId(orderId);
-    setRejectionReason("");
-  };
-
-  const confirmReject = async () => {
-    if (!rejectionReason.trim()) {
-      toast.error("Debes suministrar un motivo válido para rechazar el pago.");
-      return;
-    }
-
-    const res = await rejectPayment(rejectingOrderId, rejectionReason);
+  const confirmReject = async (orderId, reason) => {
+    const res = await rejectPayment(orderId, reason);
     if (res.success) {
-      toast.success(`Orden rechazada`);
-      setRejectingOrderId(null);
-      fetchOrders({ payment_status: "under_review", admin_view: "true" }); // Refresh queue con vista admin
+      const count = res.rejected_count || 1;
+      toast.success(
+        count > 1
+          ? `${count} órdenes del grupo rechazadas con éxito.`
+          : `Orden rechazada con éxito.`
+      );
+      setActiveOrder(null);
+      fetchOrders({ payment_status: "under_review", admin_view: "true" });
+      refreshStats();
     } else {
       toast.error(res.error || "Error al rechazar pago");
     }
-  };
-
-  const cancelReject = () => {
-    setRejectingOrderId(null);
-    setRejectionReason("");
   };
 
   // Filter orders manually on frontend just in case backend ignores param temporarily
@@ -127,71 +110,19 @@ export default function PaymentApprovals() {
       ) : (
         <PaymentApprovalQueue
           orders={pendingOrders}
-          onViewProof={handleViewProof}
-          onApprove={handleApprove}
-          onReject={initReject}
+          onReviewOrder={handleReviewOrder}
         />
       )}
 
-      {/* Proof Viewer Overlay */}
-      {activeProofUrl && (
-        <PaymentProofViewer
-          proofUrl={activeProofUrl}
-          onClose={handleCloseViewer}
+      {/* Payment Review Slide-Over */}
+      {activeOrder && (
+        <PaymentReviewSlideOver
+          order={activeOrder}
+          allOrders={pendingOrders}
+          onClose={() => setActiveOrder(null)}
+          onApprove={confirmApprove}
+          onReject={confirmReject}
         />
-      )}
-
-      {/* Rejection Modal (Tailwind v4 Safe) */}
-      {rejectingOrderId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg p-6 overflow-hidden transform transition-all">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-red-100">
-                <svg
-                  className="h-6 w-6 text-red-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900">
-                Rechazar Pago de Orden
-              </h3>
-            </div>
-            <p className="text-sm text-gray-500 mb-4">
-              Por favor, especifica el motivo por el cual se rechaza el pago
-              recibido. Esto se enviará al cliente.
-            </p>
-            <textarea
-              rows="3"
-              className="w-full border border-gray-300 rounded-md p-3 shadow-sm focus:ring-red-500 focus:border-red-500"
-              placeholder="Ej. La referencia enviada no concuerda con nuestro estado de cuenta."
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-            ></textarea>
-            <div className="mt-5 flex justify-end gap-3">
-              <button
-                onClick={cancelReject}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 transition"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmReject}
-                className="px-4 py-2 bg-red-600 text-white rounded-md font-medium hover:bg-red-700 transition shadow-sm"
-              >
-                Confirmar Rechazo
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
