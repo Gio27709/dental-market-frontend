@@ -60,7 +60,7 @@ export default function AdminOrderDetail() {
     const items = order.order_items || [];
     if (items.length > 0 && items.every((i) => i.delivery_status === "delivered")) return "delivered";
     const statuses = items.map((i) => i.delivery_status);
-    if (statuses.some((s) => s === "shipped" || s === "delivered")) return "shipped";
+    if (statuses.some((s) => ["shipped", "picked_up", "arrived", "delivered"].includes(s))) return "shipped";
     if (statuses.some((s) => s === "approved") || order.payment_status === "approved") return "approved";
     return "pending";
   };

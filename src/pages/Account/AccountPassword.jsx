@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabaseClient";
 import toast from "react-hot-toast";
 
 export default function AccountPassword() {
+  const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
@@ -21,13 +22,43 @@ export default function AccountPassword() {
 
     try {
       setIsUpdating(true);
-      const { error } = await supabase.auth.updateUser({ password });
+
+      // 1. Obtener usuario autenticado actual
+      const { data: { user }, error: userErr } = await supabase.auth.getUser();
+      if (userErr || !user) {
+        throw new Error("No se pudo obtener el usuario autenticado.");
+      }
+
+      // 2. Verificar si el método de inicio de sesión es por email/password (y no OAuth social)
+      const isEmailUser = user.app_metadata?.provider === "email";
+
+      if (isEmailUser) {
+        if (!currentPassword) {
+          toast.error("Por favor ingresa tu contraseña actual para continuar.");
+          setIsUpdating(false);
+          return;
+        }
+
+        // Re-autenticación silenciosa: intentamos iniciar sesión con la clave actual
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email: user.email,
+          password: currentPassword,
+        });
+
+        if (authError) {
+          throw new Error("La contraseña actual es incorrecta.");
+        }
+      }
+
+      // 3. Proceder con el cambio a la nueva contraseña
+      const { error: updateErr } = await supabase.auth.updateUser({ password });
       
-      if (error) {
-        throw error;
+      if (updateErr) {
+        throw updateErr;
       }
 
       toast.success("Contraseña actualizada con éxito.");
+      setCurrentPassword("");
       setPassword("");
       setConfirmPassword("");
     } catch (error) {
@@ -62,6 +93,26 @@ export default function AccountPassword() {
         </div>
 
         <form onSubmit={handleUpdatePassword} className="max-w-md space-y-5">
+          <div>
+            <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#727785" }}>
+              Contraseña Actual
+            </label>
+            <div className="relative">
+              <input
+                type="password"
+                required
+                className="w-full pl-4 pr-10 py-3 rounded-xl text-sm font-medium outline-none transition-all duration-200 focus:ring-2 focus:ring-[#6b1e96]/30"
+                style={{ background: "#f9f9ff", color: "#191c23", border: "1px solid rgba(0,0,0,0.06)" }}
+                placeholder="Ingresa tu contraseña actual"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 select-none text-[20px]">
+                lock_open
+              </span>
+            </div>
+          </div>
+
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#727785" }}>
               Nueva Contraseña

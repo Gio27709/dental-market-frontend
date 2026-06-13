@@ -81,6 +81,14 @@ export default function PaymentApprovalQueue({
         const initial = (primaryOrder.users?.full_name || primaryOrder.users?.email || "U").charAt(0).toUpperCase();
         const isZelle = primaryOrder.payment_method === 'zelle';
 
+        const storeNames = Array.from(
+          new Set(
+            group.orders.flatMap(order => 
+              order.order_items?.map(item => item.store_profiles?.business_name).filter(Boolean) || []
+            )
+          )
+        );
+
         return (
           <div
             key={primaryOrder.order_group_id || primaryOrder.id}
@@ -124,6 +132,14 @@ export default function PaymentApprovalQueue({
                   <div className="ml-3">
                     <div className="text-sm font-bold text-gray-900">{primaryOrder.users?.full_name || "Usuario Desconocido"}</div>
                     <div className="text-xs text-gray-500 font-medium">{primaryOrder.users?.email}</div>
+                    {storeNames.length > 0 && (
+                      <div className="text-[10px] text-[#6b1e96] font-bold mt-1 flex items-center gap-1 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-100/50 w-fit">
+                        <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        <span>Tienda: {storeNames.join(", ")}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 

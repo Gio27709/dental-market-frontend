@@ -11,7 +11,7 @@ const getDeliveryBadge = (orderItems) => {
 
   const statuses = orderItems.map((i) => i.delivery_status);
   const allDelivered = statuses.every((s) => s === "delivered");
-  const someShipped = statuses.some((s) => s === "shipped");
+  const someShipped = statuses.some((s) => ["shipped", "picked_up", "arrived"].includes(s));
   const allCancelled = statuses.every((s) => s === "cancelled");
   const allPending = statuses.every((s) => s === "pending" || s === "confirmed");
 

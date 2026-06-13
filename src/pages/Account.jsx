@@ -2,6 +2,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { getStoreProfile, updateMyProfileAPI, uploadAvatarAPI } from "../services/api";
+import { uploadFileDirectly } from "../lib/upload";
 import { supabase } from "../lib/supabaseClient";
 import toast from "react-hot-toast";
 import { COUNTRY_CODES } from "../utils/constants";
@@ -146,10 +147,12 @@ export default function Account() {
 
     try {
       setIsUploadingAvatar(true);
-      const formData = new FormData();
-      formData.append("image", file);
 
-      await uploadAvatarAPI(formData);
+      // 1. Upload to Supabase Storage directly via presigned URL
+      const { publicUrl, path } = await uploadFileDirectly(file, "avatars");
+
+      // 2. Notify backend of the upload to update metadata and trigger optimization
+      await uploadAvatarAPI({ path, url: publicUrl });
       
       // Force token refresh to auto-update session user metadata across the app
       await supabase.auth.refreshSession();

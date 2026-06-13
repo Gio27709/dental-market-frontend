@@ -14,7 +14,7 @@ export default function UserPublicProfile() {
         setLoading(true);
         const res = await api.get(`/profiles/user/${id}`);
         setUserData(res.data.data);
-      } catch (err) {
+      } catch {
         setError("Perfil de comprador privado o no encontrado.");
       } finally {
         setLoading(false);

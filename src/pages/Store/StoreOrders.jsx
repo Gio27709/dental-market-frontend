@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import LoadingSkeleton from "../../components/LoadingSkeleton";
 import { useStore } from "../../context/StoreContext";
 import {
@@ -30,6 +31,9 @@ const TABS = [
 
 export default function StoreOrders() {
   const { storeOrders, loading, error, fetchStoreOrders, shipItem, cancelAbandonedStoreOrder, cancelItem, cancelStoreOrder } = useStore();
+  const [searchParams] = useSearchParams();
+  const urlSearch = searchParams.get("search") || "";
+
   const [shipModal, setShipModal] = useState(null);
   const [cancelModal, setCancelModal] = useState(null); // { type: 'item'|'order', id, productName }
   const [cancelReason, setCancelReason] = useState("");
@@ -45,12 +49,18 @@ export default function StoreOrders() {
   const [riders, setRiders] = useState([]);
 
   // Filter & pagination state
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(urlSearch);
   const [activeTab, setActiveTab] = useState("actionable");
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState("cards"); // cards | table
 
+  useEffect(() => {
+    if (urlSearch) {
+      setSearchTerm(urlSearch);
+    }
+  }, [urlSearch]);
+  
   // Invoice modal for order detail
   const [invoiceOrder, setInvoiceOrder] = useState(null);
 
@@ -172,7 +182,7 @@ export default function StoreOrders() {
   // Categorize orders
   const categorizeOrder = useCallback((order) => {
     const activeItems = order.items.filter(i => i.delivery_status !== "cancelled" && i.delivery_status !== "returned");
-    const isCompleted = activeItems.length > 0 && activeItems.every(i => i.delivery_status === "shipped" || i.delivery_status === "delivered");
+    const isCompleted = activeItems.length > 0 && activeItems.every(i => ["shipped", "picked_up", "arrived", "delivered"].includes(i.delivery_status));
     const isFullyCancelled = order.items.length > 0 && activeItems.length === 0;
 
     if (isFullyCancelled) {
@@ -208,12 +218,14 @@ export default function StoreOrders() {
       result = result.filter((o) => {
         const orderNum = formatOrderNumber(o.order_id).toLowerCase();
         const buyerName = (o.buyer_name || "").toLowerCase();
-        return orderNum.includes(term) || buyerName.includes(term);
+        return orderNum.includes(term) || buyerName.includes(term) || o.order_id.toLowerCase().includes(term);
       });
     }
 
-    // Filter by active tab
-    result = result.filter((o) => categorizeOrder(o) === activeTab);
+    // Filter by active tab (skip tab filter if searching)
+    if (!searchTerm.trim()) {
+      result = result.filter((o) => categorizeOrder(o) === activeTab);
+    }
 
     return result;
   }, [allOrders, searchTerm, activeTab, categorizeOrder]);
@@ -523,7 +535,7 @@ export default function StoreOrders() {
       const isFullyCancelled = order.items.length > 0 && activeItems.length === 0;
       if (isFullyCancelled) return { label: "Cancelado", cls: "bg-red-50 text-red-700 border-red-200" };
 
-      const allShipped = activeItems.length > 0 && activeItems.every(i => i.delivery_status === "shipped" || i.delivery_status === "delivered");
+      const allShipped = activeItems.length > 0 && activeItems.every(i => ["shipped", "picked_up", "arrived", "delivered"].includes(i.delivery_status));
       const allDelivered = activeItems.length > 0 && activeItems.every(i => i.delivery_status === "delivered");
       if (allDelivered) return { label: "Entregado", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" };
       if (allShipped) return { label: "Enviado", cls: "bg-blue-50 text-blue-700 border-blue-200" };

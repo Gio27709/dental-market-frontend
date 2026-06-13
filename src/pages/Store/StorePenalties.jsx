@@ -1,19 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
-import { getStorePenaltiesAPI, appealPenaltyAPI } from "../../services/api";
+import { Link } from "react-router-dom";
+import { getStorePenaltiesAPI, appealPenaltyAPI, acknowledgePenaltyAPI } from "../../services/api";
 import { useStore } from "../../context/StoreContext";
 import toast from "react-hot-toast";
 
 const TYPE_CONFIG = {
-  warning:      { label: "Advertencia",  bg: "bg-yellow-100", text: "text-yellow-800", icon: "⚠️" },
-  fine:         { label: "Multa",        bg: "bg-orange-100", text: "text-orange-800", icon: "💸" },
-  suspension:   { label: "Suspensión",   bg: "bg-red-100",    text: "text-red-800",    icon: "🚨" },
-  cancellation: { label: "Cancelación",  bg: "bg-gray-100",   text: "text-gray-800",   icon: "🚫" },
+  warning:      { label: "Advertencia",  bg: "bg-amber-50 border-amber-200 text-amber-800", icon: "⚠️" },
+  fine:         { label: "Multa",        bg: "bg-orange-50 border-orange-200 text-orange-800", icon: "💸" },
+  suspension:   { label: "Suspensión",   bg: "bg-rose-50 border-rose-200 text-rose-800",    icon: "🚨" },
+  cancellation: { label: "Cancelación",  bg: "bg-slate-50 border-slate-200 text-slate-800",   icon: "🚫" },
 };
 
 const STATUS_CONFIG = {
-  pending_review: { label: "Pendiente",   bg: "bg-yellow-100", text: "text-yellow-700" },
-  applied:        { label: "Aplicada",    bg: "bg-green-100",  text: "text-green-700" },
-  dismissed:      { label: "Descartada",  bg: "bg-gray-100",   text: "text-gray-500" },
+  pending_review: { label: "En Revisión",   bg: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+  applied:        { label: "Aplicada",    bg: "bg-rose-50 text-rose-700 border-rose-200" },
+  dismissed:      { label: "Descartada",  bg: "bg-emerald-50 text-emerald-700 border-emerald-200" },
 };
 
 export default function StorePenalties() {
@@ -22,11 +23,18 @@ export default function StorePenalties() {
   const [penalties, setPenalties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState("");
+  const [activeTab, setActiveTab] = useState("pending"); // pending | all
+
+  // Info guide expand
+  const [showGuide, setShowGuide] = useState(true);
 
   // Appeal modal
   const [appealModal, setAppealModal] = useState({ open: false, penaltyId: null });
   const [appealNote, setAppealNote] = useState("");
   const [appealLoading, setAppealLoading] = useState(false);
+
+  // Acknowledge loading state map
+  const [ackLoading, setAckLoading] = useState({});
 
   const fetchPenalties = useCallback(async () => {
     setLoading(true);
@@ -42,7 +50,9 @@ export default function StorePenalties() {
     }
   }, [filterType]);
 
-  useEffect(() => { fetchPenalties(); }, [fetchPenalties]);
+  useEffect(() => {
+    fetchPenalties();
+  }, [fetchPenalties]);
 
   const handleAppealOpen = (id) => {
     setAppealModal({ open: true, penaltyId: id });
@@ -68,150 +78,342 @@ export default function StorePenalties() {
     }
   };
 
+  const handleAcknowledge = async (id) => {
+    setAckLoading(prev => ({ ...prev, [id]: true }));
+    try {
+      await acknowledgePenaltyAPI(id);
+      toast.success("Sanción aceptada y archivada. Notificación resuelta.");
+      fetchPenalties();
+      fetchStoreStats();
+    } catch (err) {
+      toast.error("Error: " + err.message);
+    } finally {
+      setAckLoading(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
   const formatDate = (d) =>
     d ? new Date(d).toLocaleDateString("es-VE", {
       day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
     }) : "—";
 
-  // Summary counts
+  // Summary counts based on all penalties
   const counts = {
     total: penalties.length,
-    pending: penalties.filter(p => p.status === "pending_review").length,
+    pending: penalties.filter(p => {
+      const hasAppeal = p.reason?.includes("📝 Apelación");
+      return !p.is_acknowledged && p.status !== "dismissed" && !hasAppeal && !p.resolved_by;
+    }).length,
     applied: penalties.filter(p => p.status === "applied").length,
     finesTotal: penalties
       .filter(p => p.type === "fine" && p.status === "applied")
       .reduce((sum, p) => sum + Number(p.amount || 0), 0),
   };
 
-  const hasPendingAppeal = penalties.some(p => p.reason?.includes("📝 Apelación") && !p.resolved_by);
 
+  // Filter list based on active tab
+  const displayedPenalties = penalties.filter(p => {
+    if (activeTab === "pending") {
+      const hasAppeal = p.reason?.includes("📝 Apelación");
+      return !p.is_acknowledged && p.status !== "dismissed" && !hasAppeal && !p.resolved_by;
+    }
+    return true; // "all" shows everything
+  });
 
   return (
-    <div>
+    <div className="pb-10 font-['Manrope']">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight font-['Manrope']">
-          Mis Sanciones
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Historial de sanciones administrativas de tu tienda. Puedes apelar las que estén pendientes.
-        </p>
+      <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+            Mis Sanciones y SLA
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Historial de amonestaciones y sanciones de tu tienda. Gestiona tus apelaciones y archiva las notificaciones leídas.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowGuide(!showGuide)}
+          className="text-xs font-bold px-3 py-2 bg-gradient-to-r from-[#6b1e96]/10 to-[#6b1e96]/20 text-[#6b1e96] border border-[#6b1e96]/20 rounded-xl hover:from-[#6b1e96]/20 hover:to-[#6b1e96]/30 transition-all flex items-center gap-1.5"
+        >
+          <span>📖</span> {showGuide ? "Ocultar Guía" : "Ver Guía del Sistema"}
+        </button>
       </div>
 
       {/* Suspension Info Banner */}
       {isSuspended && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <span className="text-base">🚨</span>
+        <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-2xl p-5 mb-6 flex items-start gap-4 shadow-sm animate-pulse">
+          <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0 text-xl">
+            🚨
           </div>
           <div>
-            <p className="text-sm font-bold text-red-800 mb-0.5">Tu tienda está suspendida</p>
-            <p className="text-xs text-red-600/80 leading-relaxed">
-              Puedes apelar las sanciones de tipo suspensión directamente desde aquí.
-              Un administrador revisará tu caso y decidirá si reactivar tu tienda.
+            <p className="text-base font-extrabold text-red-900 mb-1">Tu tienda está suspendida</p>
+            <p className="text-sm text-red-700 leading-relaxed max-w-2xl">
+              Has recibido una suspensión administrativa debido a infracciones graves o acumuladas de SLA. 
+              Puedes apelar la suspensión escribiendo una justificación clara. Un administrador la evaluará para restaurar tus ventas.
             </p>
           </div>
         </div>
       )}
 
+      {/* SLA Guide Panel */}
+      {showGuide && (
+        <div className="bg-white rounded-2xl border border-gray-150 p-5 mb-6 shadow-sm relative overflow-hidden transition-all duration-300">
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#c3ff00]/10 rounded-full blur-2xl pointer-events-none" />
+          <h3 className="text-sm font-extrabold text-[#6b1e96] uppercase tracking-wider mb-3 flex items-center gap-2">
+            <span>⚙️</span> Guía de Reglas de Despacho (SLA)
+          </h3>
+          <p className="text-xs text-gray-600 mb-4 leading-relaxed">
+            Para garantizar una experiencia premium, todos los comercios tienen plazos máximos para colocar los pedidos en el correo (SLA).
+            El retraso en el envío genera penalizaciones automáticas progresivas por pedido:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-3">
+              <span className="text-xs font-black text-amber-800 block mb-1">⚠️ 1. Advertencia</span>
+              <p className="text-[11px] text-amber-700/95 leading-snug">Se genera al exceder las <strong>24 horas</strong> de SLA inicial sin despachar el producto.</p>
+            </div>
+            <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-3">
+              <span className="text-xs font-black text-orange-800 block mb-1">💸 2. Multa ($3.00)</span>
+              <p className="text-[11px] text-orange-700/95 leading-snug">Se aplica al superar el doble del SLA (<strong>48 horas</strong>). Se debita automáticamente de tu wallet.</p>
+            </div>
+            <div className="bg-red-50/50 border border-red-100 rounded-xl p-3">
+              <span className="text-xs font-black text-red-800 block mb-1">🚨 3. Suspensión</span>
+              <p className="text-[11px] text-red-700/95 leading-snug">Se activa al superar el triple del SLA (<strong>72 horas</strong>). Tu tienda se inhabilita para recibir nuevas ventas.</p>
+            </div>
+            <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3">
+              <span className="text-xs font-black text-slate-800 block mb-1">🚫 4. Cancelación</span>
+              <p className="text-[11px] text-slate-700/95 leading-snug">Al exceder el cuádruple del SLA (<strong>96 horas</strong>), la orden se cancela de forma automática y se reembolsa al cliente.</p>
+            </div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100 flex flex-wrap gap-x-6 gap-y-2 text-[11px] text-gray-500">
+            <span className="flex items-center gap-1"><strong>Apelaciones:</strong> Tienes derecho a justificar retrasos causados por problemas de transporte o fuerza mayor.</span>
+            <span className="flex items-center gap-1"><strong>Archivado:</strong> Acepta las amonestaciones ya cobradas o vistas para quitarlas de tus notificaciones.</span>
+          </div>
+        </div>
+      )}
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center shadow-sm">
-          <p className="text-2xl font-bold text-gray-900">{counts.total}</p>
-          <p className="text-[10px] text-gray-500 font-medium uppercase">Total</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total Acumulado</p>
+          <p className="text-3xl font-black text-gray-900 mt-1">{counts.total}</p>
         </div>
-        <div className="bg-white rounded-xl border border-yellow-200 p-4 text-center shadow-sm">
-          <p className="text-2xl font-bold text-yellow-700">{counts.pending}</p>
-          <p className="text-[10px] text-yellow-600 font-medium uppercase">Pendientes</p>
+        <div className={`rounded-2xl border p-4 shadow-sm transition-all ${counts.pending > 0 ? "bg-amber-50/50 border-amber-200 shadow-amber-50/10" : "bg-white border-gray-200"}`}>
+          <p className={`text-[10px] font-bold uppercase tracking-wider ${counts.pending > 0 ? "text-amber-600" : "text-gray-400"}`}>Acciones Pendientes</p>
+          <div className="flex items-baseline gap-2 mt-1">
+            <p className={`text-3xl font-black ${counts.pending > 0 ? "text-amber-700" : "text-gray-900"}`}>{counts.pending}</p>
+            {counts.pending > 0 && <span className="text-[10px] font-bold bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-md animate-bounce">Atención</span>}
+          </div>
         </div>
-        <div className="bg-white rounded-xl border border-green-200 p-4 text-center shadow-sm">
-          <p className="text-2xl font-bold text-green-700">{counts.applied}</p>
-          <p className="text-[10px] text-green-600 font-medium uppercase">Aplicadas</p>
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Amonestaciones Aplicadas</p>
+          <p className="text-3xl font-black text-rose-700 mt-1">{counts.applied}</p>
         </div>
-        <div className="bg-white rounded-xl border border-orange-200 p-4 text-center shadow-sm">
-          <p className="text-2xl font-bold text-orange-700">${counts.finesTotal.toFixed(2)}</p>
-          <p className="text-[10px] text-orange-600 font-medium uppercase">Multas Cobradas</p>
+        <div className="bg-[#1a0a2e] rounded-2xl border border-white/[0.06] p-4 shadow-lg text-white">
+          <p className="text-[10px] text-[#c3ff00]/70 font-bold uppercase tracking-wider">Total Fines Debitado</p>
+          <p className="text-3xl font-black text-[#c3ff00] mt-1">${counts.finesTotal.toFixed(2)}</p>
         </div>
       </div>
 
-      {/* Filter */}
-      <div className="flex items-center gap-3 mb-4">
-        <select
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
-          className="border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#6b1e96]/20 focus:border-[#6b1e96] outline-none"
-        >
-          <option value="">Todos los tipos</option>
-          <option value="warning">⚠️ Advertencias</option>
-          <option value="fine">💸 Multas</option>
-          <option value="suspension">🚨 Suspensiones</option>
-          <option value="cancellation">🚫 Cancelaciones</option>
-        </select>
-        <button
-          onClick={fetchPenalties}
-          className="ml-auto text-sm text-[#6b1e96] hover:underline font-medium"
-        >
-          Actualizar
-        </button>
+      {/* Tabs & Filter Bar */}
+      <div className="flex flex-wrap justify-between items-center gap-4 mb-5 border-b border-gray-200 pb-3">
+        {/* Tabs */}
+        <div className="flex gap-2 p-1 bg-gray-150 rounded-xl">
+          <button
+            onClick={() => setActiveTab("pending")}
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === "pending" ? "bg-white text-[#6b1e96] shadow-sm" : "text-gray-500 hover:text-gray-800"}`}
+          >
+            📋 Acciones Requeridas ({counts.pending})
+          </button>
+          <button
+            onClick={() => setActiveTab("all")}
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === "all" ? "bg-white text-[#6b1e96] shadow-sm" : "text-gray-500 hover:text-gray-800"}`}
+          >
+            🗂️ Historial Completo ({counts.total})
+          </button>
+        </div>
+
+        {/* Dropdown Filter */}
+        <div className="flex items-center gap-3">
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="border border-gray-300 rounded-xl px-4 py-2 text-xs bg-white font-bold text-gray-700 focus:ring-2 focus:ring-[#6b1e96]/20 focus:border-[#6b1e96] outline-none cursor-pointer"
+          >
+            <option value="">Filtrar Tipo: Todos</option>
+            <option value="warning">⚠️ Advertencias</option>
+            <option value="fine">💸 Multas</option>
+            <option value="suspension">🚨 Suspensiones</option>
+            <option value="cancellation">🚫 Cancelaciones</option>
+          </select>
+          <button
+            onClick={fetchPenalties}
+            className="text-xs text-[#6b1e96] hover:text-[#8b2bc0] font-black border border-[#6b1e96]/20 hover:bg-[#6b1e96]/5 px-3 py-2 rounded-xl transition-colors"
+          >
+            Actualizar
+          </button>
+        </div>
       </div>
 
-      {/* Loading / Empty / List */}
+      {/* List */}
       {loading ? (
-        <div className="flex items-center justify-center p-16">
-          <div className="w-10 h-10 border-4 border-[#c3ff00] border-t-[#6b1e96] rounded-full animate-spin" />
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="w-10 h-10 border-4 border-[#c3ff00] border-t-[#6b1e96] rounded-full animate-spin mb-3" />
+          <p className="text-xs font-bold text-gray-400">Cargando tus amonestaciones...</p>
         </div>
-      ) : penalties.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
-          <div className="text-4xl mb-3">✅</div>
-          <h3 className="text-lg font-bold text-gray-900 font-['Manrope'] mb-1">¡Todo en orden!</h3>
-          <p className="text-sm text-gray-500">No tienes sanciones registradas.</p>
+      ) : displayedPenalties.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-150 p-12 text-center shadow-sm">
+          <div className="text-5xl mb-4">🎉</div>
+          <h3 className="text-lg font-extrabold text-gray-900 mb-1">¡No hay nada pendiente!</h3>
+          <p className="text-sm text-gray-400 max-w-sm mx-auto">
+            {activeTab === "pending"
+              ? "No tienes amonestaciones o notificaciones que requieran atención en este momento. ¡Sigue así!"
+              : "No se encontraron registros de sanciones en tu historial."}
+          </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {penalties.map((p) => {
+        <div className="space-y-4">
+          {displayedPenalties.map((p) => {
             const typeConf = TYPE_CONFIG[p.type] || TYPE_CONFIG.warning;
             const statusConf = STATUS_CONFIG[p.status] || STATUS_CONFIG.pending_review;
             const hasAppeal = p.reason?.includes("📝 Apelación");
 
+            // Format appeal text details
+            let displayReason = p.reason;
+            let appealText = null;
+            let adminResponse = null;
+
+            if (p.reason?.includes(" | 📝 Apelación de tienda:")) {
+              const parts = p.reason.split(" | 📝 Apelación de tienda:");
+              displayReason = parts[0];
+              const appealParts = parts[1].split(" | Resuelto por Admin:");
+              appealText = appealParts[0];
+              if (appealParts[1]) {
+                adminResponse = appealParts[1];
+              }
+            } else if (p.reason?.includes(" | Resuelto por Admin:")) {
+              const parts = p.reason.split(" | Resuelto por Admin:");
+              displayReason = parts[0];
+              adminResponse = parts[1];
+            }
+
+            const isPendingAction = !p.is_acknowledged && p.status !== "dismissed" && !hasAppeal && !p.resolved_by;
+
             return (
-              <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between gap-3">
+              <div
+                key={p.id}
+                className={`bg-white rounded-2xl border overflow-hidden transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${
+                  p.is_acknowledged ? "border-gray-200 opacity-70" : isPendingAction ? "border-amber-200 bg-amber-50/[0.08]" : "border-gray-200"
+                }`}
+              >
+                <div className="p-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-2">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${typeConf.bg} ${typeConf.text}`}>
+                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black border ${typeConf.bg}`}>
                         {typeConf.icon} {typeConf.label}
                       </span>
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConf.bg} ${statusConf.text}`}>
+                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${statusConf.bg}`}>
                         {statusConf.label}
                       </span>
                       {Number(p.amount) > 0 && (
-                        <span className="text-sm font-bold text-orange-700">${Number(p.amount).toFixed(2)}</span>
+                        <span className="text-sm font-black text-orange-700 bg-orange-50 border border-orange-200 px-2.5 py-0.5 rounded-lg">
+                          -${Number(p.amount).toFixed(2)} USD
+                        </span>
+                      )}
+                      {p.is_acknowledged && (
+                        <span className="text-[10px] font-black text-gray-500 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md">
+                          ✓ Archivada
+                        </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-700 leading-relaxed">{p.reason}</p>
-                    <p className="text-[10px] text-gray-400 mt-2">
-                      Orden: #{p.order_id?.substring(0, 8)} &middot; {formatDate(p.created_at)}
-                    </p>
+
+                    <p className="text-sm text-gray-800 font-medium leading-relaxed mt-2">{displayReason}</p>
+
+                    {/* Appeal text subsegment */}
+                    {appealText && (
+                      <div className="mt-3 bg-blue-50/50 border border-blue-100 rounded-xl p-3 text-xs leading-relaxed text-blue-800">
+                        <strong className="block font-black mb-1">📝 Tu Justificación de Apelación:</strong>
+                        &quot;{appealText}&quot;
+                      </div>
+                    )}
+
+                    {/* Admin response subsegment */}
+                    {adminResponse && (
+                      <div className="mt-3 bg-emerald-50/50 border border-emerald-100 rounded-xl p-3 text-xs leading-relaxed text-emerald-800">
+                        <strong className="block font-black mb-1">💬 Respuesta del Administrador:</strong>
+                        &quot;{adminResponse}&quot;
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-4 text-[11px] text-gray-400 mt-4">
+                      {p.order_id && (
+                        <span className="font-bold flex items-center gap-1 text-gray-500">
+                          Orden: #{p.order_id?.substring(0, 8)}
+                        </span>
+                      )}
+                      <span>&middot;</span>
+                      <span>Aplicada: {formatDate(p.created_at)}</span>
+                    </div>
                   </div>
 
-                  {/* Appeal button: pending_review OR applied suspensions/cancellations (BUG-E fix) */}
-                  {!hasAppeal && !p.resolved_by && !hasPendingAppeal && (
-                    (p.status === "pending_review" || 
-                     ((p.type === "suspension" || p.type === "cancellation") && p.status === "applied")
-                    ) && (
-                      <button
-                        onClick={() => handleAppealOpen(p.id)}
-                        className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-lg border border-[#6b1e96]/30 text-[#6b1e96] hover:bg-[#6b1e96]/5 transition-colors whitespace-nowrap"
+                  {/* Actions Column */}
+                  <div className="flex sm:flex-col items-stretch gap-2 flex-wrap sm:min-w-[140px]">
+                    {/* View Order Link */}
+                    {p.order_id && (
+                      <Link
+                        to={`/store/orders?search=${p.order_id}`}
+                        className="text-center text-xs font-black px-4 py-2 bg-gray-50 hover:bg-[#6b1e96]/10 text-gray-600 hover:text-[#6b1e96] border border-gray-200 hover:border-[#6b1e96]/30 rounded-xl transition-all"
                       >
-                        📝 Apelar
-                      </button>
-                    )
-                  )}
-                  {hasAppeal && (
-                    <span className="flex-shrink-0 text-[10px] font-medium px-2 py-1 rounded-full bg-blue-50 text-blue-600">
-                      ✓ Apelada
-                    </span>
-                  )}
+                        🔍 Ver Orden
+                      </Link>
+                    )}
+
+                    {/* Action buttons: if not appealed, not resolved, and not acknowledged */}
+                    {isPendingAction && (
+                      <>
+                        {/* Appeal button: available for pending_review OR applied suspensions/cancellations */}
+                        {(p.status === "pending_review" ||
+                          ((p.type === "suspension" || p.type === "cancellation") && p.status === "applied")
+                        ) && (
+                          <button
+                            onClick={() => handleAppealOpen(p.id)}
+                            className="text-xs font-black px-4 py-2 bg-[#6b1e96] hover:bg-[#8b2bc0] text-white rounded-xl transition-all shadow-sm shadow-[#6b1e96]/20"
+                          >
+                            📝 Apelar
+                          </button>
+                        )}
+
+                        {/* Acknowledge (Aceptar y Archivar) button */}
+                        <button
+                          onClick={() => handleAcknowledge(p.id)}
+                          disabled={ackLoading[p.id]}
+                          className="text-xs font-black px-4 py-2 bg-white hover:bg-amber-50 text-amber-700 border border-amber-200 hover:border-amber-300 rounded-xl transition-all disabled:opacity-50"
+                          title="Aceptar la amonestación y archivar la notificación"
+                        >
+                          {ackLoading[p.id] ? "Archivando..." : "✔️ Aceptar Sanción"}
+                        </button>
+                      </>
+                    )}
+
+                    {/* Appeal statuses */}
+                    {hasAppeal && !p.resolved_by && (
+                      <span className="text-center text-[10px] font-bold px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 border border-blue-100 flex items-center justify-center gap-1.5 animate-pulse">
+                        ⏳ Apelada en curso
+                      </span>
+                    )}
+
+                    {p.resolved_by && p.status === "applied" && (
+                      <span className="text-center text-[10px] font-bold px-3 py-1.5 rounded-xl bg-red-50 text-red-700 border border-red-100 flex items-center justify-center gap-1.5">
+                        ❌ Rechazada por Admin
+                      </span>
+                    )}
+
+                    {p.resolved_by && p.status === "dismissed" && (
+                      <span className="text-center text-[10px] font-bold px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center justify-center gap-1.5">
+                        ✅ Condonada / Exenta
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -221,36 +423,41 @@ export default function StorePenalties() {
 
       {/* Appeal Modal */}
       {appealModal.open && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setAppealModal({ open: false, penaltyId: null })}>
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setAppealModal({ open: false, penaltyId: null })}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl animate-scaleIn border border-gray-100" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-[#6b1e96]/10 text-[#6b1e96] flex items-center justify-center text-lg">📝</div>
-              <h3 className="text-lg font-bold font-['Manrope']">Apelar Sanción</h3>
+              <h3 className="text-lg font-extrabold text-gray-900">Apelar Sanción</h3>
             </div>
-            <p className="text-sm text-gray-500 mb-4">
-              Explica por qué consideras que esta sanción no es justa. Un administrador revisará tu caso.
+            <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+              Explica claramente los motivos externos o de fuerza mayor por los cuales consideras que esta penalización debe ser condonada. Un administrador revisará las evidencias y responderá en un plazo máximo de 48 horas.
             </p>
             <textarea
               value={appealNote}
               onChange={(e) => setAppealNote(e.target.value)}
-              placeholder="Escribe tu justificación aquí..."
+              placeholder="Escribe aquí tu justificación detallada..."
               rows={4}
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#6b1e96]/20 focus:border-[#6b1e96] outline-none resize-none"
+              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-[#6b1e96]/20 focus:border-[#6b1e96] outline-none resize-none font-medium placeholder:text-gray-400"
             />
-            <div className="flex justify-end gap-3 mt-4">
+            <div className="flex justify-end gap-3 mt-5">
               <button
                 onClick={() => setAppealModal({ open: false, penaltyId: null })}
-                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                className="px-4 py-2.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleAppealSubmit}
                 disabled={appealLoading}
-                className="px-4 py-2 text-sm rounded-xl font-medium transition-colors disabled:opacity-50"
+                className="px-5 py-2.5 text-xs font-black rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
                 style={{ background: 'linear-gradient(135deg, #531575, #6b1e96)', color: '#c3ff00' }}
               >
-                {appealLoading ? "Enviando..." : "Enviar Apelación"}
+                {appealLoading ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    Enviando...
+                  </>
+                ) : "Enviar Apelación"}
               </button>
             </div>
           </div>

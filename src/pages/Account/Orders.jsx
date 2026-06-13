@@ -39,7 +39,7 @@ export default function Orders() {
         order.order_items?.length > 0 &&
         order.order_items.every((i) => i.delivery_status === "cancelled");
       const anyShipped = order.order_items?.some(
-        (i) => i.delivery_status === "shipped",
+        (i) => ["shipped", "picked_up", "arrived"].includes(i.delivery_status),
       );
       const ageInHours =
         (Date.now() - new Date(order.created_at).getTime()) / (1000 * 60 * 60);
@@ -84,7 +84,7 @@ export default function Orders() {
         order.order_items?.length > 0 &&
         order.order_items.every((i) => i.delivery_status === "cancelled");
       const anyShipped = order.order_items?.some(
-        (i) => i.delivery_status === "shipped",
+        (i) => ["shipped", "picked_up", "arrived"].includes(i.delivery_status),
       );
       const ageInHours =
         (Date.now() - new Date(order.created_at).getTime()) / (1000 * 60 * 60);
@@ -172,7 +172,7 @@ export default function Orders() {
 
       {/* Controls: Search, Tabs & Date filter */}
       {!loading && !error && orders.length > 0 && (
-        <div className="flex flex-col gap-4 bg-white p-4 rounded-2xl border border-gray-150 mb-6" style={{ boxShadow: "0 4px 24px rgba(107,30,150,0.02)" }}>
+        <div className="flex flex-col gap-4 bg-white p-4 rounded-2xl border border-gray-200/60 mb-6" style={{ boxShadow: "0 4px 24px rgba(107,30,150,0.02)" }}>
           {/* Tabs and Date Select Row */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             {/* Tabs */}
@@ -308,7 +308,7 @@ export default function Orders() {
             
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-gray-150 pt-5 mt-4 flex-wrap gap-4">
+              <div className="flex items-center justify-between border-t border-slate-100 pt-5 mt-4 flex-wrap gap-4">
                 <div className="text-xs text-gray-500 font-semibold">
                   Mostrando <span className="font-bold text-[#191c23]">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredOrders.length)}–{Math.min(currentPage * itemsPerPage, filteredOrders.length)}</span> de <span className="font-bold text-[#191c23]">{filteredOrders.length}</span> órdenes
                 </div>

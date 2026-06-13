@@ -1,215 +1,249 @@
-import { useState } from 'react';
-import { ShoppingCart, Clock, Tag } from 'lucide-react';
-import { Link } from 'react-router-dom';
-
-const filterCategories = ['Todos', 'Equipos', 'Instrumental', 'Desechables', 'Materiales'];
-
-const promotionalProducts = [
-  {
-    id: 1,
-    name: 'Autoclave Clase B 18L Premium',
-    brand: 'SurgiLine',
-    originalPrice: 1250.00,
-    discountedPrice: 875.00,
-    discountPercent: 30,
-    image: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?q=80&w=600&auto=format&fit=crop',
-    category: 'Equipos',
-    isFlashSale: true
-  },
-  {
-    id: 2,
-    name: 'Kit de Resinas Compuestas Pro',
-    brand: 'DentalCore',
-    originalPrice: 180.00,
-    discountedPrice: 144.00,
-    discountPercent: 20,
-    image: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=600&auto=format&fit=crop',
-    category: 'Materiales',
-    isFlashSale: false
-  },
-  {
-    id: 3,
-    name: 'Micromotor Clínico de Alta Precisión',
-    brand: 'AeroDent',
-    originalPrice: 450.00,
-    discountedPrice: 382.50,
-    discountPercent: 15,
-    image: 'https://images.unsplash.com/photo-1598256989800-fea5f95b5fff?q=80&w=600&auto=format&fit=crop',
-    category: 'Equipos',
-    isFlashSale: false
-  },
-  {
-    id: 4,
-    name: 'Cajas de Guantes de Nitrilo (100uds)',
-    brand: 'SafeTouch',
-    originalPrice: 15.00,
-    discountedPrice: 9.00,
-    discountPercent: 40,
-    image: 'https://images.unsplash.com/photo-1584820927498-cafe2c118128?q=80&w=600&auto=format&fit=crop',
-    category: 'Desechables',
-    isFlashSale: true
-  },
-  {
-    id: 5,
-    name: 'Set de Fórceps Quirúrgicos 10pz',
-    brand: 'SteelMax',
-    originalPrice: 220.00,
-    discountedPrice: 165.00,
-    discountPercent: 25,
-    image: 'https://images.unsplash.com/photo-1509813685-e6ed9e96e003?q=80&w=600&auto=format&fit=crop',
-    category: 'Instrumental',
-    isFlashSale: false
-  },
-  {
-    id: 6,
-    name: 'Lámpara de Fotocurado Inalámbrica',
-    brand: 'LuminaTech',
-    originalPrice: 195.00,
-    discountedPrice: 156.00,
-    discountPercent: 20,
-    image: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=600&auto=format&fit=crop',
-    category: 'Equipos',
-    isFlashSale: false
-  }
-];
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { getPromotionsAPI, getPromotionByIdAPI } from "../services/api";
+import ProductCard from "../components/ProductCard";
+import LoadingSkeleton from "../components/LoadingSkeleton";
 
 export default function Promotions() {
-  const [activeFilter, setActiveFilter] = useState('Todos');
+  const [promotions, setPromotions] = useState([]);
+  const [activePromo, setActivePromo] = useState(null);
+  const [promoProducts, setPromoProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [timeLeft, setTimeLeft] = useState("");
 
-  const filteredProducts = activeFilter === 'Todos' 
-    ? promotionalProducts 
-    : promotionalProducts.filter(p => p.category === activeFilter);
+  // Fetch all promotions
+  useEffect(() => {
+    const fetchPromotions = async () => {
+      try {
+        setLoading(true);
+        const { data } = await getPromotionsAPI();
+        const promos = data.data || [];
+        setPromotions(promos);
+        // Auto-select first promotion
+        if (promos.length > 0) {
+          loadPromotionProducts(promos[0].id);
+          setActivePromo(promos[0]);
+        }
+      } catch (err) {
+        console.error("Error loading promotions:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPromotions();
+  }, []);
+
+  const loadPromotionProducts = async (promoId) => {
+    try {
+      setLoadingProducts(true);
+      const { data } = await getPromotionByIdAPI(promoId);
+      setPromoProducts(data.data?.products || []);
+    } catch (err) {
+      console.error("Error loading promotion products:", err);
+      setPromoProducts([]);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  const handleSelectPromo = (promo) => {
+    setActivePromo(promo);
+    loadPromotionProducts(promo.id);
+  };
+
+  // Ticking Countdown Effect
+  useEffect(() => {
+    if (!activePromo?.ends_at) {
+      setTimeLeft("");
+      return;
+    }
+
+    const updateTimer = () => {
+      const diff = new Date(activePromo.ends_at) - new Date();
+      if (diff <= 0) {
+        setTimeLeft("Finalizado");
+        return;
+      }
+      const days = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+
+      if (days > 0) {
+        setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+      } else {
+        const pad = (n) => String(n).padStart(2, "0");
+        setTimeLeft(`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`);
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [activePromo]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#6b1e96] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-500 font-medium animate-pulse">Cargando promociones...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (promotions.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
+        <div className="text-center max-w-md px-6 relative">
+          <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-40 h-40 bg-[#6b1e96]/5 rounded-full blur-2xl pointer-events-none" />
+          <span className="material-symbols-outlined text-slate-300 mb-4" style={{ fontSize: "64px" }}>
+            campaign
+          </span>
+          <h2 className="text-2xl font-black text-slate-800 mb-3">No hay promociones activas</h2>
+          <p className="text-slate-500 mb-6 font-medium">
+            Vuelve pronto, las tiendas del marketplace están preparando ofertas increíbles para ti.
+          </p>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#6b1e96] hover:bg-[#531575] active:bg-[#43105e] text-white font-bold rounded-xl shadow-md shadow-[#6b1e96]/15 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>home</span>
+            Volver al Inicio
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-[#f9f9ff] min-h-screen pb-20 font-sans">
-      
+    <div className="min-h-screen bg-gray-50/40 pb-12">
       {/* Hero Section */}
-      <div className="relative w-full overflow-hidden bg-[#191c20]">
-        <style>{`
-          .hero-clip {
-            clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%);
-          }
-          @media (min-width: 1024px) {
-            .hero-clip {
-              clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
-            }
-          }
-        `}</style>
-        <div className="hero-clip relative w-full pt-20 pb-32 lg:pt-28 lg:pb-40 bg-gradient-to-r from-[#4f0077] to-[#6b1e96] px-4 sm:px-6 lg:px-8">
-          
-          {/* Decorative background elements */}
-          <div className="absolute top-0 right-0 w-1/2 h-full bg-white opacity-5 mix-blend-overlay skew-x-12 transform translate-x-20"></div>
+      {activePromo && (
+        <div
+          className="relative overflow-hidden border-b border-slate-200/10 shadow-inner"
+          style={{
+            background: "linear-gradient(135deg, #10061e 0%, #3e125c 40%, #6b1e96 75%, #8b25cd 100%)",
+          }}
+        >
+          {/* Glowing Animated Orbs */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full bg-[#c3ff00]/10 blur-[100px] animate-pulse duration-[6000ms]" />
+            <div className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full bg-pink-500/10 blur-[120px] animate-pulse duration-[8000ms]" />
+            <div className="absolute top-1/2 left-1/3 w-[300px] h-[300px] rounded-full bg-[#6b1e96]/30 blur-[80px]" />
+          </div>
 
-          <div className="max-w-7xl mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="text-white">
-              <div className="inline-flex items-center gap-2 bg-[#ffdad6] text-[#93000a] px-4 py-1.5 rounded-full text-sm font-bold tracking-wide font-inter mb-6 uppercase shadow-lg shadow-[#93000a]/10">
-                <Clock className="w-4 h-4" />
-                Oferta Relámpago
-              </div>
-              <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tighter mb-6 font-manrope leading-[1.1]">
-                Semana de la <br/>
-                <span className="text-[#c3ff00]">Endodoncia</span>
+          {/* Grid pattern overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)] opacity-40" />
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20 md:py-24 relative z-10">
+            <div className="text-center max-w-3xl mx-auto">
+              {activePromo.badge_text && (
+                <span
+                  className="inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest mb-6 shadow-xl border border-white/10 text-white"
+                  style={{
+                    background: `linear-gradient(135deg, ${activePromo.badge_color || '#ef4444'} 0%, ${activePromo.badge_color ? activePromo.badge_color + 'dd' : '#f43f5e'} 100%)`,
+                    boxShadow: `0 0 20px ${(activePromo.badge_color || '#ef4444')}33`
+                  }}
+                >
+                  <span className="material-symbols-outlined animate-pulse text-[14px]">local_fire_department</span>
+                  {activePromo.badge_text}
+                </span>
+              )}
+              
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white mb-6 leading-tight tracking-tight drop-shadow-md">
+                {activePromo.title}
               </h1>
-              <p className="text-lg lg:text-xl text-[#e6b4ff] font-inter mb-10 max-w-lg leading-relaxed">
-                Equipa tu clínica con la más alta tecnología en instrumentación rotatoria y localizadores de ápice con hasta un <strong className="text-white">40% de descuento</strong>.
-              </p>
-              <button className="bg-[#c3ff00] hover:bg-[#bcf600] text-[#151f00] px-8 py-4 rounded-xl font-bold font-inter text-lg shadow-[0_10px_25px_rgba(195,255,0,0.25)] transition-all active:scale-95 flex items-center gap-3">
-                Ver Ofertas Flash
-                <Tag className="w-5 h-5" />
-              </button>
+              
+              {activePromo.subtitle && (
+                <p className="text-base sm:text-lg md:text-xl text-slate-200/90 max-w-2xl mx-auto mb-8 font-medium leading-relaxed">
+                  {activePromo.subtitle}
+                </p>
+              )}
+              
+              {activePromo.ends_at && timeLeft && (
+                <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-xl transition-all duration-300 hover:scale-105 hover:bg-white/15">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                  <span className="material-symbols-outlined text-emerald-400 text-lg">timer</span>
+                  <span className="text-white font-bold text-xs sm:text-sm tracking-wider uppercase">
+                    Termina en: <span className="text-[#c3ff00] font-black tracking-normal ml-1">{timeLeft}</span>
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-20">
-        
-        {/* Filter Pills */}
-        <div className="flex overflow-x-auto pb-6 pt-2 hide-scrollbar gap-3 snap-x">
-          {filterCategories.map(category => (
-            <button
-              key={category}
-              onClick={() => setActiveFilter(category)}
-              className={`whitespace-nowrap px-6 py-3 rounded-full font-inter text-sm font-semibold transition-all snap-start ${
-                activeFilter === category
-                  ? 'bg-[#4f0077] text-white shadow-lg'
-                  : 'bg-white text-[#4d4351] hover:bg-[#ededf3] shadow-sm'
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+        {/* Promotion Tabs */}
+        {promotions.length > 1 && (
+          <div className="flex gap-3 mb-10 overflow-x-auto pb-3 pt-1 scrollbar-thin scrollbar-thumb-slate-200">
+            {promotions.map((promo) => {
+              const isActive = activePromo?.id === promo.id;
+              return (
+                <button
+                  key={promo.id}
+                  onClick={() => handleSelectPromo(promo)}
+                  className={`px-6 py-3 rounded-2xl text-sm font-extrabold whitespace-nowrap transition-all duration-300 flex items-center gap-2 border hover:scale-[1.02] cursor-pointer ${
+                    isActive
+                      ? "bg-gradient-to-r from-[#6b1e96] to-[#8b25cd] text-white border-transparent shadow-lg shadow-[#6b1e96]/20"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-[#6b1e96]/35 hover:text-[#6b1e96] shadow-sm"
+                  }`}
+                >
+                  <span className={`material-symbols-outlined text-[18px] ${isActive ? "text-white" : "text-[#6b1e96]"}`}>
+                    campaign
+                  </span>
+                  {promo.title}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
-        {/* Header for grid */}
-        <div className="flex justify-between items-end mt-10 mb-8">
-          <h2 className="text-3xl font-bold font-manrope text-[#191c20]">
-            Ofertas Destacadas
-          </h2>
-          <span className="text-[#7f7382] font-inter font-medium text-sm">
-            {filteredProducts.length} productos
-          </span>
-        </div>
-
-        {/* Promotions Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredProducts.map(product => (
-            <div 
-              key={product.id} 
-              className="bg-white rounded-[2rem] overflow-hidden shadow-[0_20px_40px_rgba(25,28,32,0.04)] hover:shadow-[0_20px_40px_rgba(25,28,32,0.08)] transition-all duration-300 group flex flex-col relative"
-            >
-              {/* Discount Badge */}
-              <div className="absolute top-5 left-5 z-10 flex flex-col gap-2">
-                <div className="bg-[#ef4444] text-white px-3 py-1.5 rounded-lg font-bold font-manrope text-sm shadow-lg">
-                  -{product.discountPercent}%
-                </div>
-                {product.isFlashSale && (
-                  <div className="bg-[#191c20] text-white px-3 py-1.5 rounded-lg font-bold font-inter text-xs shadow-lg uppercase tracking-wide flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    Flash
-                  </div>
-                )}
-              </div>
-
-              {/* Image Container */}
-              <div className="relative h-64 overflow-hidden bg-[#f3f3f9]">
-                <img 
-                  src={product.image} 
-                  alt={product.name} 
-                  className="w-full h-full object-cover mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-
-              {/* Content */}
-              <div className="p-8 flex-grow flex flex-col">
-                <p className="text-xs font-bold text-[#853bb0] uppercase tracking-wider font-inter mb-2">
-                  {product.brand}
-                </p>
-                <h3 className="text-lg font-bold font-manrope text-[#191c20] mb-4 leading-tight">
-                  <Link to={`/product/${product.id}`} className="hover:text-[#6b1e96] transition-colors">
-                    {product.name}
-                  </Link>
-                </h3>
-                
-                <div className="mt-auto pt-4 flex items-end justify-between">
-                  <div>
-                    <span className="text-sm text-[#7f7382] line-through font-inter font-medium block mb-0.5">
-                      ${product.originalPrice.toFixed(2)}
-                    </span>
-                    <span className="text-2xl font-bold font-manrope text-[#ef4444]">
-                      ${product.discountedPrice.toFixed(2)}
-                    </span>
-                  </div>
-                  
-                  <button className="w-12 h-12 rounded-xl bg-[#f3f3f9] text-[#191c20] flex items-center justify-center hover:bg-[#c3ff00] hover:text-[#151f00] transition-colors shadow-sm">
-                    <ShoppingCart className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
+        {/* Products Section Header */}
+        {activePromo && !loadingProducts && promoProducts.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#6b1e96]">local_offer</span>
+                Ofertas de la Promoción
+              </h2>
+              <p className="text-slate-500 text-sm mt-0.5">Explora productos seleccionados con descuentos exclusivos</p>
             </div>
-          ))}
-        </div>
+            <div className="bg-slate-100/80 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 border border-slate-200/40 w-fit">
+              {promoProducts.length} {promoProducts.length === 1 ? 'Producto disponible' : 'Productos disponibles'}
+            </div>
+          </div>
+        )}
 
+        {/* Products Grid */}
+        {loadingProducts ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <LoadingSkeleton variant="product-card" count={8} />
+          </div>
+        ) : promoProducts.length === 0 ? (
+          <div className="text-center py-24 bg-white rounded-3xl border border-slate-150 shadow-sm max-w-xl mx-auto px-6">
+            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 mx-auto mb-5">
+              <span className="material-symbols-outlined text-slate-400 text-3xl">inventory_2</span>
+            </div>
+            <h3 className="text-lg font-black text-slate-800 mb-2">No hay productos disponibles</h3>
+            <p className="text-slate-500 text-sm leading-relaxed max-w-sm mx-auto">
+              Esta promoción activa no cuenta con productos asignados por el momento. ¡Vuelve más tarde para ver las novedades!
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {promoProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

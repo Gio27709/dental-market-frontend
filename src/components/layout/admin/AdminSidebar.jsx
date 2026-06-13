@@ -29,6 +29,12 @@ export default function AdminSidebar() {
         return stats.pendingStores;
       case "/admin/rider-applications":
         return stats.pendingRiders;
+      case "/admin/support":
+        return stats.pendingTickets;
+      case "/admin/promotions":
+        return stats.pendingDiscounts;
+      case "/admin/penalties":
+        return stats.pendingPenalties;
       default:
         return 0;
     }

@@ -1,17 +1,23 @@
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
+import { memo } from "react";
 import { formatCurrencyUSD, formatCurrencyVES } from "../utils/formatters";
 import { useCurrency } from "../context/CurrencyContext";
 import { useProducts } from "../context/ProductContext";
 
-export default function SmallProductCard({ product, badge }) {
+const SmallProductCard = memo(function SmallProductCard({ product, badge }) {
   const { isVES } = useCurrency();
   const { bcvRate, trendingProductIds } = useProducts();
   const isTrending = trendingProductIds?.has(product.id);
   const hasImage = product.images && product.images.length > 0;
-  const price = Number(product.price) || 0;
-  // Simula un precio original más alto para mostrar tachado
-  const originalPrice = product.originalPrice || Math.round(price * 1.35 * 100) / 100;
+  
+  const discount = product.active_discount;
+  const price = discount ? Number(discount.final_price) : (Number(product.price) || 0);
+  const originalPrice = discount ? Number(discount.original_price) : (product.originalPrice || Math.round(price * 1.35 * 100) / 100);
+
+  const discountBadgeText = discount 
+    ? (discount.discount_type === "percentage" ? `-${discount.discount_value}%` : `-$${discount.discount_value}`)
+    : null;
 
   const formatPrice = (amount) => {
     if (isVES) return formatCurrencyVES(amount * Number(bcvRate || 1));
@@ -37,11 +43,13 @@ export default function SmallProductCard({ product, badge }) {
             image
           </span>
         )}
-        {/* Badge (SALE / NEW / HOT / MÁS VENDIDO) */}
-        {(badge || isTrending) && (
+        {/* Badge (SALE / NEW / HOT / DISCOUNT) */}
+        {(discountBadgeText || badge || isTrending) && (
           <span
-            className={`absolute top-0.5 left-0.5 px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-md text-white leading-none flex items-center gap-0.5 ${
-              badge === "SALE"
+            className={`absolute top-0.5 left-0.5 px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-md text-white leading-none flex items-center gap-0.5 z-10 ${
+              discountBadgeText
+                ? "bg-red-500 font-extrabold"
+                : badge === "SALE"
                 ? "bg-red-500"
                 : badge === "NEW"
                 ? "bg-blue-500"
@@ -50,8 +58,17 @@ export default function SmallProductCard({ product, badge }) {
                 : "bg-emerald-500"
             }`}
           >
-            {isTrending && !badge && <span className="material-symbols-outlined text-[10px] leading-none">local_fire_department</span>}
-            {badge || "HOT"}
+            {discountBadgeText ? (
+              <>
+                <span className="material-symbols-outlined text-[10px] leading-none">local_offer</span>
+                {discountBadgeText}
+              </>
+            ) : (
+              <>
+                {isTrending && !badge && <span className="material-symbols-outlined text-[10px] leading-none">local_fire_department</span>}
+                {badge || "HOT"}
+              </>
+            )}
           </span>
         )}
       </div>
@@ -93,14 +110,18 @@ export default function SmallProductCard({ product, badge }) {
           <span className="text-[15px] font-bold text-[#6b1e96]">
             {formatPrice(price)}
           </span>
-          <span className="text-[11px] text-gray-400 line-through">
-            {formatPrice(originalPrice)}
-          </span>
+          {(discount || originalPrice > price) && (
+            <span className="text-[11px] text-gray-400 line-through">
+              {formatPrice(originalPrice)}
+            </span>
+          )}
         </div>
       </div>
     </Link>
   );
-}
+})
+
+export default SmallProductCard;
 
 SmallProductCard.propTypes = {
   product: PropTypes.shape({
@@ -111,6 +132,12 @@ SmallProductCard.propTypes = {
     images: PropTypes.arrayOf(PropTypes.string),
     store_profiles: PropTypes.shape({
       state: PropTypes.string,
+    }),
+    active_discount: PropTypes.shape({
+      final_price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      original_price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      discount_type: PropTypes.string,
+      discount_value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     }),
   }).isRequired,
   badge: PropTypes.oneOf(["SALE", "NEW", "HOT"]),

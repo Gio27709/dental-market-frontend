@@ -17,7 +17,6 @@ import PropTypes from "prop-types";
 export default function LocationModal({ isOpen, onClose }) {
   const {
     buyerState,
-    isDetecting,
     detectionError,
     detectedState,
     detectLocation,

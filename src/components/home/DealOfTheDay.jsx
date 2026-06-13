@@ -8,21 +8,28 @@ import useHomeSections from "../../hooks/useHomeSections";
    ──────────────────────────────────────────── */
 function DealCard({ product, badge }) {
   const imageUrl = typeof product?.images?.[0] === 'string' ? product.images[0] : product?.images?.[0]?.url || product?.image || null;
-  const price = product?.price ?? 0;
+  
+  const discount = product?.active_discount;
+  const price = discount ? (discount.final_price ?? 0) : (product?.price ?? 0);
+  const originalPrice = discount ? (discount.original_price ?? 0) : null;
   const name = product?.name || "Producto";
+
+  const discountBadgeText = discount 
+    ? (discount.discount_type === "percentage" ? `-${discount.discount_value}%` : `-$${discount.discount_value}`)
+    : null;
 
   // Simular rating
   const rating = Math.floor(Math.random() * 2) + 3; // 3-4
 
   return (
     <Link
-      to={`/producto/${product?._id || product?.id || ""}`}
+      to={`/product/${product?.id || product?._id || ""}`}
       className="group bg-white rounded-2xl border border-gray-100 hover:border-purple-200 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 p-4 flex flex-col relative overflow-hidden"
     >
       {/* Badge Premium */}
-      {badge && (
+      {(discountBadgeText || badge) && (
         <span className="absolute top-3 right-3 z-10 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md uppercase tracking-wider">
-          {badge}
+          {discountBadgeText || badge}
         </span>
       )}
 
@@ -62,9 +69,16 @@ function DealCard({ product, badge }) {
 
       {/* Precio y Acción */}
       <div className="flex items-center justify-between">
-        <p className="text-lg font-extrabold text-gray-900 group-hover:text-purple-800 transition-colors">
-          ${price.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-        </p>
+        <div className="flex flex-col">
+          <p className="text-lg font-extrabold text-gray-900 group-hover:text-purple-800 transition-colors">
+            ${price.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          </p>
+          {originalPrice > 0 && (
+            <p className="text-xs text-gray-400 line-through">
+              ${originalPrice.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+            </p>
+          )}
+        </div>
         <div className="w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
           <span className="material-symbols-outlined text-sm font-bold">add_shopping_cart</span>
         </div>

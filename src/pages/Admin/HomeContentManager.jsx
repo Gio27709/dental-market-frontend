@@ -242,6 +242,27 @@ export default function HomeContentManager() {
               <Field label="Título Resaltado" value={d.heading_highlight} onChange={v => update({...d, heading_highlight: v})} placeholder="Vanguardia" />
               <Field label="Descripción" value={d.description} onChange={v => update({...d, description: v})} type="textarea" />
               <ImageField label="Imagen de Fondo" value={d.background_image} onChange={v => update({...d, background_image: v})} />
+              
+              <div className="mt-4 p-4 bg-purple-50 border border-purple-100 rounded-xl space-y-2 text-xs">
+                <div className="flex items-center gap-2 font-bold text-[#6b1e96]">
+                  <span className="material-symbols-outlined text-base font-bold">info</span>
+                  Especificaciones Recomendadas de Imagen:
+                </div>
+                <p className="leading-relaxed text-gray-700">
+                  Para asegurar que el banner de la página de inicio se vea impecable en todas las pantallas (incluyendo dispositivos móviles y pantallas de alta densidad):
+                </p>
+                <ul className="list-disc list-inside space-y-1.5 text-gray-600 pl-1">
+                  <li>
+                    <strong>Resolución óptima:</strong> <code className="bg-purple-100/80 text-[#6b1e96] px-1.5 py-0.5 rounded font-mono text-[10px]">2400 x 600 px</code> (Relación de aspecto 4:1). Mínimo recomendado: <code className="bg-purple-100/80 text-[#6b1e96] px-1.5 py-0.5 rounded font-mono text-[10px]">1200 x 300 px</code>.
+                  </li>
+                  <li>
+                    <strong>Composición visual:</strong> Coloca el producto, equipo o punto focal en el <strong>lado derecho</strong>. La mitad izquierda debe permanecer limpia o con fondos oscuros/neutros para mantener legible el texto blanco superpuesto.
+                  </li>
+                  <li>
+                    <strong>Ajuste dinámico:</strong> La imagen utiliza el comportamiento <code className="bg-purple-100/80 text-[#6b1e96] px-1.5 py-0.5 rounded font-mono text-[10px]">cover</code>, por lo que se adaptará y recortará de forma inteligente por los bordes según la pantalla.
+                  </li>
+                </ul>
+              </div>
             </div>
           </SectionBox>
           <SectionBox title="Botones">
@@ -272,6 +293,10 @@ export default function HomeContentManager() {
                     <Field label="URL Link" value={card.link_url} onChange={v => { const arr = [...cards]; arr[i] = {...arr[i], link_url: v}; update({...d, promo_cards: arr}); }} />
                   </div>
                   <ImageField label="Imagen" value={card.image_url} onChange={v => { const arr = [...cards]; arr[i] = {...arr[i], image_url: v}; update({...d, promo_cards: arr}); }} />
+                  <p className="text-[10px] text-purple-700 mt-1.5 flex items-center gap-1 font-medium bg-purple-50/60 p-2 rounded-lg border border-purple-100/50">
+                    <span className="material-symbols-outlined text-[13px] font-bold">info</span>
+                    <span>Recomendado: Imagen cuadrada (1:1), mínimo 160 x 160 px, con fondo blanco o transparente.</span>
+                  </p>
                 </div>
               ))}
             </div>
@@ -314,16 +339,53 @@ export default function HomeContentManager() {
       return (
         <div className="p-4 overflow-y-auto flex-1 space-y-4">
           <Field label="Título de la Sección" value={d.heading} onChange={v => update({...d, heading: v})} />
+          
+          <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl space-y-2 text-xs">
+            <div className="flex items-center gap-2 font-bold text-[#6b1e96]">
+              <span className="material-symbols-outlined text-base font-bold">info</span>
+              Especificaciones Recomendadas para los Logos:
+            </div>
+            <p className="leading-relaxed text-gray-700">
+              Para garantizar que los logos se alineen perfectamente y se visualicen con total claridad y elegancia en el carrusel infinito del Home:
+            </p>
+            <ul className="list-disc list-inside space-y-1.5 text-gray-600 pl-1">
+              <li>
+                <strong>Formatos admitidos:</strong> Imagen <code className="bg-purple-100/80 text-[#6b1e96] px-1.5 py-0.5 rounded font-mono text-[10px]">PNG</code> o <code className="bg-purple-100/80 text-[#6b1e96] px-1.5 py-0.5 rounded font-mono text-[10px]">WebP</code>. Para URLs externas directas, también se admite <code className="bg-purple-100/80 text-[#6b1e96] px-1.5 py-0.5 rounded font-mono text-[10px]">SVG</code>.
+              </li>
+              <li>
+                <strong>Fondo Transparente:</strong> Es <strong>indispensable</strong> que el logo tenga fondo transparente. Evita imágenes con fondos de color sólido o recuadros blancos que rompan la estética limpia del carrusel.
+              </li>
+              <li>
+                <strong>Resolución recomendada:</strong> Altura óptima entre <code className="bg-purple-100/80 text-[#6b1e96] px-1.5 py-0.5 rounded font-mono text-[10px]">120px</code> y <code className="bg-purple-100/80 text-[#6b1e96] px-1.5 py-0.5 rounded font-mono text-[10px]">200px</code> (con ancho proporcional) para asegurar nitidez en pantallas de alta densidad (Retina). El carrusel escala dinámicamente los logos a una altura máxima de <code className="bg-purple-100/80 text-[#6b1e96] px-1.5 py-0.5 rounded font-mono text-[10px]">56px</code>.
+              </li>
+              <li>
+                <strong>Márgenes y Recorte:</strong> Recorta todo el espacio transparente innecesario alrededor del logo. Si el archivo tiene márgenes vacíos grandes, el logo se renderizará extremadamente pequeño y se verá desalineado.
+              </li>
+            </ul>
+          </div>
+
           <div className="flex justify-between items-center">
             <h3 className="text-sm font-bold text-gray-700">Marcas ({brands.length})</h3>
             <AddButton onClick={() => update({...d, brands: [...brands, {name:'', img:''}]})} text="Añadir Marca" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {brands.map((b, i) => (
-              <div key={i} className="flex gap-2 items-end bg-gray-50 p-2 rounded border border-gray-200">
-                <div className="flex-1"><Field label="Nombre" value={b.name} onChange={v => { const arr = [...brands]; arr[i] = {...arr[i], name: v}; update({...d, brands: arr}); }} /></div>
-                <div className="flex-1"><ImageField label="Logo URL" value={b.img} onChange={v => { const arr = [...brands]; arr[i] = {...arr[i], img: v}; update({...d, brands: arr}); }} /></div>
-                <RemoveButton onClick={() => { const arr = [...brands]; arr.splice(i, 1); update({...d, brands: arr}); }} />
+              <div key={i} className="bg-gray-50 p-3 rounded-lg border border-gray-200 space-y-2">
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <Field label="Nombre" value={b.name} onChange={v => { const arr = [...brands]; arr[i] = {...arr[i], name: v}; update({...d, brands: arr}); }} />
+                  </div>
+                  <div className="flex-1">
+                    <ImageField label="Logo URL" value={b.img} onChange={v => { const arr = [...brands]; arr[i] = {...arr[i], img: v}; update({...d, brands: arr}); }} />
+                  </div>
+                  <RemoveButton onClick={() => { const arr = [...brands]; arr.splice(i, 1); update({...d, brands: arr}); }} />
+                </div>
+                {b.img && (
+                  <p className="text-[10px] text-gray-500 flex items-center gap-1 font-medium bg-white/60 p-1.5 rounded border border-gray-100">
+                    <span className="material-symbols-outlined text-[13px] text-[#6b1e96] font-bold">info</span>
+                    <span>Asegúrate de que este logo tenga fondo transparente y las dimensiones optimizadas.</span>
+                  </p>
+                )}
               </div>
             ))}
           </div>

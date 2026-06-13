@@ -400,6 +400,156 @@ export default function StoreDashboard() {
         </div>
       )}
 
+      {/* ── Sección de Descuentos y Promociones (BI) ── */}
+      {analytics && analytics.discounts && !loading && (
+        <div 
+          className="rounded-2xl p-6 border transition-all duration-300"
+          style={{
+            background: "linear-gradient(135deg, rgba(26,10,46,0.02) 0%, rgba(107,30,150,0.04) 100%)",
+            borderColor: "rgba(107,30,150,0.08)",
+            boxShadow: "0 10px 30px -10px rgba(107,30,150,0.05)",
+          }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-xl shadow-sm">🏷️</div>
+              <div>
+                <h3 className="text-sm font-bold text-purple-950 uppercase tracking-wider">Rendimiento de Descuentos</h3>
+                <p className="text-[11px] text-gray-400">Impacto en ventas, ahorro otorgado a clientes y efectividad de campañas activas</p>
+              </div>
+            </div>
+            
+            {analytics.discounts.discountedOrdersCount > 0 && (
+              <div className="text-xs bg-[#c3ff00]/10 border border-[#c3ff00]/30 text-purple-950 px-3 py-1.5 rounded-xl font-semibold self-start sm:self-auto">
+                🎯 {Math.round((analytics.discounts.discountedOrdersCount / (analytics.kpis.totalOrders || 1)) * 100)}% de tus órdenes usaron descuentos
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left side: Grid of KPI Metrics */}
+            <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Ahorro Otorgado */}
+              <div className="bg-white rounded-xl p-5 border border-gray-100/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Ahorro Otorgado</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-extrabold text-gray-800">${(analytics.discounts.totalSavings || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    {analytics.discounts.trends?.savings !== 0 && (
+                      <span className={`text-[10px] font-bold ${analytics.discounts.trends?.savings > 0 ? "text-emerald-600" : "text-red-500"}`}>
+                        {analytics.discounts.trends?.savings > 0 ? "▲" : "▼"} {Math.abs(analytics.discounts.trends?.savings)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-3 leading-relaxed">Monto total descontado a los compradores en este periodo.</p>
+              </div>
+
+              {/* Ventas con Descuento */}
+              <div className="bg-white rounded-xl p-5 border border-gray-100/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Ventas con Descuento</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-extrabold text-gray-800">${(analytics.discounts.totalDiscountedRevenue || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    {analytics.discounts.trends?.revenue !== 0 && (
+                      <span className={`text-[10px] font-bold ${analytics.discounts.trends?.revenue > 0 ? "text-emerald-600" : "text-red-500"}`}>
+                        {analytics.discounts.trends?.revenue > 0 ? "▲" : "▼"} {Math.abs(analytics.discounts.trends?.revenue)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-3 leading-relaxed">Ventas netas originadas de productos con descuento aplicado.</p>
+              </div>
+
+              {/* Órdenes con Descuento */}
+              <div className="bg-white rounded-xl p-5 border border-gray-100/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Órdenes Afectadas</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-extrabold text-gray-800">{analytics.discounts.discountedOrdersCount || 0}</span>
+                    {analytics.discounts.trends?.orders !== 0 && (
+                      <span className={`text-[10px] font-bold ${analytics.discounts.trends?.orders > 0 ? "text-emerald-600" : "text-red-500"}`}>
+                        {analytics.discounts.trends?.orders > 0 ? "▲" : "▼"} {Math.abs(analytics.discounts.trends?.orders)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-3 leading-relaxed">Cantidad de pedidos únicos que incluyeron al menos un descuento.</p>
+              </div>
+            </div>
+
+            {/* Right side: Top Discounts Ranking */}
+            <div className="bg-white border border-gray-100/80 rounded-xl p-5 shadow-sm">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-3">Campañas más Efectivas</span>
+              {analytics.discounts.topDiscounts && analytics.discounts.topDiscounts.length > 0 ? (
+                <div className="space-y-3.5">
+                  {analytics.discounts.topDiscounts.map((disc, idx) => {
+                    const maxUses = analytics.discounts.topDiscounts[0]?.uses || 1;
+                    const pctOfMax = Math.round((disc.uses / maxUses) * 100);
+                    
+                    return (
+                      <div key={disc.id || idx} className="space-y-1">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-semibold text-gray-800 truncate max-w-[140px]" title={disc.name}>{disc.name}</span>
+                          <span className="text-gray-400 text-[10px]">{disc.uses} uds · <strong className="text-purple-950 font-bold">${disc.savings.toLocaleString("en-US")}</strong></span>
+                        </div>
+                        <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full rounded-full transition-all duration-500" 
+                            style={{ 
+                              width: `${pctOfMax}%`, 
+                              background: "linear-gradient(90deg, #6b1e96 0%, #a855f7 100%)" 
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : analytics.discounts.activeCampaigns && analytics.discounts.activeCampaigns.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg p-2 leading-relaxed font-semibold">
+                    Tienes campañas activas pero sin ventas registradas en este periodo.
+                  </div>
+                  <div className="space-y-2 mt-2">
+                    {analytics.discounts.activeCampaigns.map((disc, idx) => (
+                      <div key={disc.id || idx} className="flex justify-between items-center text-xs p-2.5 bg-slate-50/50 rounded-xl border border-slate-100">
+                        <span className="font-bold text-gray-700 truncate max-w-[130px]" title={disc.name}>{disc.name}</span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <span className="px-2 py-0.5 text-[10px] font-black bg-[#6b1e96]/10 text-[#6b1e96] rounded-md">
+                            {disc.discount_type === "percentage" ? `-${disc.discount_value}%` : `-$${disc.discount_value}`}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-bold bg-slate-100 px-1.5 py-0.5 rounded-md">0 usos</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <Link to="/store/discounts" className="block text-[11px] text-[#6b1e96] hover:text-[#531575] underline mt-3 font-bold text-center">
+                    Gestionar Descuentos
+                  </Link>
+                </div>
+              ) : analytics.discounts.hasExistingCampaigns ? (
+                <div className="flex flex-col items-center justify-center py-6 text-center">
+                  <span className="text-2xl mb-1">🏷️</span>
+                  <p className="text-xs text-gray-400 font-semibold">Sin campañas activas en este periodo</p>
+                  <Link to="/store/discounts" className="text-[11px] text-[#6b1e96] hover:text-[#531575] underline mt-2 font-bold">
+                    Activar o crear descuentos
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-6 text-center">
+                  <span className="text-2xl mb-1">🏷️</span>
+                  <p className="text-xs text-gray-400 font-semibold">Sin campañas de descuento en este periodo</p>
+                  <Link to="/store/discounts" className="text-[11px] text-purple-600 hover:text-purple-800 underline mt-2 font-bold">
+                    Crear mi primer descuento
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Sales Chart + Top Products (2-column layout) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <div className="lg:col-span-3">

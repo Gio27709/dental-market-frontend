@@ -80,7 +80,7 @@ export default function OrderItemDetail({ item }) {
           <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#727785" }}>
             Cant: {item.quantity} × {formatCurrencyUSD(item.unit_price)}
           </p>
-          {item.delivery_status === "shipped" ? (
+          {["shipped", "picked_up", "arrived"].includes(item.delivery_status) ? (
             <ShippedBadge size="sm" label={statusInfo.label} />
           ) : (
             <span
@@ -89,6 +89,12 @@ export default function OrderItemDetail({ item }) {
             >
               <span className="w-1 h-1 rounded-full" style={{ backgroundColor: badgeStyle.text }}></span>
               {statusInfo.label}
+            </span>
+          )}
+          {item.delivery_type === "local_delivery" && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-purple-50 text-[#6b1e96] border border-purple-100/50">
+              <span className="material-symbols-outlined text-[10px] align-middle">two_wheeler</span>
+              Repartidor Local
             </span>
           )}
         </div>
@@ -111,6 +117,7 @@ OrderItemDetail.propTypes = {
     quantity: PropTypes.number,
     unit_price: PropTypes.number,
     delivery_status: PropTypes.string,
+    delivery_type: PropTypes.string,
     products: PropTypes.object,
     product_variations: PropTypes.object,
     store_profiles: PropTypes.object,

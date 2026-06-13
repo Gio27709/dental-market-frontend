@@ -5,6 +5,7 @@ import {
   useEffect,
   useContext,
   useCallback,
+  useMemo,
 } from "react";
 import PropTypes from "prop-types";
 import api, { getProducts, getTrendingAPI } from "../services/api";
@@ -27,7 +28,7 @@ export const ProductProvider = ({ children }) => {
   });
   const [trendingProductIds, setTrendingProductIds] = useState(new Set());
 
-  const fetchProductsAndSettings = async (forceRefresh = false) => {
+  const fetchProductsAndSettings = useCallback(async (forceRefresh = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -63,7 +64,7 @@ export const ProductProvider = ({ children }) => {
       // Fetch concurrently for performance
       // Phase 3: Pass buyer_state to trending API for geo-boosted trending
       const [productsRes, settingsRes, trendingRes] = await Promise.all([
-        getProducts(buyerState),
+        getProducts({ buyer_state: buyerState, limit: 20 }),
         api.get("/admin/settings").catch(() => ({ data: { data: {} } })), // Fallback if settings fail
         getTrendingAPI({ prod_limit: 8, buyer_state: buyerState }).catch(() => ({ data: { data: { trending_products: [] } } }))
       ]);
@@ -118,7 +119,7 @@ export const ProductProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [bcvRate]);
 
   const fetchProductById = useCallback(async (id) => {
     // NOTE: Removed global setLoading() here to prevent infinite React render loops
@@ -221,22 +222,26 @@ export const ProductProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buyerState]);
 
+  const refreshProducts = useCallback(() => {
+    fetchProductsAndSettings(true);
+  }, [fetchProductsAndSettings]);
+
+  const contextValue = useMemo(() => ({
+    products: filteredProducts, // Always return the filtered view
+    allProducts: products, // Access to raw products if needed
+    loading,
+    error,
+    bcvRate,
+    trendingProductIds,
+    fetchProducts: fetchProductsAndSettings,
+    refreshProducts,
+    fetchProductById,
+    fetchSimilarProducts,
+    applyFilters,
+  }), [filteredProducts, products, loading, error, bcvRate, trendingProductIds, fetchProductsAndSettings, refreshProducts, fetchProductById, fetchSimilarProducts, applyFilters]);
+
   return (
-    <ProductContext.Provider
-      value={{
-        products: filteredProducts, // Always return the filtered view
-        allProducts: products, // Access to raw products if needed
-        loading,
-        error,
-        bcvRate,
-        trendingProductIds,
-        fetchProducts: fetchProductsAndSettings,
-        refreshProducts: () => fetchProductsAndSettings(true), // Force refresh bypassing cache
-        fetchProductById,
-        fetchSimilarProducts,
-        applyFilters,
-      }}
-    >
+    <ProductContext.Provider value={contextValue}>
       {children}
     </ProductContext.Provider>
   );

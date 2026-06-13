@@ -288,12 +288,35 @@ export default function ProductDetail() {
             )}
             
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-4">
-              <PriceDisplay amountUSD={product.price} priceClassName="text-[28px] font-bold text-[#2563eb]" hideSwitcher={true} />
+              {product.active_discount ? (
+                <>
+                  <PriceDisplay amountUSD={product.active_discount.final_price} priceClassName="text-[28px] font-bold text-[#2563eb]" hideSwitcher={true} />
+                  <span className="text-lg text-gray-300 line-through decoration-gray-300 font-medium ml-1">
+                    ${Number(product.active_discount.original_price).toFixed(2)}
+                  </span>
+                  <span className="px-2.5 py-1 text-[11px] font-black uppercase tracking-wide bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-lg flex items-center gap-1">
+                    <span className="material-symbols-outlined" style={{ fontSize: "13px" }}>local_offer</span>
+                    {product.active_discount.discount_type === "percentage"
+                      ? `-${product.active_discount.discount_value}%`
+                      : `-$${product.active_discount.discount_value}`}
+                  </span>
+                  {product.active_discount.ends_at && (
+                    <span className="text-[10px] font-bold text-red-500 uppercase tracking-wide flex items-center gap-0.5 ml-1">
+                      <span className="material-symbols-outlined" style={{ fontSize: "12px" }}>timer</span>
+                      Oferta limitada
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <PriceDisplay amountUSD={product.price} priceClassName="text-[28px] font-bold text-[#2563eb]" hideSwitcher={true} />
               
-              {product.compare_at_price > product.price && (
-                <span className="text-lg text-gray-300 line-through decoration-gray-300 font-medium ml-1">
-                  ${product.compare_at_price.toFixed(2)}
-                </span>
+                  {Number(product.compare_at_price) > Number(product.price) && (
+                    <span className="text-lg text-gray-300 line-through decoration-gray-300 font-medium ml-1">
+                      ${Number(product.compare_at_price).toFixed(2)}
+                    </span>
+                  )}
+                </>
               )}
               
               <span className="text-gray-300 hidden sm:inline px-1">|</span>

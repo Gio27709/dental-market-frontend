@@ -1,6 +1,8 @@
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
 import { formatCurrencyVES, formatCurrencyUSD } from "../../utils/formatters";
+import api from "../../services/api";
+import toast from "react-hot-toast";
 
 // Parse variation display name from the variation object
 const getVariationDisplayName = (variation) => {
@@ -23,7 +25,60 @@ const getVariationDisplayName = (variation) => {
   }
 };
 
-export default function CheckoutSummary({ cartItems, total_usd, total_ves, deliveryType, buyerFeePercentage = 0 }) {
+export default function CheckoutSummary({ cartItems, total_usd, total_ves, deliveryType, buyerFeePercentage = 0, onCouponApply }) {
+  const [couponCodeInput, setCouponCodeInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState("");
+  const [couponPercentage, setCouponPercentage] = useState(0);
+  const [activeNewsletterPercent, setActiveNewsletterPercent] = useState(10);
+
+  useEffect(() => {
+    let isMounted = true;
+    api.get("/admin/settings")
+      .then((res) => {
+        if (isMounted && res.data?.success) {
+          const discountVal = res.data.data?.newsletter_discount;
+          if (discountVal?.percentage !== undefined) {
+            setActiveNewsletterPercent(Number(discountVal.percentage));
+          }
+        }
+      })
+      .catch((err) => console.error("Error al cargar descuento de newsletter en CheckoutSummary:", err));
+    return () => { isMounted = false; };
+  }, []);
+
+  const handleApplyCoupon = (e) => {
+    e.preventDefault();
+    const code = couponCodeInput.trim().toUpperCase();
+    const expectedCode = `DENTIX${activeNewsletterPercent}`;
+    if (code === expectedCode) {
+      setAppliedCoupon(code);
+      setCouponPercentage(activeNewsletterPercent);
+      if (onCouponApply) onCouponApply(code);
+      toast.success("¡Cupón del boletín aplicado correctamente!");
+    } else {
+      toast.error("Código de cupón no válido o expirado.");
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon("");
+    setCouponPercentage(0);
+    setCouponCodeInput("");
+    if (onCouponApply) onCouponApply("");
+    toast.success("Cupón removido.");
+  };
+
+  const couponDiscountAmountUsd = useMemo(() => {
+    if (couponPercentage <= 0 || !cartItems || cartItems.length === 0) return 0;
+    let maxPrice = -1;
+    for (const item of cartItems) {
+      if (item.price_usd > maxPrice) {
+        maxPrice = item.price_usd;
+      }
+    }
+    return maxPrice > 0 ? maxPrice * (couponPercentage / 100) : 0;
+  }, [cartItems, couponPercentage]);
+
   // Group items by store
   const storeGroups = useMemo(() => {
     const groups = {};
@@ -57,11 +112,14 @@ export default function CheckoutSummary({ cartItems, total_usd, total_ves, deliv
     return Object.values(feeByStore).reduce((acc, fee) => acc + fee, 0);
   })();
 
+  // Subtotal after coupon discount
+  const subtotalAfterCoupon = Math.max(0, total_usd - couponDiscountAmountUsd);
+
   // Buyer fee calculated on product subtotal ONLY (not shipping)
   const buyerFeeRate = parseFloat(buyerFeePercentage) || 0;
-  const buyerFeeAmount = (total_usd * buyerFeeRate) / 100;
+  const buyerFeeAmount = (subtotalAfterCoupon * buyerFeeRate) / 100;
 
-  const finalUsd = total_usd + deliveryFee + buyerFeeAmount;
+  const finalUsd = subtotalAfterCoupon + deliveryFee + buyerFeeAmount;
   // Use implied exchange rate to get updated VES sum
   const rate = total_usd > 0 ? (total_ves / total_usd) : 0;
   const finalVes = total_usd > 0 ? (finalUsd * rate) : 0;
@@ -174,12 +232,87 @@ export default function CheckoutSummary({ cartItems, total_usd, total_ves, deliv
         </div>
       )}
 
+      {/* Coupon Application Block */}
+      <div className="mb-6 pt-5 border-t border-slate-100/80">
+        <form onSubmit={handleApplyCoupon} className="flex gap-2">
+          <input
+            type="text"
+            placeholder="¿Tienes un cupón?"
+            value={couponCodeInput}
+            onChange={(e) => setCouponCodeInput(e.target.value)}
+            disabled={!!appliedCoupon}
+            className="flex-1 px-3.5 py-2 text-xs text-gray-900 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-[#6b1e96] focus:ring-1 focus:ring-[#6b1e96]/30 transition-all uppercase placeholder-slate-400 disabled:bg-slate-100 disabled:text-slate-500 font-semibold"
+          />
+          {appliedCoupon ? (
+            <button
+              type="button"
+              onClick={handleRemoveCoupon}
+              className="bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-600 px-4.5 rounded-xl text-xs font-bold transition-all border border-rose-200/50"
+            >
+              Quitar
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!couponCodeInput.trim()}
+              className={`px-4.5 rounded-xl text-xs font-bold transition-all border ${
+                couponCodeInput.trim()
+                  ? "bg-[#6b1e96] hover:bg-[#531575] active:scale-95 text-white border-transparent"
+                  : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
+              }`}
+            >
+              Aplicar
+            </button>
+          )}
+        </form>
+        {appliedCoupon && (
+          <p className="text-[10px] text-[#6b1e96] font-extrabold uppercase tracking-wide mt-2 flex items-center gap-1 animate-fade-in-up">
+            <span className="material-symbols-outlined text-[13px] font-black">check_circle</span>
+            Cupón del {couponPercentage}% aplicado a tu producto más caro.
+          </p>
+        )}
+      </div>
+
       {/* Costs Breakdown */}
       <div className="space-y-3.5 mb-6 pt-5 border-t border-slate-100/80">
         <div className="flex justify-between text-xs font-bold text-slate-500">
           <span>Subtotal</span>
           <span className="text-slate-800">{formatCurrencyUSD(total_usd)}</span>
         </div>
+
+        {/* Coupon Discount Row */}
+        {couponDiscountAmountUsd > 0 && (
+          <div className="flex justify-between text-xs font-bold">
+            <span className="text-[#6b1e96] flex items-center gap-1">
+              <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>confirmation_number</span>
+              Cupón ({appliedCoupon})
+            </span>
+            <span className="text-[#6b1e96] font-extrabold">-{formatCurrencyUSD(couponDiscountAmountUsd)}</span>
+          </div>
+        )}
+
+        {/* Discount Savings */}
+        {(() => {
+          const totalDiscount = cartItems.reduce((acc, item) => {
+            if (item.active_discount) {
+              return acc + (item.active_discount.discount_amount * item.quantity);
+            }
+            return acc;
+          }, 0);
+          if (totalDiscount > 0) {
+            return (
+              <div className="flex justify-between text-xs font-bold">
+                <span className="text-emerald-600 flex items-center gap-1">
+                  <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>sell</span>
+                  Descuentos aplicados
+                </span>
+                <span className="text-emerald-600">-{formatCurrencyUSD(totalDiscount)}</span>
+              </div>
+            );
+          }
+          return null;
+        })()}
+
         <div className="flex justify-between text-xs font-bold text-slate-500">
           <span>Envío</span>
           <span className={deliveryType === "local_delivery" || deliveryType === "mixed" ? "text-slate-800 font-black" : "bg-slate-100 px-2.5 py-1 rounded-lg text-slate-600 text-[10px] font-extrabold"}>
@@ -225,4 +358,5 @@ CheckoutSummary.propTypes = {
   total_ves: PropTypes.number.isRequired,
   deliveryType: PropTypes.string,
   buyerFeePercentage: PropTypes.number,
+  onCouponApply: PropTypes.func,
 };

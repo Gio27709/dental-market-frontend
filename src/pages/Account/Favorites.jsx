@@ -25,8 +25,18 @@ export default function Favorites() {
   const enrichedFavorites = favorites.map(fav => {
     const product = fav.products;
     if (!product) return null;
-    const fullProduct = allProducts.find(p => p.id === product.id) || product;
-    return { ...fav, product: fullProduct };
+    const fullProduct = allProducts.find(p => p.id === product.id);
+    if (fullProduct) {
+      return { ...fav, product: fullProduct };
+    }
+    // Fallback mapped for products from suspended/offline stores
+    const mappedProduct = {
+      ...product,
+      variations: product.product_variations || [],
+      store: product.store_profiles || null,
+      brand: product.brands || null,
+    };
+    return { ...fav, product: mappedProduct };
   }).filter(Boolean);
 
   const handleAddToCart = async (product) => {
@@ -153,7 +163,8 @@ export default function Favorites() {
           {enrichedFavorites.map(({ id, product }) => {
             const storeName = product.store?.business_name || product.store_profiles?.business_name || "Tienda";
             const hasImage = product.images && product.images.length > 0;
-            const price = product.price || 0;
+            const price = Number(product.price) || 0;
+            const isSuspended = product.store?.is_suspended || product.store_profiles?.is_suspended || false;
 
             return (
               <div
@@ -222,16 +233,30 @@ export default function Favorites() {
                 {/* Card Body */}
                 <div style={{ padding: "1.25rem 1.5rem", flex: 1, display: "flex", flexDirection: "column" }}>
                   {/* Store Name */}
-                  <span style={{
-                    fontSize: "0.6875rem",
-                    fontWeight: "600",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    color: "#6b1e96",
-                    marginBottom: "0.375rem",
-                  }}>
-                    {storeName}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
+                    <span style={{
+                      fontSize: "0.6875rem",
+                      fontWeight: "600",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      color: isSuspended ? "#ef4444" : "#6b1e96",
+                    }}>
+                      {storeName}
+                    </span>
+                    {isSuspended && (
+                      <span style={{
+                        fontSize: "0.625rem",
+                        fontWeight: "700",
+                        padding: "0.125rem 0.375rem",
+                        borderRadius: "0.25rem",
+                        background: "#fee2e2",
+                        color: "#ef4444",
+                        textTransform: "uppercase",
+                      }}>
+                        Suspendida
+                      </span>
+                    )}
+                  </div>
 
                   {/* Product Name */}
                   <Link
@@ -267,40 +292,46 @@ export default function Favorites() {
                   {/* Add to Cart Button */}
                   <button
                     onClick={() => handleAddToCart(product)}
-                    disabled={addingIds.has(product.id)}
+                    disabled={addingIds.has(product.id) || isSuspended}
                     style={{
                       width: "100%",
                       padding: "0.75rem",
                       borderRadius: "0.75rem",
                       border: "none",
-                      background: addingIds.has(product.id)
+                      background: isSuspended
+                        ? "#e2e8f0"
+                        : addingIds.has(product.id)
                         ? "linear-gradient(135deg, #531575 0%, #3a0055 100%)"
                         : "linear-gradient(135deg, #6b1e96 0%, #4f0077 100%)",
-                      color: "#ffffff",
+                      color: isSuspended ? "#94a3b8" : "#ffffff",
                       fontWeight: "700",
                       fontSize: "0.8125rem",
-                      cursor: addingIds.has(product.id) ? "wait" : "pointer",
+                      cursor: isSuspended ? "not-allowed" : addingIds.has(product.id) ? "wait" : "pointer",
                       transition: "all 0.2s ease",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       gap: "0.5rem",
-                      boxShadow: "0 2px 8px rgba(107, 30, 150, 0.2)",
+                      boxShadow: isSuspended ? "none" : "0 2px 8px rgba(107, 30, 150, 0.2)",
                       marginBottom: "0.5rem",
                       opacity: addingIds.has(product.id) ? 0.85 : 1,
                     }}
                     onMouseEnter={(e) => {
-                      if (!addingIds.has(product.id)) {
+                      if (!addingIds.has(product.id) && !isSuspended) {
                         e.currentTarget.style.boxShadow = "0 4px 16px rgba(107, 30, 150, 0.35)";
                         e.currentTarget.style.transform = "translateY(-1px)";
                       }
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(107, 30, 150, 0.2)";
-                      e.currentTarget.style.transform = "translateY(0)";
+                      if (!isSuspended) {
+                        e.currentTarget.style.boxShadow = "0 2px 8px rgba(107, 30, 150, 0.2)";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }
                     }}
                   >
-                    {addingIds.has(product.id) ? (
+                    {isSuspended ? (
+                      "Tienda Suspendida"
+                    ) : addingIds.has(product.id) ? (
                       <>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 1s linear infinite" }}>
                           <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25"></circle>

@@ -194,10 +194,10 @@ export default function StorePublicProfile() {
             <div className="flex-1">
               <p className="text-sm text-gray-500 font-medium">Reputación Global</p>
               <div className="flex items-center gap-2">
-                <p className="text-2xl font-bold text-[#6b1e96]">{stats.globalRating.toFixed(1)}</p>
+                <p className="text-2xl font-bold text-[#6b1e96]">{Number(stats.globalRating || 0).toFixed(1)}</p>
                 <div className="flex">
                   {[...Array(5)].map((_, i) => (
-                    <span key={i} className={`material-symbols-outlined text-[20px] ${i < Math.round(stats.globalRating) ? 'text-[#facc15]' : 'text-gray-200'}`}>star</span>
+                    <span key={i} className={`material-symbols-outlined text-[20px] ${i < Math.round(Number(stats.globalRating || 0)) ? 'text-[#facc15]' : 'text-gray-200'}`}>star</span>
                   ))}
                 </div>
               </div>

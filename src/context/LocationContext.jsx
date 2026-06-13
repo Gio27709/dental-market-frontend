@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useEffect, useCallback } from "react";
+import { createContext, useState, useEffect, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
 import { detectUserState } from "../services/geolocationService";
 
@@ -149,27 +149,29 @@ export function LocationProvider({ children }) {
     setIsDetecting(false);
   }, []);
 
+  const contextValue = useMemo(() => ({
+    // ─── Existentes (compatibilidad total) ───
+    buyerState,
+    setBuyerState,
+
+    // ─── Nuevos estados ───
+    isDetecting,
+    detectionError,
+    locationMethod,
+    detectedState,
+    shouldShowPrompt,
+
+    // ─── Nuevas funciones ───
+    detectLocation,
+    confirmDetectedLocation,
+    setManualLocation,
+    dismissPrompt,
+    clearLocation,
+    resetDetection,
+  }), [buyerState, isDetecting, detectionError, locationMethod, detectedState, shouldShowPrompt, detectLocation, confirmDetectedLocation, setManualLocation, dismissPrompt, clearLocation, resetDetection]);
+
   return (
-    <LocationContext.Provider value={{
-      // ─── Existentes (compatibilidad total) ───
-      buyerState,
-      setBuyerState,
-
-      // ─── Nuevos estados ───
-      isDetecting,
-      detectionError,
-      locationMethod,
-      detectedState,
-      shouldShowPrompt,
-
-      // ─── Nuevas funciones ───
-      detectLocation,
-      confirmDetectedLocation,
-      setManualLocation,
-      dismissPrompt,
-      clearLocation,
-      resetDetection,
-    }}>
+    <LocationContext.Provider value={contextValue}>
       {children}
     </LocationContext.Provider>
   );

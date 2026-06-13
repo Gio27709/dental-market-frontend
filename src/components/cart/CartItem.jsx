@@ -248,6 +248,7 @@ CartItem.propTypes = {
     quantity: PropTypes.number.isRequired,
     image: PropTypes.string,
     store_is_suspended: PropTypes.bool,
+    max_stock: PropTypes.number,
     variation: PropTypes.shape({
       attribute_name: PropTypes.string,
       attribute_value: PropTypes.string,

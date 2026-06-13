@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PropTypes from "prop-types";
 
 const FAILURE_REASONS = [
   { value: "no_one_home", label: "Nadie en el domicilio", icon: "door_front" },
@@ -20,7 +21,6 @@ export default function DeliveryFailedModal({ isOpen, onClose, onSubmit, loading
     onSubmit({ reason, notes: notes.trim() });
   };
 
-  const selectedReason = FAILURE_REASONS.find(r => r.value === reason);
   const isValid = reason && (reason !== "other" || notes.trim().length >= 5);
 
   return (
@@ -123,3 +123,10 @@ export default function DeliveryFailedModal({ isOpen, onClose, onSubmit, loading
     </div>
   );
 }
+
+DeliveryFailedModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func.isRequired,
+  loading: PropTypes.bool,
+};

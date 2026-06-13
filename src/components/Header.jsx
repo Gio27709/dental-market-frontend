@@ -8,9 +8,53 @@ import CartDrawer from "./cart/CartDrawer";
 import LocationModal from "./LocationModal";
 import NotificationBell from "./notifications/NotificationBell";
 import useHomeSections from "../hooks/useHomeSections";
+import { getCategoriesAPI } from "../services/api";
+
+// FALLBACKS: Static config used while useHomeSections() is loading or if API fails
+const HEADER_TOP_BAR = {
+  promo_text: "Envío gratis en pedidos profesionales de más de $500.",
+  promo_link_text: "Comprar esenciales de clínica",
+  promo_link_url: "/store-catalog"
+};
+const HEADER_BRAND_NAME = "Dentix";
+const HEADER_NAV_LINKS = [
+  { text: "Inicio", url: "/" },
+  { text: "Tienda", url: "/store-catalog" },
+  { text: "Ortodoncia", url: "#" },
+  { text: "Esterilización", url: "#" },
+  { text: "Contacto", url: "#" },
+  { text: "Afíliate con nosotros", url: "/afiliate" }
+];
+
+const FALLBACK_CATEGORIES = [
+  { id: "all", name: "Instrumentos", icon: "home_repair_service" },
+  { id: "all", name: "Materiales de Impresión", icon: "layers" },
+  { id: "all", name: "Ortodoncia", icon: "grid_view" },
+  { id: "all", name: "Equipos de Rayos X", icon: "radiology" },
+  { id: "all", name: "Desechables", icon: "delete" },
+  { id: "all", name: "Mobiliario Dental", icon: "chair" },
+  { id: "all", name: "Higiene Oral", icon: "mop" }
+];
+
+const getCategoryIcon = (name) => {
+  if (!name) return "category";
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes("resina") || lowerName.includes("composite")) return "science";
+  if (lowerName.includes("instrument") || lowerName.includes("herramienta") || lowerName.includes("quirurgico")) return "handyman";
+  if (lowerName.includes("anestesia")) return "vaccines";
+  if (lowerName.includes("descartable") || lowerName.includes("desechable")) return "medication";
+  if (lowerName.includes("ortodoncia")) return "airline_seat_flat_angled";
+  if (lowerName.includes("rayos") || lowerName.includes("x-ray") || lowerName.includes("radiologia")) return "radiology";
+  if (lowerName.includes("equipo") || lowerName.includes("mayor")) return "devices_other";
+  if (lowerName.includes("biomaterial") || lowerName.includes("hueso")) return "biotech";
+  if (lowerName.includes("mobiliario") || lowerName.includes("silla") || lowerName.includes("sillón")) return "chair";
+  if (lowerName.includes("higiene") || lowerName.includes("oral") || lowerName.includes("limpieza")) return "mop";
+  if (lowerName.includes("impresion") || lowerName.includes("impresión") || lowerName.includes("silicona")) return "layers";
+  return "category";
+};
 
 export default function Header() {
-  const { items, total_usd, toggleDrawer } = useCart();
+  const { itemCount, total_usd, toggleDrawer } = useCart();
   const { user } = useAuth();
   const { buyerState, shouldShowPrompt, locationMethod } = useLocationContext();
   const navigate = useNavigate();
@@ -23,6 +67,53 @@ export default function Header() {
   const [categoriesDrawerOpen, setCategoriesDrawerOpen] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [categoriesData, setCategoriesData] = useState([]);
+  const [expandedCategories, setExpandedCategories] = useState({});
+
+  // Cargar categorías con caché en localStorage
+  useEffect(() => {
+    const cached = localStorage.getItem("dental_categories_cache");
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+          setCategoriesData(parsed.data);
+          return;
+        }
+      } catch (err) {
+        console.warn("Error parsing cached categories in Header:", err);
+      }
+    }
+    getCategoriesAPI()
+      .then((res) => {
+        const data = res.data?.data || [];
+        setCategoriesData(data);
+        localStorage.setItem("dental_categories_cache", JSON.stringify({ data, timestamp: Date.now() }));
+      })
+      .catch((err) => {
+        console.error("Error loading categories in Header:", err);
+      });
+  }, []);
+
+  const categoriesList = categoriesData.length > 0 ? categoriesData : FALLBACK_CATEGORIES;
+
+  const toggleCategoryExpand = (id) => {
+    setExpandedCategories((prev) => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const handleCategoryClick = (id) => {
+    setCategoriesDrawerOpen(false);
+    setMobileMenuOpen(false);
+    if (id === "all") {
+      navigate("/store-catalog");
+    } else {
+      navigate(`/store-catalog?category=${id}`);
+    }
+  };
 
   // ─── Auto-abrir modal de ubicación en primera visita ───
   useEffect(() => {
@@ -43,28 +134,18 @@ export default function Header() {
   };
 
   const { sections } = useHomeSections();
-  const data = sections?.header || {};
+  const headerSection = sections?.header || {};
 
-  const fbTopBar = {
-    promo_text: "Envío gratis en pedidos profesionales de más de $500.",
-    promo_link_text: "Comprar esenciales de clínica",
-    promo_link_url: "/store-catalog"
+  const topBar = {
+    promo_text: headerSection.top_bar?.promo_text || HEADER_TOP_BAR.promo_text,
+    promo_link_text: headerSection.top_bar?.promo_link_text || HEADER_TOP_BAR.promo_link_text,
+    promo_link_url: headerSection.top_bar?.promo_link_url || HEADER_TOP_BAR.promo_link_url
   };
-  const topBar = data.top_bar || fbTopBar;
+  const brandName = headerSection.brand_name || HEADER_BRAND_NAME;
+  const navLinks = Array.isArray(headerSection.nav_links) ? headerSection.nav_links : HEADER_NAV_LINKS;
 
-  const brandName = data.brand_name || "Dentix";
 
-  const fbNavLinks = [
-    { text: "Inicio", url: "/" },
-    { text: "Tienda", url: "/store-catalog" },
-    { text: "Ortodoncia", url: "#" },
-    { text: "Esterilización", url: "#" },
-    { text: "Contacto", url: "#" },
-    { text: "Afíliate con nosotros", url: "/afiliate" }
-  ];
-  const navLinks = data.nav_links || fbNavLinks;
-
-  const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const cartCount = itemCount;
 
   // Helper para cerrar dropdowns de forma genérica
   useEffect(() => {
@@ -509,24 +590,84 @@ export default function Header() {
 
               {/* Divider + Categories */}
               <div className="mx-4 my-3 border-t border-gray-100" />
-              <p className="px-6 text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">Categorías</p>
-              <div className="px-3 space-y-0.5">
-                <Link to="#" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 hover:bg-gray-50 text-sm transition-colors">
-                  <span className="material-symbols-outlined text-gray-400" style={{fontSize: '18px'}}>home_repair_service</span>
-                  Instrumentos
-                </Link>
-                <Link to="#" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 hover:bg-gray-50 text-sm transition-colors">
-                  <span className="material-symbols-outlined text-gray-400" style={{fontSize: '18px'}}>layers</span>
-                  Materiales de Impresión
-                </Link>
-                <Link to="#" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 hover:bg-gray-50 text-sm transition-colors">
-                  <span className="material-symbols-outlined text-gray-400" style={{fontSize: '18px'}}>radiology</span>
-                  Equipos de Rayos X
-                </Link>
-                <Link to="#" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 hover:bg-gray-50 text-sm transition-colors">
-                  <span className="material-symbols-outlined text-gray-400" style={{fontSize: '18px'}}>delete</span>
-                  Desechables
-                </Link>
+              <p className="px-6 text-[10px] font-bold uppercase text-[#6b1e96] tracking-widest mb-2">Categorías</p>
+              
+              <div className="px-3 space-y-1.5">
+                {/* Opción de Ver todo el catálogo en móvil */}
+                <button
+                  onClick={() => handleCategoryClick("all")}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-700 hover:bg-purple-50 hover:text-[#6b1e96] font-bold text-sm text-left transition-colors border border-transparent hover:border-purple-100"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-slate-400" style={{ fontSize: '20px' }}>
+                      grid_view
+                    </span>
+                    <span>Ver todo el catálogo</span>
+                  </div>
+                </button>
+
+                {categoriesList.map((cat) => {
+                  const hasChildren = cat.children && cat.children.length > 0;
+                  const isExpanded = !!expandedCategories[cat.id];
+                  const iconName = cat.icon || getCategoryIcon(cat.name);
+
+                  return (
+                    <div key={cat.id} className="flex flex-col">
+                      {hasChildren ? (
+                        <button
+                          onClick={() => toggleCategoryExpand(cat.id)}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-700 font-semibold text-sm text-left transition-colors ${
+                            isExpanded ? 'bg-purple-50 text-[#6b1e96] font-bold' : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className={`material-symbols-outlined ${isExpanded ? 'text-[#6b1e96]' : 'text-slate-400'}`} style={{ fontSize: '20px' }}>
+                              {iconName}
+                            </span>
+                            <span>{cat.name}</span>
+                          </div>
+                          <span className={`material-symbols-outlined text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-90 text-[#6b1e96]' : ''}`} style={{ fontSize: '18px' }}>
+                            chevron_right
+                          </span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleCategoryClick(cat.id)}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 hover:bg-gray-50 text-sm font-semibold text-left transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-slate-400" style={{ fontSize: '20px' }}>
+                            {iconName}
+                          </span>
+                          <span>{cat.name}</span>
+                        </button>
+                      )}
+
+                      {hasChildren && isExpanded && (
+                        <div className="pl-5 pr-1 py-1 space-y-1 border-l-2 border-purple-100 ml-5 mt-1 animate-in fade-in duration-200">
+                          <button
+                            onClick={() => handleCategoryClick(cat.id)}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[#6b1e96] hover:bg-purple-50/40 text-xs font-bold text-left transition-colors"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#c3ff00] border border-[#6b1e96]"></span>
+                            <span>Ver todo en {cat.name}</span>
+                          </button>
+                          {cat.children.map((sub) => (
+                            <button
+                              key={sub.id}
+                              onClick={() => handleCategoryClick(sub.id)}
+                              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-slate-500 hover:bg-gray-50 text-xs font-medium text-left transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-slate-300" style={{ fontSize: '14px' }}>
+                                subdirectory_arrow_right
+                              </span>
+                              <span>{sub.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </nav>
 
@@ -574,58 +715,130 @@ export default function Header() {
         <div className="fixed inset-0 z-[200]">
           {/* Overlay */}
           <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
             onClick={() => setCategoriesDrawerOpen(false)}
           />
           {/* Drawer Panel */}
-          <div className="absolute left-0 top-0 h-full w-[280px] bg-white shadow-2xl flex flex-col animate-in slide-in-from-left duration-200">
+          <div className="absolute left-0 top-0 h-full w-[320px] bg-white shadow-2xl flex flex-col animate-in slide-in-from-left duration-200">
             {/* Drawer Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-[#6b1e96]">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-md bg-[#c3ff00] flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#531575]">
+            <div className="flex items-center justify-between px-5 py-5 border-b border-gray-100 bg-gradient-to-r from-[#531575] via-[#6b1e96] to-[#531575] relative overflow-hidden">
+              <div className="absolute -left-10 -top-10 w-24 h-24 bg-[#c3ff00]/10 rounded-full blur-xl"></div>
+              <div className="flex items-center gap-2.5 relative z-10">
+                <div className="w-8 h-8 rounded-lg bg-[#c3ff00] flex items-center justify-center shadow-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-[#531575]">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                   </svg>
                 </div>
-                <span className="text-lg font-bold tracking-widest text-white uppercase">{brandName}</span>
+                <div className="flex flex-col">
+                  <span className="text-lg font-extrabold tracking-widest text-white uppercase leading-none">{brandName}</span>
+                  <span className="text-[10px] text-purple-200 font-semibold tracking-wider mt-0.5">Categorías</span>
+                </div>
               </div>
-              <button onClick={() => setCategoriesDrawerOpen(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-white">
+              <button 
+                onClick={() => setCategoriesDrawerOpen(false)} 
+                className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors relative z-10 cursor-pointer"
+                aria-label="Cerrar menú"
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
             
-            {/* Contexto del Drawer (Minimalista) */}
-            <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
-              <Link to="#" onClick={() => setCategoriesDrawerOpen(false)} className="flex items-center gap-4 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors group">
-                <span className="material-symbols-outlined text-gray-500 group-hover:text-[#6b1e96]" style={{fontSize: '24px'}}>home_repair_service</span>
-                <span className="text-sm font-medium tracking-wide">Instrumentos</span>
-              </Link>
-              <Link to="#" onClick={() => setCategoriesDrawerOpen(false)} className="flex items-center gap-4 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors group">
-                <span className="material-symbols-outlined text-gray-500 group-hover:text-[#6b1e96]" style={{fontSize: '24px'}}>layers</span>
-                <span className="text-sm font-medium tracking-wide">Materiales de Impresión</span>
-              </Link>
-              <Link to="#" onClick={() => setCategoriesDrawerOpen(false)} className="flex items-center gap-4 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors group">
-                <span className="material-symbols-outlined text-gray-500 group-hover:text-[#6b1e96]" style={{fontSize: '24px'}}>grid_view</span>
-                <span className="text-sm font-medium tracking-wide">Ortodoncia</span>
-              </Link>
-              <Link to="#" onClick={() => setCategoriesDrawerOpen(false)} className="flex items-center gap-4 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors group">
-                <span className="material-symbols-outlined text-gray-500 group-hover:text-[#6b1e96]" style={{fontSize: '24px'}}>radiology</span>
-                <span className="text-sm font-medium tracking-wide">Equipos de Rayos X</span>
-              </Link>
-              <Link to="#" onClick={() => setCategoriesDrawerOpen(false)} className="flex items-center gap-4 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors group">
-                <span className="material-symbols-outlined text-gray-500 group-hover:text-[#6b1e96]" style={{fontSize: '24px'}}>delete</span>
-                <span className="text-sm font-medium tracking-wide">Desechables</span>
-              </Link>
-              <Link to="#" onClick={() => setCategoriesDrawerOpen(false)} className="flex items-center gap-4 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors group">
-                <span className="material-symbols-outlined text-gray-500 group-hover:text-[#6b1e96]" style={{fontSize: '24px'}}>chair</span>
-                <span className="text-sm font-medium tracking-wide">Mobiliario Dental</span>
-              </Link>
-              <Link to="#" onClick={() => setCategoriesDrawerOpen(false)} className="flex items-center gap-4 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors group">
-                <span className="material-symbols-outlined text-gray-500 group-hover:text-[#6b1e96]" style={{fontSize: '24px'}}>mop</span>
-                <span className="text-sm font-medium tracking-wide">Higiene Oral</span>
-              </Link>
+            {/* Contexto del Drawer */}
+            <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5" style={{ scrollbarWidth: "thin" }}>
+              {/* Opción de Ver Todo el Catálogo */}
+              <button
+                onClick={() => handleCategoryClick("all")}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-slate-700 hover:bg-purple-50 hover:text-[#6b1e96] font-bold text-sm transition-all duration-200 text-left border border-transparent hover:border-purple-100 group shadow-sm bg-slate-50/50"
+              >
+                <div className="flex items-center gap-3.5">
+                  <span className="material-symbols-outlined text-slate-400 group-hover:text-[#6b1e96] transition-colors" style={{ fontSize: '22px' }}>
+                    grid_view
+                  </span>
+                  <span>Ver todo el catálogo</span>
+                </div>
+                <span className="material-symbols-outlined text-slate-300 group-hover:text-[#6b1e96] transition-transform duration-200 group-hover:translate-x-1" style={{ fontSize: '18px' }}>
+                  arrow_forward
+                </span>
+              </button>
+
+              <div className="h-px bg-slate-100 my-2"></div>
+
+              {categoriesList.map((cat) => {
+                const hasChildren = cat.children && cat.children.length > 0;
+                const isExpanded = !!expandedCategories[cat.id];
+                const iconName = cat.icon || getCategoryIcon(cat.name);
+
+                return (
+                  <div key={cat.id} className="flex flex-col">
+                    {hasChildren ? (
+                      /* Category button with children (interactive expand/collapse) */
+                      <button
+                        onClick={() => toggleCategoryExpand(cat.id)}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-slate-700 font-semibold text-sm transition-all duration-200 text-left border ${
+                          isExpanded 
+                            ? 'bg-purple-50/70 text-[#6b1e96] border-purple-100/60 font-bold' 
+                            : 'border-transparent hover:bg-slate-50 hover:text-slate-900'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3.5">
+                          <span className={`material-symbols-outlined ${isExpanded ? 'text-[#6b1e96]' : 'text-slate-400'} transition-colors`} style={{ fontSize: '22px' }}>
+                            {iconName}
+                          </span>
+                          <span>{cat.name}</span>
+                        </div>
+                        <span 
+                          className={`material-symbols-outlined text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-90 text-[#6b1e96]' : ''}`} 
+                          style={{ fontSize: '20px' }}
+                        >
+                          chevron_right
+                        </span>
+                      </button>
+                    ) : (
+                      /* Category button without children (direct navigation) */
+                      <button
+                        onClick={() => handleCategoryClick(cat.id)}
+                        className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-semibold text-sm transition-all duration-200 text-left border border-transparent"
+                      >
+                        <div className="flex items-center gap-3.5">
+                          <span className="material-symbols-outlined text-slate-400" style={{ fontSize: '22px' }}>
+                            {iconName}
+                          </span>
+                          <span>{cat.name}</span>
+                        </div>
+                      </button>
+                    )}
+
+                    {/* Subcategories (Children) List with smooth height transition */}
+                    {hasChildren && isExpanded && (
+                      <div className="pl-6 pr-2 py-1.5 space-y-1 border-l-2 border-purple-100 ml-6 mt-1.5 mb-2 animate-in fade-in duration-200">
+                        {/* Option to view all under this category */}
+                        <button
+                          onClick={() => handleCategoryClick(cat.id)}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[#6b1e96]/80 hover:text-[#6b1e96] hover:bg-purple-50/40 text-xs font-bold text-left transition-colors"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#c3ff00] border border-[#6b1e96]"></span>
+                          <span>Ver todo en {cat.name}</span>
+                        </button>
+
+                        {cat.children.map((sub) => (
+                          <button
+                            key={sub.id}
+                            onClick={() => handleCategoryClick(sub.id)}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-slate-500 hover:text-[#6b1e96] hover:bg-purple-50/40 text-xs font-medium text-left transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-slate-300" style={{ fontSize: '14px' }}>
+                              subdirectory_arrow_right
+                            </span>
+                            <span>{sub.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </nav>
           </div>
         </div>

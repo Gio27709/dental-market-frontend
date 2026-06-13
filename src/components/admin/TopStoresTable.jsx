@@ -66,8 +66,8 @@ export default function TopStoresTable({ stores = [], loading = false, onStoreCl
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-gray-800 truncate group-hover:text-purple-700 transition-colors">{store.name}</p>
                     <div className="flex items-center gap-1">
-                      {store.rating > 0 && (
-                        <span className="text-[9px] text-yellow-500">★ {store.rating.toFixed(1)}</span>
+                      {Number(store.rating) > 0 && (
+                        <span className="text-[9px] text-yellow-500">★ {Number(store.rating).toFixed(1)}</span>
                       )}
                       {store.state && store.state !== "—" && (
                         <span className="text-[9px] text-gray-400">{store.state}</span>

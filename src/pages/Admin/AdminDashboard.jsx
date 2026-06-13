@@ -13,6 +13,7 @@ export default function AdminDashboard() {
     activeStores: '--',
     monthlyRevenue: '--',
     completedOrders: '--',
+    pendingTickets: '--',
   });
   const [loading, setLoading] = useState(true);
 
@@ -73,6 +74,17 @@ export default function AdminDashboard() {
       iconBg: 'rgba(255,255,255,0.2)',
       iconColor: '#ffffff',
       link: '/admin/product-moderation',
+    },
+    {
+      title: 'Tickets de Soporte',
+      value: loading ? '...' : stats.pendingTickets,
+      icon: (
+        <span className="material-symbols-outlined text-[24px]">support_agent</span>
+      ),
+      gradient: 'linear-gradient(135deg, #581c87 0%, #7c3aed 100%)',
+      iconBg: 'rgba(255,255,255,0.2)',
+      iconColor: '#ffffff',
+      link: '/admin/support',
     },
   ];
 
@@ -178,6 +190,15 @@ export default function AdminDashboard() {
       color: '#8b5cf6',
     },
     {
+      title: 'Soporte y Tickets',
+      description: 'Atención a usuarios y soporte',
+      path: '/admin/support',
+      icon: (
+        <span className="material-symbols-outlined text-[20px]">support_agent</span>
+      ),
+      color: '#7c3aed',
+    },
+    {
       title: 'Notificaciones',
       description: 'Enviar avisos a usuarios',
       path: '/admin/notifications',
@@ -268,7 +289,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Primary Stat Cards (Action KPIs) ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {primaryStatCards.map((card, index) => renderStatCard(card, index))}
       </div>
 

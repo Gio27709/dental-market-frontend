@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import { getAdminStatsAPI } from "../services/api";
 
 const AdminStatsContext = createContext();
@@ -17,6 +18,9 @@ export function AdminStatsProvider({ children }) {
     pendingProducts: 0,
     pendingStores: 0,
     pendingRiders: 0,
+    pendingTickets: 0,
+    pendingDiscounts: 0,
+    pendingPenalties: 0,
   });
   const [loading, setLoading] = useState(false);
 
@@ -45,6 +49,11 @@ export function AdminStatsProvider({ children }) {
   );
 }
 
+AdminStatsProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};
+
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAdminStats = () => {
   const context = useContext(AdminStatsContext);
   if (!context) {

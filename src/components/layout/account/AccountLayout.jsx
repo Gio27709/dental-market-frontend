@@ -28,9 +28,8 @@ export default function AccountLayout() {
     },
     {
       name: "Descargas",
-      path: "#",
+      path: "/account/downloads",
       icon: "download",
-      disabled: true,
     },
     {
       name: "Favoritos",
@@ -44,21 +43,23 @@ export default function AccountLayout() {
     },
     {
       name: "Direcciones",
-      path: "#",
+      path: "/account/addresses",
       icon: "location_on",
-      disabled: true,
     },
     {
       name: "Métodos de Pago",
-      path: "#",
+      path: "/account/payment-methods",
       icon: "credit_card",
-      disabled: true,
     },
     {
       name: "Reseñas",
-      path: "#",
+      path: "/account/reviews",
       icon: "star_rate",
-      disabled: true,
+    },
+    {
+      name: "Mis Publicaciones",
+      path: "/account/posts",
+      icon: "article",
     },
     {
       name: "Contraseña",
@@ -67,9 +68,8 @@ export default function AccountLayout() {
     },
     {
       name: "Soporte",
-      path: "#",
+      path: "/account/support",
       icon: "help",
-      disabled: true,
     },
   ];
 
@@ -243,30 +243,7 @@ export default function AccountLayout() {
                 </Link>
               ))}
 
-              {/* Separator before disabled items */}
-              <div className="pt-4 pb-1 mx-4 mt-2" style={{ borderTop: "1px dashed rgba(207,194,213,0.3)" }}>
-                <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#727785" }}>
-                  Próximamente
-                </span>
-              </div>
 
-              {/* Secondary Disabled Items */}
-              {menuItems.filter((item) => item.disabled).map((item) => (
-                <div
-                  key={item.name}
-                  className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-400 cursor-not-allowed select-none hover:bg-gray-50/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined" style={{ fontSize: "20px", color: "#d1d5db" }}>
-                      {item.icon}
-                    </span>
-                    {item.name}
-                  </div>
-                  <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: "#f3f4f6", color: "#9ca3af", border: "1px solid #e5e7eb" }}>
-                    Pronto
-                  </span>
-                </div>
-              ))}
 
               {/* Logout removed from here, now in header */}
             </nav>

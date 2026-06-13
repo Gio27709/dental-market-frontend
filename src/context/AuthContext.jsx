@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import PropTypes from "prop-types";
-import { createContext, useState, useEffect, useContext } from "react";
+import { createContext, useState, useEffect, useContext, useMemo, useCallback } from "react";
 import {
   supabase,
   signInWithGoogle,
@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (sessionUser) => {
+  const fetchProfile = useCallback(async (sessionUser) => {
     if (!sessionUser) {
       setUser(null);
       setLoading(false);
@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -85,53 +85,53 @@ export const AuthProvider = ({ children }) => {
       subscription.unsubscribe();
       clearTimeout(failsafe);
     };
+  }, [fetchProfile]);
+
+  const loginWithGoogle = useCallback(async () => {
+    return await signInWithGoogle();
   }, []);
 
-  const loginWithGoogle = async () => {
-    return await signInWithGoogle();
-  };
-
-  const login = async ({ email, password }) => {
+  const login = useCallback(async ({ email, password }) => {
     const { data, error } = await signInWithEmail(email, password);
     if (error) throw error;
     return data;
-  };
+  }, []);
 
-  const register = async ({ email, password, name, role }) => {
+  const register = useCallback(async ({ email, password, name, role }) => {
     const { data, error } = await signUpWithEmail(email, password, {
       full_name: name,
       role,
     });
     if (error) throw error;
     return data;
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await authSignOut();
-  };
+  }, []);
 
-  const resetPassword = async (email) => {
+  const resetPassword = useCallback(async (email) => {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/update-password`,
     });
     if (error) throw error;
     return data;
-  };
+  }, []);
 
-  const updatePassword = async (newPassword) => {
+  const updatePassword = useCallback(async (newPassword) => {
     const { data, error } = await supabase.auth.updateUser({
       password: newPassword,
     });
     if (error) throw error;
     return data;
-  };
+  }, []);
 
   /**
    * Force a JWT session refresh from Supabase.
    * This is needed after admin changes the user's role (e.g., store approval),
    * because app_metadata changes don't propagate to existing JWT tokens.
    */
-  const refreshSession = async () => {
+  const refreshSession = useCallback(async () => {
     try {
       const { data, error } = await supabase.auth.refreshSession();
       if (error) throw error;
@@ -144,12 +144,34 @@ export const AuthProvider = ({ children }) => {
       console.error("Error refreshing session:", err);
       return { success: false, error: err.message };
     }
-  };
+  }, [fetchProfile]);
+
+  const contextValue = useMemo(() => ({
+    user,
+    token,
+    loading,
+    login,
+    loginWithGoogle,
+    register,
+    logout,
+    resetPassword,
+    updatePassword,
+    refreshSession,
+  }), [
+    user,
+    token,
+    loading,
+    login,
+    loginWithGoogle,
+    register,
+    logout,
+    resetPassword,
+    updatePassword,
+    refreshSession,
+  ]);
 
   return (
-    <AuthContext.Provider
-      value={{ user, token, loading, login, loginWithGoogle, register, logout, resetPassword, updatePassword, refreshSession }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,8 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useEffect, useCallback, useRef } from "react";
+import { createContext, useState, useEffect, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
 import { useAuth } from "./AuthContext";
-import { supabase } from "../lib/supabaseClient";
+import { socket, connectSocket, disconnectSocket } from "../lib/socket";
 import {
   getNotificationsAPI,
   getUnreadCountAPI,
@@ -61,14 +61,17 @@ const NOTIFICATION_ICONS = {
   stock_restored_abandonment: "🔄",
   // Auto-confirm
   delivery_auto_confirmed: "⏰",
+  // Support events
+  support_message: "💬",
+  support_ticket_status: "📋",
+  new_support_ticket: "🎫",
 };
 
 export function NotificationProvider({ children }) {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
-  const channelRef = useRef(null);
 
   // Notification type → navigation URL
   const getNotificationUrl = useCallback((notification) => {
@@ -138,6 +141,12 @@ export function NotificationProvider({ children }) {
         return data.order_id ? `/account/orders/${data.order_id}` : "/account/orders";
       case "stock_restored_abandonment":
         return "/store/orders";
+      // Support events
+      case "support_message":
+      case "support_ticket_status":
+        return data.ticket_id ? `/account/support?ticketId=${data.ticket_id}` : "/account/support";
+      case "new_support_ticket":
+        return data.ticket_id ? `/admin/support?ticketId=${data.ticket_id}` : "/admin/support";
       default:
         return "/account/notifications";
     }
@@ -228,7 +237,16 @@ export function NotificationProvider({ children }) {
     }
   }, []);
 
-  // Subscribe to Supabase Realtime for new notifications
+  // Manage socket connection lifecycle reactively based on token
+  useEffect(() => {
+    if (token) {
+      connectSocket(token);
+    } else {
+      disconnectSocket();
+    }
+  }, [token]);
+
+  // Subscribe to Socket.io for new notifications
   useEffect(() => {
     if (!user) {
       // Cleanup on logout
@@ -240,51 +258,40 @@ export function NotificationProvider({ children }) {
     // Initial fetch
     fetchUnreadCount();
 
-    // Subscribe to real-time inserts
-    const channel = supabase
-      .channel(`notifications-${user.id}`)
-      .on(
-        "postgres_changes",
+    // Listen to notification events from socket
+    const handleNotification = (newNotif) => {
+      // Add to local state
+      setNotifications((prev) => {
+        // Prevent duplicates
+        if (prev.some((n) => n.id === newNotif.id)) return prev;
+        return [newNotif, ...prev];
+      });
+      setUnreadCount((prev) => prev + 1);
+      
+      // Show toast
+      const icon = NOTIFICATION_ICONS[newNotif.type] || "🔔";
+      toast(
+        `${icon} ${newNotif.title}`,
         {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const newNotif = payload.new;
-          // Add to local state
-          setNotifications((prev) => [newNotif, ...prev]);
-          setUnreadCount((prev) => prev + 1);
-          // Show toast
-          const icon = NOTIFICATION_ICONS[newNotif.type] || "🔔";
-          toast(
-            `${icon} ${newNotif.title}`,
-            {
-              duration: 4000,
-              style: {
-                background: "#1a1a2e",
-                color: "#ffffff",
-                borderLeft: "4px solid #c3ff00",
-                fontSize: "14px",
-              },
-            }
-          );
+          duration: 4000,
+          style: {
+            background: "#1a1a2e",
+            color: "#ffffff",
+            borderLeft: "4px solid #c3ff00",
+            fontSize: "14px",
+          },
         }
-      )
-      .subscribe();
+      );
+    };
 
-    channelRef.current = channel;
+    socket.on("notification", handleNotification);
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      socket.off("notification", handleNotification);
     };
   }, [user, fetchUnreadCount]);
 
-  const value = {
+  const value = useMemo(() => ({
     unreadCount,
     notifications,
     loading,
@@ -295,7 +302,7 @@ export function NotificationProvider({ children }) {
     removeNotification,
     getNotificationUrl,
     NOTIFICATION_ICONS,
-  };
+  }), [unreadCount, notifications, loading, fetchNotifications, fetchUnreadCount, markAsRead, markAllRead, removeNotification, getNotificationUrl]);
 
   return (
     <NotificationContext.Provider value={value}>

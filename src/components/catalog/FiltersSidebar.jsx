@@ -64,12 +64,12 @@ function FilterOption({ isSelected, onClick, label, count, indent = false }) {
   const hasProducts = count === undefined || count > 0;
   
   // Establecer estilos dinámicos del botón
-  let buttonClasses = `w-full flex items-center justify-between px-3 py-2 rounded-full text-left transition-all duration-200 mb-1 group ${
+  let buttonClasses = `w-full flex items-start justify-between px-3 py-2 rounded-xl text-left transition-all duration-200 mb-1 group ${
     indent ? 'pl-8' : ''
   }`;
   
-  let textClasses = 'text-[13px] truncate transition-colors duration-200';
-  let badgeClasses = 'text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 transition-colors duration-200';
+  let textClasses = 'text-[13px] break-words whitespace-normal leading-tight transition-colors duration-200 pr-1';
+  let badgeClasses = 'text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 transition-colors duration-200 mt-0.5';
 
   if (isSelected) {
     buttonClasses += ' bg-[#6b1e96]/10 opacity-100';
@@ -94,8 +94,8 @@ function FilterOption({ isSelected, onClick, label, count, indent = false }) {
       onClick={onClick}
       className={buttonClasses}
     >
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+      <div className="flex items-start gap-3 min-w-0">
+        <div className="w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5">
           {isSelected ? (
             <div className="w-5 h-5 rounded-full bg-[#6b1e96] flex items-center justify-center shadow-sm">
               <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={3.5} stroke="currentColor">
@@ -401,7 +401,7 @@ export default function FiltersSidebar({
                   key={cat.id}
                   isSelected={category === cat.id} 
                   onClick={() => { setCategory(cat.id); setCategorySearch(""); }} 
-                  label={cat.name} 
+                  label={cat.displayName || cat.name} 
                   count={count}
                   indent={!cat.isParent}
                 />
@@ -599,6 +599,7 @@ FiltersSidebar.propTypes = {
   categories: PropTypes.arrayOf(PropTypes.shape({
     id: PropTypes.string,
     name: PropTypes.string,
+    displayName: PropTypes.string,
     isParent: PropTypes.bool,
   })),
   productCountByState: PropTypes.object,

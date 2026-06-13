@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useEffect, useContext, useCallback } from "react";
+import { createContext, useState, useEffect, useContext, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
 import { getFavoritesAPI, addFavoriteAPI, removeFavoriteAPI } from "../services/api";
 import { useAuth } from "./AuthContext";
@@ -36,7 +36,7 @@ export const FavoriteProvider = ({ children }) => {
     fetchFavorites();
   }, [fetchFavorites]);
 
-  const toggleFavorite = async (productId) => {
+  const toggleFavorite = useCallback(async (productId) => {
     if (!user) return false;
     
     const isFav = favoriteIds.has(productId);
@@ -67,10 +67,14 @@ export const FavoriteProvider = ({ children }) => {
       fetchFavorites();
       return false;
     }
-  };
+  }, [user, favoriteIds, fetchFavorites]);
+
+  const contextValue = useMemo(() => ({
+    favorites, favoriteIds, loading, toggleFavorite, fetchFavorites
+  }), [favorites, favoriteIds, loading, toggleFavorite, fetchFavorites]);
 
   return (
-    <FavoriteContext.Provider value={{ favorites, favoriteIds, loading, toggleFavorite, fetchFavorites }}>
+    <FavoriteContext.Provider value={contextValue}>
       {children}
     </FavoriteContext.Provider>
   );

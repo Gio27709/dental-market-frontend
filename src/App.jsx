@@ -41,6 +41,7 @@ const AdminCourses = lazy(() => import("./pages/Admin/AdminCourses"));
 const AdminPosts = lazy(() => import("./pages/Admin/AdminPosts"));
 const CategoryManagement = lazy(() => import("./pages/Admin/CategoryManagement"));
 const PlatformSettings = lazy(() => import("./pages/Admin/PlatformSettings"));
+const AdminNewsletter = lazy(() => import("./pages/Admin/AdminNewsletter"));
 const AdminNotifications = lazy(() => import("./pages/Admin/AdminNotifications"));
 const HomeContentManager = lazy(() => import("./pages/Admin/HomeContentManager"));
 const PaymentHistory = lazy(() => import("./pages/Admin/PaymentHistory"));
@@ -49,12 +50,20 @@ const AdminAnalytics = lazy(() => import("./pages/Admin/AdminAnalytics"));
 const AdminRefunds = lazy(() => import("./pages/Admin/AdminRefunds"));
 const AdminPenalties = lazy(() => import("./pages/Admin/AdminPenalties"));
 const AdminPayouts = lazy(() => import("./pages/Admin/AdminPayouts"));
+const AdminSupport = lazy(() => import("./pages/Admin/AdminSupport"));
+const AdminPromotions = lazy(() => import("./pages/Admin/AdminPromotions"));
 
 const Orders = lazy(() => import("./pages/Account/Orders"));
 const OrderDetail = lazy(() => import("./pages/Account/OrderDetail"));
 const Favorites = lazy(() => import("./pages/Account/Favorites"));
+const Downloads = lazy(() => import("./pages/Account/Downloads"));
+const AccountReviews = lazy(() => import("./pages/Account/Reviews"));
 const Notifications = lazy(() => import("./pages/Account/Notifications"));
 const AccountPassword = lazy(() => import("./pages/Account/AccountPassword"));
+const Addresses = lazy(() => import("./pages/Account/Addresses"));
+const PaymentMethods = lazy(() => import("./pages/Account/PaymentMethods"));
+const Support = lazy(() => import("./pages/Account/Support"));
+const UserPosts = lazy(() => import("./pages/Account/UserPosts"));
 
 const StoreDashboard = lazy(() => import("./pages/Store/StoreDashboard"));
 const StoreProducts = lazy(() => import("./pages/Store/StoreProducts"));
@@ -65,6 +74,7 @@ const StoreProfile = lazy(() => import("./pages/Store/StoreProfile"));
 const StorePenalties = lazy(() => import("./pages/Store/StorePenalties"));
 const StoreWallet = lazy(() => import("./pages/Store/StoreWallet"));
 const ProductStats = lazy(() => import("./pages/Store/ProductStats"));
+const StoreDiscounts = lazy(() => import("./pages/Store/StoreDiscounts"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AffiliateLanding = lazy(() => import("./pages/Store/AffiliateLanding"));
 const StoreCatalog = lazy(() => import("./pages/StoreCatalog"));
@@ -78,6 +88,10 @@ const Blog = lazy(() => import("./pages/News/Blog"));
 const PostDetail = lazy(() => import("./pages/News/PostDetail"));
 const StorePublicProfile = lazy(() => import("./pages/StorePublicProfile"));
 const UserPublicProfile = lazy(() => import("./pages/UserPublicProfile"));
+const AboutUs = lazy(() => import("./pages/AboutUs"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
+const TermsConditions = lazy(() => import("./pages/TermsConditions"));
 
 export default function App() {
   return (
@@ -106,6 +120,10 @@ export default function App() {
                         <Route path="/cart" element={<Cart />} />
                         <Route path="/contacto" element={<Contact />} />
                         <Route path="/promociones" element={<Promotions />} />
+                        <Route path="/acerca" element={<AboutUs />} />
+                        <Route path="/privacidad" element={<PrivacyPolicy />} />
+                        <Route path="/devoluciones" element={<RefundPolicy />} />
+                        <Route path="/terminos" element={<TermsConditions />} />
                         <Route path="/store-catalog" element={<StoreCatalog />} />
                         <Route path="/courses" element={<Courses />} />
                         <Route path="/courses/:id" element={<CourseDetail />} />
@@ -126,8 +144,14 @@ export default function App() {
                           <Route path="orders" element={<Orders />} />
                           <Route path="orders/:id" element={<OrderDetail />} />
                           <Route path="favorites" element={<Favorites />} />
+                          <Route path="downloads" element={<Downloads />} />
+                          <Route path="reviews" element={<AccountReviews />} />
                           <Route path="notifications" element={<Notifications />} />
                           <Route path="password" element={<AccountPassword />} />
+                          <Route path="addresses" element={<Addresses />} />
+                          <Route path="payment-methods" element={<PaymentMethods />} />
+                          <Route path="support" element={<Support />} />
+                          <Route path="posts" element={<UserPosts />} />
                         </Route>
                         <Route
                           path="/checkout"
@@ -174,8 +198,11 @@ export default function App() {
                           <Route path="courses" element={<AdminCourses />} />
                           <Route path="posts" element={<AdminPosts />} />
                           <Route path="settings" element={<PlatformSettings />} />
+                          <Route path="newsletter" element={<AdminNewsletter />} />
                           <Route path="notifications" element={<AdminNotifications />} />
                           <Route path="home-content" element={<HomeContentManager />} />
+                          <Route path="support" element={<AdminSupport />} />
+                          <Route path="promotions" element={<AdminPromotions />} />
                         </Route>
 
                         {/* Rider Dashboard Routes */}
@@ -222,6 +249,7 @@ export default function App() {
                           <Route path="riders" element={<StoreRiders />} />
                           <Route path="profile" element={<StoreProfile />} />
                           <Route path="penalties" element={<StorePenalties />} />
+                          <Route path="discounts" element={<StoreDiscounts />} />
                         </Route>
 
                         <Route path="*" element={<NotFound />} />

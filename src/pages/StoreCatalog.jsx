@@ -1,299 +1,24 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import PropTypes from "prop-types";
+import { useSearchParams } from "react-router-dom";
 import FiltersSidebar from "../components/catalog/FiltersSidebar";
 import ProductCard from "../components/ProductCard";
-import { useCart } from "../context/CartContext";
-import { useAuth } from "../context/AuthContext";
-import { useProducts } from "../context/ProductContext";
-import { useCurrency } from "../context/CurrencyContext";
-import { useFavorites } from "../context/FavoriteContext";
-import { getCategoriesAPI, getBrandsAPI } from "../services/api";
-import { formatCurrencyUSD, formatCurrencyVES } from "../utils/formatters";
-import { getProximityScore, getProximityLabel, getCanonicalStateName } from "../utils/stateProximity";
+import ProductRow from "../components/ProductRow";
 import { useLocationContext } from "../hooks/useLocationContext";
 import { VENEZUELA_STATES } from "../utils/venezuelaStates";
-import toast from "react-hot-toast";
+import { getCategoriesAPI, getBrandsAPI, getProducts, getProductsFacetsAPI } from "../services/api";
 
-// ─── Componente de fila horizontal Premium (solo Desktop) ───
-function ProductRow({ product }) {
-  const { addToCart, items: cartItems } = useCart();
-  const { user } = useAuth();
-  const { toggleFavorite, favoriteIds } = useFavorites();
-  const { bcvRate, allProducts, trendingProductIds } = useProducts();
-  const { buyerState } = useLocationContext();
-  const { isVES } = useCurrency();
-  const [isAdding, setIsAdding] = useState(false);
-  const isOwnProduct = user?.id === product.store_id;
-  const hasImage = product.images && product.images.length > 0;
-  const isAvailable = (() => {
-    if (product?.stock_status === "Sin stock") return false;
-    const variations = product?.product_variations || product?.variations || [];
-    if (variations.length > 0) return variations.some(v => v.stock > 0);
-    return product?.stock !== 0 && product?.stock !== null && product?.stock !== undefined;
-  })();
-  const storeName = product.store?.business_name || "Tienda Oficial";
-  const isFavorite = favoriteIds?.has(product.id);
-  const vesEquiv = (product.price || 0) * Number(bcvRate || 1);
-
-  // Phase 4: Compute proximity label for geo-badge
-  const storeState = product.store?.state || null;
-  const proximityLabel = buyerState && storeState ? getProximityLabel(buyerState, storeState) : "";
-
-  // Resolve max stock for this product
-  const resolveProductMaxStock = () => {
-    const fullProduct = allProducts?.find(p => p.id === product.id) || product;
-    const defaultVariation = fullProduct?.variations?.[0];
-    if (defaultVariation?.stock != null) return defaultVariation.stock;
-    const defaultVar = fullProduct?.variations?.find(v =>
-      v.attribute_name === "default" ||
-      v.attribute_value === '{"_default":"default"}' ||
-      v.attribute_value === "default"
-    );
-    if (defaultVar?.stock != null) return defaultVar.stock;
-    if (fullProduct?.product_variations?.length > 0 && fullProduct.product_variations[0].stock != null) return fullProduct.product_variations[0].stock;
-    if (fullProduct?.stock != null) return fullProduct.stock;
-    return 99; // Safe cap — backend enforces actual limit
-  };
-
-  const maxStock = resolveProductMaxStock();
-  // DEDUP FIX: Search cart by product_id to catch items regardless of variation_id format
-  const totalCartQtyForProduct = cartItems
-    .filter(ci => ci.product_id === product.id)
-    .reduce((sum, ci) => sum + Number(ci.quantity), 0);
-  const isCartAtMax = maxStock > 0 && totalCartQtyForProduct >= maxStock;
-
-  // Strip HTML tags from ReactQuill descriptions
-  const cleanDescription = product.description
-    ? product.description.replace(/<[^>]*>?/gm, '').trim()
-    : '';
-
-  const handleAddToCart = async () => {
-    if (isOwnProduct || isAdding || isCartAtMax) return;
-    setIsAdding(true);
-    try {
-      const success = await addToCart(product, product.variations?.[0] || null, 1);
-      if (success) toast.success("Agregado a la bolsa");
-    } finally {
-      setIsAdding(false);
-    }
-  };
-
-  return (
-    <article className="bg-white rounded-2xl border border-slate-200/80 hover:border-slate-300 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex overflow-hidden group relative">
-
-      {/* 🖼 Contenedor de Imagen y Overlay Favoritos */}
-      <div className="relative flex-shrink-0 w-[210px] h-[210px] bg-white overflow-hidden">
-        {/* ♥ Heart Button — Overlay sobre la imagen */}
-        <button
-          onClick={() => toggleFavorite(product.id)}
-          className={`absolute top-3.5 left-3.5 z-10 p-2 rounded-full backdrop-blur-sm border transition-all duration-200 ${
-            isFavorite
-              ? "text-rose-500 bg-rose-50/90 border-rose-200 shadow-sm"
-              : "text-slate-400 bg-white/80 border-slate-200/60 hover:text-rose-400 hover:bg-rose-50/90 hover:border-rose-200"
-          }`}
-          title={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
-        >
-          <svg
-            className={`w-4 h-4 transition-all duration-300 ${isFavorite ? "fill-current scale-110" : "fill-none scale-100"}`}
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-          </svg>
-        </button>
-
-        <Link to={`/product/${product.id}`} className="block w-full h-full flex items-center justify-center p-6">
-          {hasImage ? (
-            <img
-              src={product.images[0]}
-              alt={product.name}
-              loading="lazy"
-              className="max-w-full max-h-full object-contain mix-blend-multiply group-hover:scale-108 transition-transform duration-500"
-            />
-          ) : (
-            <div className="flex flex-col items-center gap-2 text-slate-300">
-              <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
-              </svg>
-              <span className="text-xs italic">Sin Imagen</span>
-            </div>
-          )}
-        </Link>
-      </div>
-
-      {/* 📋 Info Central */}
-      <div className="flex-1 py-5 pr-4 flex flex-col justify-between min-w-0">
-        <div>
-          {/* Badges: Tienda y Tendencia */}
-          <div className="mb-2 flex items-center gap-2 flex-wrap">
-            {trendingProductIds?.has(product.id) && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase bg-orange-500 text-white shadow-sm rounded-md">
-                <span className="material-symbols-outlined text-[12px]">local_fire_department</span>
-                Más Vendido
-              </span>
-            )}
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase bg-[#6b1e96]/10 text-[#6b1e96] border border-[#6b1e96]/15 rounded-md">
-              <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" />
-              </svg>
-              {storeName}
-            </span>
-
-            {/* Phase 4: Geo-Proximity Badge */}
-            {proximityLabel === "same_state" && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold tracking-wider uppercase bg-emerald-50 text-emerald-700 border border-emerald-200/60 rounded-md">
-                <span className="material-symbols-outlined text-[11px]">location_on</span>
-                En tu estado
-              </span>
-            )}
-            {proximityLabel === "neighbor" && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold tracking-wider uppercase bg-blue-50 text-blue-600 border border-blue-200/60 rounded-md">
-                <span className="material-symbols-outlined text-[11px]">near_me</span>
-                Cerca de ti
-              </span>
-            )}
-            {proximityLabel === "regional" && storeState && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium tracking-wider uppercase bg-slate-50 text-slate-500 border border-slate-200/60 rounded-md">
-                <span className="material-symbols-outlined text-[11px]">local_shipping</span>
-                {storeState}
-              </span>
-            )}
-          </div>
-
-          {/* Título del Producto */}
-          <Link to={`/product/${product.id}`}>
-            <h3 className="text-lg font-bold text-slate-900 leading-snug hover:text-[#6b1e96] transition-colors line-clamp-2 mb-1.5">
-              {product.name}
-            </h3>
-          </Link>
-
-          {/* Descripción — HTML limpio de ReactQuill */}
-          {cleanDescription && (
-            <p className="text-[13px] text-slate-500 leading-relaxed line-clamp-2 mb-3">{cleanDescription}</p>
-          )}
-
-          {/* Estrellas + Disponibilidad en una línea */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <div className="flex text-amber-400 gap-px">
-                {[1,2,3,4].map(s => (
-                  <svg key={s} className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                ))}
-                <svg className="w-3.5 h-3.5 fill-slate-200" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-              </div>
-              <span className="text-[10px] text-slate-400 font-medium">(128)</span>
-            </div>
-            <span className="text-slate-300 text-xs">·</span>
-            <div className="flex items-center gap-1.5">
-              <div className={`h-1.5 w-1.5 rounded-full ${isAvailable ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
-              <span className={`text-[11px] font-semibold uppercase tracking-wide ${isAvailable ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {isAvailable ? 'Disponible' : 'Sin Stock'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 💰 Precio + CTA (columna derecha, sin fondo gris) */}
-      <div className="flex-shrink-0 w-[190px] p-5 flex flex-col items-end justify-between">
-        {/* Precio dual: moneda principal + equivalente secundario */}
-        <div className="text-right">
-          <span className="text-2xl font-bold text-[#6b1e96]">
-            {isVES
-              ? formatCurrencyVES(vesEquiv)
-              : formatCurrencyUSD(product.price || 0)
-            }
-          </span>
-          <p className="text-[11px] text-slate-400 mt-0.5 font-medium">
-            {isVES
-              ? `≈ ${formatCurrencyUSD(product.price || 0)}`
-              : `≈ ${formatCurrencyVES(vesEquiv)}`
-            }
-          </p>
-        </div>
-
-        {/* Botón CTA */}
-        <div className="w-full mt-auto">
-          {!isAvailable ? (
-            <button disabled className="w-full bg-gray-100 text-gray-400 font-medium py-2.5 px-4 rounded-xl text-xs cursor-not-allowed">
-              Agotado
-            </button>
-          ) : isOwnProduct ? (
-            <button disabled className="w-full bg-slate-50 text-slate-400 border border-slate-200 font-medium py-2.5 px-4 rounded-xl text-xs cursor-not-allowed">
-              Producto Propio
-            </button>
-          ) : (
-            <button
-              onClick={handleAddToCart}
-              disabled={isAdding || isCartAtMax}
-              className={`w-full font-semibold py-2.5 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm ${
-                isCartAtMax
-                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  : isAdding
-                  ? "bg-[#531575] text-white cursor-wait"
-                  : "bg-[#6b1e96] hover:bg-[#531575] active:bg-[#43105e] text-white hover:shadow-md"
-              }`}
-            >
-              {isAdding ? (
-                <>
-                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Agregando...
-                </>
-              ) : isCartAtMax ? (
-                <>
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  Máximo
-                </>
-              ) : (
-                <>
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                  </svg>
-                  Al Carrito
-                </>
-              )}
-            </button>
-          )}
-        </div>
-      </div>
-    </article>
-  );
-}
-
-ProductRow.propTypes = {
-  product: PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    name: PropTypes.string.isRequired,
-    price: PropTypes.number,
-    stock: PropTypes.number,
-    stock_status: PropTypes.string,
-    store_id: PropTypes.string,
-    description: PropTypes.string,
-    images: PropTypes.arrayOf(PropTypes.string),
-    variations: PropTypes.array,
-    product_variations: PropTypes.array,
-    store: PropTypes.shape({
-      business_name: PropTypes.string,
-      state: PropTypes.string,
-    }),
-  }).isRequired,
-};
 export default function StoreCatalog() {
-  // Traer productos reales del contexto
-  const { allProducts, loading: productsLoading, refreshProducts } = useProducts();
   const { buyerState } = useLocationContext();
   
-  const [filteredProducts, setFilteredProducts] = useState([]);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const [isFiltering, setIsFiltering] = useState(false);
 
-  // Paginación
+  // Paginación y Productos Server-Side
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 20;
+  const ITEMS_PER_PAGE = 15;
 
   // Estados de Filtros
   const [searchParams] = useSearchParams();
@@ -304,12 +29,6 @@ export default function StoreCatalog() {
   const [store, setStore] = useState("all");
   const [location, setLocation] = useState("all");
 
-  // Force fresh data on catalog mount (bypasses cache to reflect store state changes)
-  useEffect(() => {
-    refreshProducts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  
   // Inicializar filtro de categoría desde URL params (Home → Catálogo)
   const [category, setCategory] = useState(() => {
     return searchParams.get("category") || "all";
@@ -318,200 +37,151 @@ export default function StoreCatalog() {
   // Sincronizar searchTerm cuando el usuario busca desde el Header (cambia la URL)
   useEffect(() => {
     const urlSearch = searchParams.get("search");
-    if (urlSearch) setSearchTerm(urlSearch);
+    if (urlSearch) {
+      setSearchTerm(urlSearch);
+      setCurrentPage(1);
+    }
   }, [searchParams]);
 
-  // Cargar marcas desde la API
+  // Cargar marcas desde la API (con caché en localStorage)
   const [brandsData, setBrandsData] = useState([]);
 
   useEffect(() => {
+    const cached = localStorage.getItem("dental_brands_cache");
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+          setBrandsData(parsed.data);
+          return;
+        }
+      } catch { /* corrupted cache */ }
+    }
     getBrandsAPI()
-      .then((res) => setBrandsData(res.data.data || []))
+      .then((res) => {
+        const data = res.data.data || [];
+        setBrandsData(data);
+        localStorage.setItem("dental_brands_cache", JSON.stringify({ data, timestamp: Date.now() }));
+      })
       .catch(() => console.error("Error loading brands"));
   }, []);
 
-  // Cargar categorías desde la API (nombres legibles)
+  // Cargar categorías desde la API (con caché en localStorage)
   const [categoriesData, setCategoriesData] = useState([]);
 
   useEffect(() => {
+    const cached = localStorage.getItem("dental_categories_cache");
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+          setCategoriesData(parsed.data);
+          return;
+        }
+      } catch { /* corrupted cache */ }
+    }
     getCategoriesAPI()
-      .then((res) => setCategoriesData(res.data.data || []))
+      .then((res) => {
+        const data = res.data.data || [];
+        setCategoriesData(data);
+        localStorage.setItem("dental_categories_cache", JSON.stringify({ data, timestamp: Date.now() }));
+      })
       .catch(() => console.error("Error loading categories"));
+  }, []);
+
+  // Cargar Facetas (Conteos agregados) desde la API
+  const [facets, setFacets] = useState({
+    categoryCounts: {},
+    brandCounts: {},
+    storeCounts: {},
+    stateCounts: {},
+    stores: [],
+    states: []
+  });
+
+  useEffect(() => {
+    getProductsFacetsAPI()
+      .then((res) => {
+        if (res.data?.success) {
+          setFacets(res.data.data);
+        }
+      })
+      .catch((err) => console.error("Error loading facets:", err));
   }, []);
 
   // Flatten tree para dropdown: [{id, name, isParent}]
   const flatCategories = useMemo(() => {
     const flat = [];
     (categoriesData || []).forEach((cat) => {
-      flat.push({ id: cat.id, name: cat.name, isParent: true });
+      flat.push({ id: cat.id, name: cat.name, displayName: cat.name, isParent: true });
       (cat.children || []).forEach((sub) => {
-        flat.push({ id: sub.id, name: `${cat.name} > ${sub.name}`, isParent: false });
+        flat.push({ 
+          id: sub.id, 
+          name: `${cat.name} > ${sub.name}`, 
+          displayName: sub.name, 
+          isParent: false 
+        });
       });
     });
     return flat;
   }, [categoriesData]);
 
-  // Extraer tiendas únicas de los productos reales
-  const uniqueStores = useMemo(() => {
-    const storesSet = new Set();
-    (allProducts || []).forEach(p => {
-      const name = p.store?.business_name;
-      if (name) storesSet.add(name);
-    });
-    return Array.from(storesSet).sort();
-  }, [allProducts]);
+  // Extraer tiendas, ubicaciones y conteos de las facetas cargadas por la BD
+  const uniqueStores = facets.stores || [];
+  const productCountByState = facets.stateCounts || {};
+  const productCountByCategory = facets.categoryCounts || {};
+  const productCountByBrand = facets.brandCounts || {};
+  const productCountByStore = facets.storeCounts || {};
 
-
-  // Conteo de productos por estado (canonicalizado) para mostrar badges en el filtro
-  const productCountByState = useMemo(() => {
-    const counts = {};
-    (allProducts || []).forEach(p => {
-      const state = p.store?.state;
-      if (state) {
-        const canonical = getCanonicalStateName(state);
-        if (canonical) {
-          counts[canonical] = (counts[canonical] || 0) + 1;
-        }
-      }
-    });
-    return counts;
-  }, [allProducts]);
-
-  // Conteo de productos por categoría (directas + subcategorías añadidas a los padres)
-  const productCountByCategory = useMemo(() => {
-    const counts = {};
-    // Primero, contar coincidencias exactas
-    (allProducts || []).forEach(p => {
-      if (p.category_id) {
-        counts[p.category_id] = (counts[p.category_id] || 0) + 1;
-      }
-    });
-    // Luego, agregar conteos de subcategorías a sus respectivas categorías padres
-    (categoriesData || []).forEach((cat) => {
-      let sum = counts[cat.id] || 0;
-      (cat.children || []).forEach((sub) => {
-        sum += counts[sub.id] || 0;
-      });
-      counts[cat.id] = sum;
-    });
-    return counts;
-  }, [allProducts, categoriesData]);
-
-  // Conteo de productos por marca
-  const productCountByBrand = useMemo(() => {
-    const counts = {};
-    (allProducts || []).forEach(p => {
-      if (p.brand_id) {
-        counts[p.brand_id] = (counts[p.brand_id] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [allProducts]);
-
-  // Conteo de productos por tienda
-  const productCountByStore = useMemo(() => {
-    const counts = {};
-    (allProducts || []).forEach(p => {
-      const name = p.store?.business_name;
-      if (name) {
-        counts[name] = (counts[name] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [allProducts]);
-
-
-  // Efecto premium para simular transición de filtrado (300ms)
+  // Fetch paginado desde la API
   useEffect(() => {
-    setIsFiltering(true);
-    const timer = setTimeout(() => {
-      setIsFiltering(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchTerm, sortBy, priceRange, category, brandFilter, store, location]);
+    const loadProducts = async () => {
+      try {
+        setProductsLoading(true);
+        const params = {
+          page: currentPage,
+          limit: ITEMS_PER_PAGE,
+          buyer_state: buyerState || undefined,
+          sort_by: sortBy,
+          max_price: priceRange,
+          category_id: category !== "all" ? category : undefined,
+          brand_id: brandFilter !== "all" ? brandFilter : undefined,
+          store_name: store !== "all" ? store : undefined,
+          location_state: location !== "all" ? location : undefined,
+          search: searchTerm || undefined
+        };
 
+        const res = await getProducts(params);
+        const data = res.data?.data || [];
+        const pagination = res.data?.pagination || {};
 
+        // Map product_variations from Supabase to variations field expected by UI
+        const mappedProducts = data.map((p) => ({
+          ...p,
+          variations: p.product_variations || [],
+          store: p.store_profiles || p.store || null,
+          brand: p.brands || null,
+        }));
 
-  // Lógica de filtrado (sobre productos reales)
-  useEffect(() => {
-    let filtered = [...(allProducts || [])];
-
-    if (searchTerm) {
-      const lower = searchTerm.toLowerCase();
-      filtered = filtered.filter(p => 
-        (p.name && p.name.toLowerCase().includes(lower)) || 
-        (p.description && p.description.toLowerCase().includes(lower)) ||
-        (p.store?.business_name && p.store.business_name.toLowerCase().includes(lower))
-      );
-    }
-    if (brandFilter !== "all") {
-      filtered = filtered.filter(p => p.brand_id === brandFilter);
-    }
-    if (store !== "all") {
-      filtered = filtered.filter(p => p.store?.business_name === store);
-    }
-    if (location !== "all") {
-      const canonicalLocation = getCanonicalStateName(location);
-      filtered = filtered.filter(p => getCanonicalStateName(p.store?.state) === canonicalLocation);
-    }
-    if (category !== "all") {
-      filtered = filtered.filter(p => p.category_id === category);
-    }
-    filtered = filtered.filter(p => p.price <= priceRange);
-
-    if (sortBy === "price-asc") filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
-    else if (sortBy === "price-desc") filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
-    else if (sortBy === "name-asc") filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-    else if (sortBy === "nearby" && buyerState) {
-      // Phase 3: Sort purely by geographic proximity
-      filtered.sort((a, b) => {
-        const aGeo = getProximityScore(buyerState, a.store?.state);
-        const bGeo = getProximityScore(buyerState, b.store?.state);
-        if (bGeo !== aGeo) return bGeo - aGeo;
-        return a.price - b.price; // tiebreaker: cheaper first
-      });
-    } else if (sortBy === "featured") {
-      // Phase 3: Composite scoring with geo-proximity
-      if (searchTerm && buyerState) {
-        // Search + location: relevance * 0.6 + proximity * 0.4
-        const lower = searchTerm.toLowerCase();
-        filtered.sort((a, b) => {
-          const aName = (a.name || "").toLowerCase().includes(lower) ? 2 : 0;
-          const bName = (b.name || "").toLowerCase().includes(lower) ? 2 : 0;
-          const aGeo = getProximityScore(buyerState, a.store?.state);
-          const bGeo = getProximityScore(buyerState, b.store?.state);
-          const aScore = (aName * 0.6) + (aGeo * 0.4);
-          const bScore = (bName * 0.6) + (bGeo * 0.4);
-          return bScore - aScore;
-        });
-      } else if (searchTerm) {
-        // Search only: relevance
-        const lower = searchTerm.toLowerCase();
-        filtered.sort((a, b) => {
-          const aName = (a.name || "").toLowerCase().includes(lower) ? 2 : 0;
-          const bName = (b.name || "").toLowerCase().includes(lower) ? 2 : 0;
-          return bName - aName;
-        });
-      } else if (buyerState) {
-        // No search: products come pre-sorted by backend, but apply client-side geo-sort
-        // for any client-side-only filtering that might have changed the order
-        filtered.sort((a, b) => {
-          const aGeo = getProximityScore(buyerState, a.store?.state);
-          const bGeo = getProximityScore(buyerState, b.store?.state);
-          return bGeo - aGeo;
-        });
+        setProducts(mappedProducts);
+        setTotalPages(pagination.totalPages || 1);
+        setTotalItems(pagination.totalItems || 0);
+      } catch (err) {
+        console.error("Error loading products:", err);
+      } finally {
+        setProductsLoading(false);
       }
-    }
+    };
 
-    setFilteredProducts(filtered);
-    setCurrentPage(1); // Reset pagination on filter change
-  }, [allProducts, searchTerm, sortBy, priceRange, category, brandFilter, store, location, buyerState]);
+    loadProducts();
+  }, [currentPage, searchTerm, sortBy, priceRange, category, brandFilter, store, location, buyerState]);
 
-  // Derived state for pagination
-  const totalPages = Math.ceil((filteredProducts?.length || 0) / ITEMS_PER_PAGE);
+  // Reset de página al cambiar filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortBy, priceRange, category, brandFilter, store, location, buyerState]);
+
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedProducts = filteredProducts?.slice(startIndex, endIndex) || [];
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -553,8 +223,8 @@ export default function StoreCatalog() {
                 <h1 className="text-xl font-bold text-[#163152] leading-tight">Todos los Productos</h1>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Mostrando <span className="text-[#163152] font-semibold">
-                    {filteredProducts.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, filteredProducts.length)}
-                  </span> de {(filteredProducts || []).length} resultados
+                    {products.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + products.length, totalItems)}
+                  </span> de {totalItems} resultados
                 </p>
                 {buyerState && (
                   <div className="flex items-center gap-1.5 mt-1.5">
@@ -597,7 +267,7 @@ export default function StoreCatalog() {
             </div>
 
             {/* Loading State */}
-            {(productsLoading || isFiltering) ? (
+            {productsLoading ? (
               <div className="flex flex-col gap-4">
                 {[1,2,3,4].map(i => (
                   <div key={i} className="bg-white rounded-xl border border-slate-200 h-[200px] animate-pulse flex overflow-hidden">
@@ -614,7 +284,7 @@ export default function StoreCatalog() {
                   </div>
                 ))}
               </div>
-            ) : filteredProducts.length === 0 ? (
+            ) : products.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-sm">
                 <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
                   {sortBy === "nearby" && buyerState ? (
@@ -658,14 +328,14 @@ export default function StoreCatalog() {
               <>
                 {/* DESKTOP: Lista Horizontal estilo Amazon */}
                 <div className="hidden md:flex flex-col gap-4">
-                  {paginatedProducts.map((product) => (
+                  {products.map((product) => (
                     <ProductRow key={product.id} product={product} />
                   ))}
                 </div>
 
                 {/* MOBILE: Grid de tarjetas */}
                 <div className="md:hidden grid grid-cols-2 gap-3">
-                  {paginatedProducts.map((product) => (
+                  {products.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
@@ -762,7 +432,7 @@ export default function StoreCatalog() {
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                   </svg>
-                  Aplicar ({filteredProducts.length})
+                  Aplicar ({totalItems})
                </button>
              </div>
           </div>

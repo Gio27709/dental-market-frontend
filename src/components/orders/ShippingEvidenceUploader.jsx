@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { uploadShippingEvidenceAPI } from '../../services/api';
+import { uploadFileDirectly } from '../../lib/upload';
 import { Camera, X, Loader2, UploadCloud, CheckCircle, ShieldAlert, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -32,10 +33,11 @@ const ShippingEvidenceUploader = ({ onEvidenceChange }) => {
           continue;
         }
 
-        const formData = new FormData();
-        formData.append("evidence", file);
+        // 1. Upload to Supabase Storage directly via presigned URL
+        const { publicUrl, path } = await uploadFileDirectly(file, "shipping_evidence");
 
-        const res = await uploadShippingEvidenceAPI(formData);
+        // 2. Notify backend of the upload to trigger background optimization
+        const res = await uploadShippingEvidenceAPI({ path, url: publicUrl });
         newUrls.push(res.data.url);
       }
 

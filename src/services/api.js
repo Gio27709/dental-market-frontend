@@ -69,20 +69,21 @@ api.interceptors.response.use(
   },
 );
 
-export const getProducts = (buyerState = "") => 
-  api.get(`/products${buyerState ? `?buyer_state=${encodeURIComponent(buyerState)}` : ""}`);
+export const getProducts = (params = {}) => {
+  if (typeof params === "string") {
+    return api.get("/products", { params: { buyer_state: params } });
+  }
+  return api.get("/products", { params });
+};
+export const getProductsFacetsAPI = () => api.get("/products/facets");
 // Native login/register runs directly hitting Supabase. We only use api for business logic:
 export const createOrder = (orderData) => api.post("/orders", orderData);
 export const getMyOrders = (config = {}) => api.get("/orders", config);
 export const getOrderByIdAPI = (id) => api.get(`/orders/${id}`);
 export const getOrdersByGroupAPI = (groupId) => api.get(`/orders/group/${groupId}`);
 export const cancelAbandonedOrderAPI = (id) => api.put(`/orders/${id}/cancel-abandoned`);
-export const uploadPaymentProofAPI = (id, formData) =>
-  api.post(`/orders/${id}/payment-proof`, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+export const uploadPaymentProofAPI = (id, paymentData) =>
+  api.post(`/orders/${id}/payment-proof`, paymentData);
 
 // Admin Escrow API
 export const approvePaymentAPI = (id) =>
@@ -167,10 +168,8 @@ export const getMyRiderApplicationAPI = () => api.get("/rider-applications/me");
 
 // Public User/Profile API
 export const updateMyProfileAPI = (data) => api.put("/profiles/me", data);
-export const uploadAvatarAPI = (formData) =>
-  api.post("/profiles/me/avatar", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+export const uploadAvatarAPI = (avatarData) =>
+  api.post("/profiles/me/avatar", avatarData);
 
 // Store Product Management API
 export const getMyProducts = () => api.get("/products/mine");
@@ -180,18 +179,14 @@ export const deleteProductAPI = (id) => api.delete(`/products/${id}`);
 export const getBulkImportTemplateAPI = () => api.get("/products/bulk-import/template", { responseType: 'blob' });
 export const validateBulkImportAPI = (formData) => api.post("/products/bulk-import/validate", formData, { headers: { "Content-Type": "multipart/form-data" } });
 export const bulkImportProductsAPI = (formData) => api.post("/products/bulk-import", formData, { headers: { "Content-Type": "multipart/form-data" } });
-export const uploadProductImage = (formData) =>
-  api.post("/products/upload-image", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+export const uploadProductImage = (imageData) =>
+  api.post("/products/upload-image", imageData);
 
 // Store Shipping API
 export const shipOrderItemAPI = (itemId, data) =>
   api.put(`/orders/${itemId}/ship`, data);
-export const uploadShippingEvidenceAPI = (formData) =>
-  api.post("/orders/upload-shipping-evidence", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+export const uploadShippingEvidenceAPI = (evidenceData) =>
+  api.post("/orders/upload-shipping-evidence", evidenceData);
 
 // Store Cancel API
 export const cancelOrderItemAPI = (itemId, reason) =>
@@ -274,6 +269,12 @@ export const addFavoriteAPI = (productId) => api.post(`/wishlist/${productId}`);
 export const removeFavoriteAPI = (productId) => api.delete(`/wishlist/${productId}`);
 export const checkFavoriteAPI = (productId) => api.get(`/wishlist/check/${productId}`);
 
+// My Reviews API (Account Section)
+export const getMyReviewsAPI = (params) => api.get("/products/my-reviews", { params });
+export const getStoreProductReviewsAPI = (params) => api.get("/products/store-reviews", { params });
+export const updateMyReviewAPI = (reviewId, data) => api.put(`/products/reviews/${reviewId}`, data);
+export const deleteMyReviewAPI = (reviewId) => api.delete(`/products/reviews/${reviewId}`);
+
 // Notifications API
 export const getNotificationsAPI = (params) => api.get("/notifications", { params });
 export const getUnreadCountAPI = () => api.get("/notifications/unread-count");
@@ -302,12 +303,22 @@ export const getStorePenaltiesAPI = (params) =>
   api.get("/store/penalties", { params });
 export const appealPenaltyAPI = (id, appeal_note) =>
   api.put(`/store/penalties/${id}/appeal`, { appeal_note });
+export const acknowledgePenaltyAPI = (id) =>
+  api.put(`/store/penalties/${id}/acknowledge`);
 
 // Home Sections API
 export const getHomeSectionsAPI = () => api.get("/home-sections");
 export const updateHomeSectionAPI = (sectionKey, content) => api.put(`/home-sections/${sectionKey}`, { content });
 export const uploadHomeSectionImageAPI = (formData) => api.post("/home-sections/upload-image", formData, { headers: { "Content-Type": "multipart/form-data" } });
 export const toggleHomeSectionAPI = (sectionKey) => api.patch(`/home-sections/${sectionKey}/toggle`);
+export const subscribeNewsletterAPI = (email) => api.post("/newsletter/subscribe", { email });
+export const getNewsletterSubscribersAPI = () => api.get("/newsletter/subscribers");
+export const deleteNewsletterSubscriberAPI = (id) => api.delete(`/newsletter/subscribers/${id}`);
+export const updateNewsletterDiscountAPI = (percentage) => api.put("/admin/settings/newsletter-discount", { percentage });
+export const updateNewsletterLimitAPI = (enabled) => api.put("/admin/settings/newsletter-limit", { enabled });
+export const updateNewsletterEnabledAPI = (enabled) => api.put("/admin/settings/newsletter-status", { enabled });
+export const getWeeklyPromotionsPreviewAPI = () => api.get("/newsletter/weekly-promotions-preview");
+export const sendWeeklyPromotionsNewsletterAPI = () => api.post("/newsletter/send-weekly-promotions");
 
 // Courses API
 export const getCoursesAPI = () => api.get("/courses");
@@ -318,10 +329,25 @@ export const deleteCourseAPI = (id) => api.delete(`/courses/${id}`);
 
 // Posts API
 export const getPostsAPI = () => api.get("/posts");
+export const getMyPostsAPI = () => api.get("/posts/me");
+export const getAdminPostsAPI = (params) => api.get("/posts/admin/all", { params });
 export const getPostByIdAPI = (id) => api.get(`/posts/${id}`);
 export const createPostAPI = (data) => api.post("/posts", data);
 export const updatePostAPI = (id, data) => api.put(`/posts/${id}`, data);
 export const deletePostAPI = (id) => api.delete(`/posts/${id}`);
+export const moderatePostAPI = (id, data) => api.put(`/posts/${id}/moderate`, data);
+export const uploadPostImageAPI = (imageData) => api.post("/posts/upload-image", imageData);
+export const updateAllowUserPostsAPI = (mode) => api.put("/admin/settings/allow-user-posts", { mode });
+export const togglePostLikeAPI = (id) => api.post(`/posts/${id}/like`);
+export const getPostLikesAPI = (id) => api.get(`/posts/${id}/likes`);
+export const getPostCommentsAPI = (id) => api.get(`/posts/${id}/comments`);
+export const createPostCommentAPI = (id, data) => api.post(`/posts/${id}/comments`, data);
+export const deletePostCommentAPI = (commentId) => api.delete(`/posts/comments/${commentId}`);
+export const getUserLikedPostsAPI = () => api.get("/posts/me/liked");
+export const togglePostSaveAPI = (id) => api.post(`/posts/${id}/save`);
+export const getPostSavesAPI = (id) => api.get(`/posts/${id}/saves`);
+export const getUserSavedPostsAPI = () => api.get("/posts/me/saved");
+
 
 // Returns / Devoluciones API
 export const createReturnRequestAPI = (data) => api.post("/returns", data);
@@ -331,6 +357,50 @@ export const resolveReturnRequestAPI = (id, data) => api.put(`/returns/${id}/res
 // Refunds / Reembolsos API
 export const submitRefundDetailsAPI = (refundId, refundDetails) =>
   api.put(`/orders/refunds/${refundId}/details`, { refund_details: refundDetails });
+
+// Addresses API
+export const getMyAddressesAPI = () => api.get("/addresses");
+export const createAddressAPI = (data) => api.post("/addresses", data);
+export const updateAddressAPI = (id, data) => api.put(`/addresses/${id}`, data);
+export const deleteAddressAPI = (id) => api.delete(`/addresses/${id}`);
+export const setDefaultAddressAPI = (id) => api.patch(`/addresses/${id}/default`);
+
+// Payment Methods API
+export const getMyPaymentMethodsAPI = () => api.get("/payment-methods");
+export const createPaymentMethodAPI = (data) => api.post("/payment-methods", data);
+export const updatePaymentMethodAPI = (id, data) => api.put(`/payment-methods/${id}`, data);
+export const deletePaymentMethodAPI = (id) => api.delete(`/payment-methods/${id}`);
+export const setDefaultPaymentMethodAPI = (id) => api.patch(`/payment-methods/${id}/default`);
+
+// Support / Tickets API
+export const createTicketAPI = (data) => api.post("/support/tickets", data);
+export const getMyTicketsAPI = () => api.get("/support/tickets");
+export const getTicketDetailsAPI = (id) => api.get(`/support/tickets/${id}`);
+export const addTicketMessageAPI = (id, data) => api.post(`/support/tickets/${id}/messages`, data);
+export const getAllTicketsAdminAPI = (params) => api.get("/support/admin/tickets", { params });
+export const updateTicketStatusAdminAPI = (id, status) => api.put(`/support/admin/tickets/${id}/status`, { status });
+
+// Store Discounts API
+export const getStoreDiscountsAPI = () => api.get("/store/discounts");
+export const createDiscountAPI = (data) => api.post("/store/discounts", data);
+export const updateDiscountAPI = (id, data) => api.put(`/store/discounts/${id}`, data);
+export const toggleDiscountAPI = (id) => api.patch(`/store/discounts/${id}/toggle`);
+export const deleteDiscountAPI = (id) => api.delete(`/store/discounts/${id}`);
+
+// Promotions API (Public)
+export const getPromotionsAPI = () => api.get("/promotions");
+export const getPromotionByIdAPI = (id) => api.get(`/promotions/${id}`);
+export const getFeaturedPromotionAPI = () => api.get("/promotions/featured");
+
+// Admin Promotions API
+export const getAdminPromotionsAPI = () => api.get("/admin/promotions");
+export const createPromotionAPI = (data) => api.post("/admin/promotions", data);
+export const updatePromotionAPI = (id, data) => api.put(`/admin/promotions/${id}`, data);
+export const deletePromotionAPI = (id) => api.delete(`/admin/promotions/${id}`);
+
+// Admin Discounts API
+export const getAdminDiscountsAPI = (params) => api.get("/admin/discounts", { params });
+export const moderateDiscountAPI = (id, action) => api.put(`/admin/discounts/${id}/moderate`, { action });
 
 // Exporting standard API for frontend endpoints
 export default api;

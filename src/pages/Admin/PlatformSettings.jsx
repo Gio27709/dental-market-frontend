@@ -11,6 +11,7 @@ export default function PlatformSettings() {
   const [bcvRate, setBcvRate] = useState("");
   const [bcvInput, setBcvInput] = useState("");
   const [bcvLastUpdated, setBcvLastUpdated] = useState(null);
+  const [bcvLastChecked, setBcvLastChecked] = useState(null);
   const [savingBcv, setSavingBcv] = useState(false);
   const [fetchingBcv, setFetchingBcv] = useState(false);
 
@@ -56,6 +57,7 @@ export default function PlatformSettings() {
         setBcvRate(String(bcvValue.rate));
         setBcvInput(String(bcvValue.rate));
         setBcvLastUpdated(bcvValue.updated_at || null);
+        setBcvLastChecked(bcvValue.last_checked_at || bcvValue.updated_at || null);
       }
 
       // Store Fee
@@ -127,7 +129,9 @@ export default function PlatformSettings() {
     try {
       setSavingBcv(true);
       await api.put("/admin/settings/bcv-rate", { rate: numericRate });
-      setBcvLastUpdated(new Date().toISOString());
+      const nowStr = new Date().toISOString();
+      setBcvLastUpdated(nowStr);
+      setBcvLastChecked(nowStr);
       // Actualizar localStorage para que el frontend muestre la tasa nueva inmediatamente
       localStorage.setItem("bcv_rate", numericRate);
       toast.success(`Tasa BCV actualizada a ${numericRate} Bs/$`);
@@ -210,8 +214,13 @@ export default function PlatformSettings() {
                       Tasa Actual: {bcvRate ? `${Number(bcvRate).toLocaleString("es-VE", { minimumFractionDigits: 2 })} Bs/$` : "No configurada"}
                     </strong>
                     {bcvLastUpdated && (
-                      <span className="text-sm text-green-600/70">
-                        Última actualización: {new Date(bcvLastUpdated).toLocaleDateString("es-VE", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      <span className="text-sm text-green-600/70 block">
+                        Tasa cambió: {new Date(bcvLastUpdated).toLocaleDateString("es-VE", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    )}
+                    {bcvLastChecked && (
+                      <span className="text-sm text-blue-500/70 block">
+                        Última verificación: {new Date(bcvLastChecked).toLocaleDateString("es-VE", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                       </span>
                     )}
                   </div>

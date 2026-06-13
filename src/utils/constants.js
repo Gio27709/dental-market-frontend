@@ -36,6 +36,8 @@ export const ORDER_STATUS = {
   approved: { label: "Pago aprobado", color: "blue" },
   processing: { label: "En proceso", color: "blue" },
   shipped: { label: "Enviado", color: "indigo" },
+  picked_up: { label: "Recogido por rider", color: "indigo" },
+  arrived: { label: "Rider en destino", color: "indigo" },
   delivered: { label: "Entregado", color: "emerald" },
   cancelled: { label: "Cancelado", color: "red" },
   rejected: { label: "Rechazado", color: "red" },

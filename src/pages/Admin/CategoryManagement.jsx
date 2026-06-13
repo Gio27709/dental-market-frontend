@@ -12,12 +12,28 @@ import {
 } from "../../services/api";
 import toast from "react-hot-toast";
 
-// Íconos comunes para el selector visual
-const COMMON_ICONS = [
-  "category", "label", "healing", "dentistry", "medkit", 
-  "vaccines", "stethoscope", "local_pharmacy", "biotech", 
-  "prescriptions", "emergency", "masks", "clean_hands", "build", "diamond",
-  "chair_alt", "inventory_2", "science", "sanitizer", "medical_services"
+// Categorías de íconos comunes para el selector visual
+const ICON_CATEGORIES = [
+  {
+    title: "Odontología y Dental",
+    icons: ["dentistry", "chair_alt", "face", "diamond", "build"]
+  },
+  {
+    title: "Médico y Clínico",
+    icons: ["vaccines", "stethoscope", "local_pharmacy", "pill", "medication", "emergency", "medical_services", "prescriptions", "healing"]
+  },
+  {
+    title: "Laboratorio y Ciencia",
+    icons: ["science", "biotech", "lab_research", "microbiology"]
+  },
+  {
+    title: "Higiene y Protección",
+    icons: ["masks", "clean_hands", "sanitizer"]
+  },
+  {
+    title: "Generales y Gestión",
+    icons: ["category", "label", "inventory_2", "storefront", "shopping_bag"]
+  }
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -512,28 +528,42 @@ function CategorySlideOver({
             {/* Icon Picker */}
             <div>
               <label className="block text-sm font-bold text-gray-800 mb-2">Ícono Visual</label>
-              <div className="p-4 border border-gray-200 rounded-2xl bg-gray-50/50">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-gray-200 flex items-center justify-center text-primary-600">
+              <div className="p-4 border border-gray-200 rounded-2xl bg-gray-50/50 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-gray-200 flex items-center justify-center text-primary-600 flex-shrink-0">
                     <span className="material-symbols-outlined text-2xl">{form.icon}</span>
                   </div>
-                  <input
-                    type="text" name="icon" value={form.icon} onChange={handleChange}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary-500"
-                    placeholder="Nombre del ícono..."
-                  />
+                  <div className="flex-1">
+                    <input
+                      type="text" name="icon" value={form.icon} onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary-500"
+                      placeholder="Nombre del ícono..."
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1 font-medium">Escribe un nombre de Google Material Symbols.</p>
+                  </div>
                 </div>
-                {/* Grilla de íconos rápidos */}
-                <div className="grid grid-cols-5 gap-2">
-                  {COMMON_ICONS.map(ic => (
-                    <button
-                      key={ic} type="button" onClick={() => setForm(p => ({...p, icon: ic}))}
-                      className={`h-10 rounded-lg flex items-center justify-center border transition-all ${
-                        form.icon === ic ? "bg-primary-100 border-primary-300 text-primary-700 shadow-sm" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-lg">{ic}</span>
-                    </button>
+
+                {/* Categorías de íconos */}
+                <div className="space-y-4 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
+                  {ICON_CATEGORIES.map(categoryGroup => (
+                    <div key={categoryGroup.title} className="space-y-1.5">
+                      <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">{categoryGroup.title}</h5>
+                      <div className="grid grid-cols-5 gap-2">
+                        {categoryGroup.icons.map(ic => (
+                          <button
+                            key={ic} type="button" onClick={() => setForm(p => ({...p, icon: ic}))}
+                            title={ic}
+                            className={`h-10 rounded-lg flex items-center justify-center border transition-all hover:scale-105 active:scale-95 ${
+                              form.icon === ic 
+                                ? "bg-primary-100 border-primary-300 text-primary-700 shadow-sm font-bold" 
+                                : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-lg">{ic}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>

@@ -27,6 +27,7 @@ export default function Checkout() {
   const [deliveryType, setDeliveryType] = useState("shipping");
   const [buyerFeePercentage, setBuyerFeePercentage] = useState(0);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
+  const [appliedCouponCode, setAppliedCouponCode] = useState("");
 
   // Bug 2: Immediate ref flag to prevent redirect after cart is cleared post-order
   const orderCreatedRef = useRef(false);
@@ -115,7 +116,8 @@ export default function Checkout() {
         delivery_reference: formData.delivery_reference || null,
         delivery_lat: formData.delivery_lat || null,
         delivery_lng: formData.delivery_lng || null,
-      })
+      }),
+      coupon_code: appliedCouponCode || null
     };
 
     const result = await createOrder(orderPayload);
@@ -297,6 +299,7 @@ export default function Checkout() {
               total_ves={total_ves}
               deliveryType={deliveryType}
               buyerFeePercentage={buyerFeePercentage}
+              onCouponApply={(code) => setAppliedCouponCode(code)}
             />
           </div>
         </div>

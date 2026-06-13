@@ -74,17 +74,17 @@ export default function Login() {
     <div className="min-h-screen flex bg-white font-sans">
       {/* Left Column: Image/Branding */}
       <div className="hidden lg:flex w-1/2 relative bg-gray-900 overflow-hidden items-center justify-center">
-        <div className="absolute inset-0 z-10 bg-gradient-to-br from-black/70 to-black/30 p-16 flex flex-col justify-center text-white">
+        <div className="absolute inset-0 z-10 bg-gradient-to-br from-[#6b1e96]/75 via-[#531575]/85 to-[#0e0214]/95 p-16 flex flex-col justify-center text-white">
           <h1 className="text-5xl font-bold mb-6 leading-tight">
-            Welcome Back
+            Tu Aliado en Insumos Dentales
           </h1>
           <p className="text-xl max-w-lg opacity-90 leading-relaxed">
-            Access your premium dashboard and manage your products with style.
+            Abastece tu clínica con el catálogo más completo de equipos, instrumental y materiales odontológicos al mejor precio.
           </p>
         </div>
         <img
-          src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80"
-          alt="Office Tech"
+          src="/dental_login_banner.png"
+          alt="Consultorio Dental Moderno"
           loading="lazy"
           className="w-full h-full object-cover opacity-80"
         />
@@ -95,12 +95,12 @@ export default function Login() {
         <div className="w-full max-w-[420px]">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              {isForgotPassword ? "Reset Password" : "Sign in"}
+              {isForgotPassword ? "Restablecer Contraseña" : "Iniciar Sesión"}
             </h2>
-            <p className="text-gray-500">
+            <p className="text-gray-500 text-sm">
               {isForgotPassword
-                ? "Enter your email to receive a password reset link."
-                : "Please enter your details to sign in."}
+                ? "Ingresa tu correo para recibir un enlace de restablecimiento."
+                : "Ingresa tus datos para acceder a tu cuenta."}
             </p>
           </div>
 
@@ -123,12 +123,12 @@ export default function Login() {
                   loading="lazy"
                   className="w-5 h-5"
                 />
-                <span>Sign in with Google</span>
+                <span>Iniciar sesión con Google</span>
               </button>
 
               <div className="flex items-center text-center mb-6 text-gray-400">
                 <div className="flex-1 border-b border-gray-200" />
-                <span className="px-3 text-sm uppercase tracking-wider">OR</span>
+                <span className="px-3 text-xs uppercase tracking-wider">O</span>
                 <div className="flex-1 border-b border-gray-200" />
               </div>
             </>
@@ -138,14 +138,14 @@ export default function Login() {
             <form onSubmit={handleForgotPassword} className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Email
+                  Correo Electrónico
                 </label>
                 <input
                   type="email"
                   required
                   disabled={loading}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-900"
-                  placeholder="name@company.com"
+                  placeholder="ejemplo@correo.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -156,7 +156,7 @@ export default function Login() {
                 disabled={loading}
                 className="w-full py-3 px-4 bg-primary-600 text-white font-semibold rounded-lg shadow-md hover:bg-primary-700 hover:-translate-y-[1px] hover:shadow-lg transition-all active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
               >
-                {loading ? "Sending..." : "Send Reset Link"}
+                {loading ? "Enviando..." : "Enviar Enlace de Recuperación"}
               </button>
 
               <div className="text-center mt-6">
@@ -168,7 +168,7 @@ export default function Login() {
                   }}
                   className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
                 >
-                  Back to Sign In
+                  Volver al Inicio de Sesión
                 </button>
               </div>
             </form>
@@ -177,14 +177,14 @@ export default function Login() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-900 mb-2">
-                    Email
+                    Correo Electrónico
                   </label>
                   <input
                     type="email"
                     required
                     disabled={loading}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-900"
-                    placeholder="name@company.com"
+                    placeholder="ejemplo@correo.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -192,7 +192,7 @@ export default function Login() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-900 mb-2">
-                    Password
+                    Contraseña
                   </label>
                   <input
                     type="password"
@@ -216,7 +216,7 @@ export default function Login() {
                       htmlFor="remember"
                       className="text-sm text-gray-500 cursor-pointer"
                     >
-                      Remember me
+                      Recordarme
                     </label>
                   </div>
                   <button
@@ -227,7 +227,7 @@ export default function Login() {
                     }}
                     className="text-sm font-medium text-primary-600 hover:underline"
                   >
-                    Forgot password
+                    ¿Olvidaste tu contraseña?
                   </button>
                 </div>
 
@@ -236,17 +236,17 @@ export default function Login() {
                   disabled={loading}
                   className="w-full py-3 px-4 bg-primary-600 text-white font-semibold rounded-lg shadow-md hover:bg-primary-700 hover:-translate-y-[1px] hover:shadow-lg transition-all active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
                 >
-                  {loading ? "Signing In..." : "Sign in"}
+                  {loading ? "Iniciando Sesión..." : "Iniciar Sesión"}
                 </button>
               </form>
 
               <p className="text-center mt-8 text-gray-500 text-sm">
-                Don&apos;t have an account?{" "}
+                ¿No tienes una cuenta?{" "}
                 <Link
                   to={`/register${redirectPath !== "/" ? `?redirect=${redirectPath}` : ""}`}
                   className="font-semibold text-primary-600 hover:underline ml-1"
                 >
-                  Create an account
+                  Regístrate aquí
                 </Link>
               </p>
             </>

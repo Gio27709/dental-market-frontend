@@ -31,7 +31,7 @@ export default function OrderCard({ order }) {
     order.order_items?.length > 0 &&
     order.order_items.every((i) => i.delivery_status === "cancelled");
   const anyShipped = order.order_items?.some(
-    (i) => i.delivery_status === "shipped",
+    (i) => ["shipped", "picked_up", "arrived"].includes(i.delivery_status),
   );
 
   const ageInHours = (Date.now() - new Date(order.created_at).getTime()) / (1000 * 60 * 60);
@@ -116,7 +116,7 @@ export default function OrderCard({ order }) {
           navigate(`/account/orders/${order.id}`);
         }
       }}
-      className="group rounded-2xl bg-white border border-gray-150 overflow-hidden hover:border-[#6b1e96]/30 hover:shadow-[0_8px_30px_rgb(107,30,150,0.03)] transition-all duration-250 cursor-pointer flex flex-col"
+      className="group rounded-2xl bg-white border border-gray-100 overflow-hidden hover:border-[#6b1e96]/30 hover:shadow-[0_8px_30px_rgb(107,30,150,0.03)] transition-all duration-250 cursor-pointer flex flex-col"
     >
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/80 px-6 py-3 border-b border-gray-100/80">

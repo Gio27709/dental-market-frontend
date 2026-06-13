@@ -154,7 +154,7 @@ export default function AdminCourses() {
                     <span className="inline-flex px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-green-50 text-green-700 rounded-md">{course.category || 'General'}</span>
                   </td>
                   <td className="px-5 py-3.5 text-right font-mono font-medium text-gray-700">
-                    {course.price > 0 ? `$${course.price.toFixed(2)}` : <span className="text-[#c3ff00] bg-[#111111] px-2 rounded font-bold text-xs">Gratis</span>}
+                    {Number(course.price) > 0 ? `$${Number(course.price).toFixed(2)}` : <span className="text-[#c3ff00] bg-[#111111] px-2 rounded font-bold text-xs">Gratis</span>}
                   </td>
                   <td className="px-5 py-3.5 text-center">
                      {course.is_published ? (

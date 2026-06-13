@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
+import { uploadFileDirectly } from "../lib/upload";
 import {
   getStoreProfile as getStoreProfileAPI,
   upsertStoreProfile as upsertStoreProfileAPI,
@@ -70,7 +71,7 @@ export const StoreProvider = ({ children }) => {
     }
   }, []);
 
-  const updateProfile = async (data) => {
+  const updateProfile = useCallback(async (data) => {
     setLoading(true);
     setError(null);
     try {
@@ -84,7 +85,7 @@ export const StoreProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const fetchMyProducts = useCallback(async () => {
     setLoading(true);
@@ -102,7 +103,7 @@ export const StoreProvider = ({ children }) => {
     }
   }, []);
 
-  const createProduct = async (productData) => {
+  const createProduct = useCallback(async (productData) => {
     setLoading(true);
     setError(null);
     try {
@@ -119,9 +120,9 @@ export const StoreProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const updateProduct = async (id, productData) => {
+  const updateProduct = useCallback(async (id, productData) => {
     setLoading(true);
     setError(null);
     try {
@@ -139,23 +140,22 @@ export const StoreProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchMyProducts]);
 
-  const uploadImage = async (file) => {
+  const uploadImage = useCallback(async (file) => {
     try {
-      const formData = new FormData();
-      formData.append("image", file);
-      const response = await uploadProductImage(formData);
+      const { publicUrl, path } = await uploadFileDirectly(file, "products");
+      const response = await uploadProductImage({ path, url: publicUrl });
       return { success: true, url: response.data.file.url };
     } catch (err) {
       return {
         success: false,
-        error: err.response?.data?.error || "Error al subir imagen",
+        error: err.response?.data?.error || err.message || "Error al subir imagen",
       };
     }
-  };
+  }, []);
 
-  const deleteProduct = async (id) => {
+  const deleteProduct = useCallback(async (id) => {
     setLoading(true);
     try {
       await deleteProductAPI(id);
@@ -171,13 +171,13 @@ export const StoreProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const fetchStoreOrders = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await getMyOrders();
+      const response = await getMyOrders({ params: { as_store: true } });
       setStoreOrders(response.data.data || []);
       return { success: true };
     } catch (err) {
@@ -189,7 +189,7 @@ export const StoreProvider = ({ children }) => {
     }
   }, []);
 
-  const shipItem = async (itemId, trackingData) => {
+  const shipItem = useCallback(async (itemId, trackingData) => {
     setLoading(true);
     try {
       await shipOrderItemAPI(itemId, trackingData);
@@ -205,9 +205,9 @@ export const StoreProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchStoreOrders, fetchStoreStats]);
 
-  const cancelAbandonedStoreOrder = async (orderId) => {
+  const cancelAbandonedStoreOrder = useCallback(async (orderId) => {
     setLoading(true);
     try {
       await cancelAbandonedOrderAPI(orderId);
@@ -223,10 +223,10 @@ export const StoreProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchStoreOrders, fetchStoreStats]);
 
   // Cancel a specific item (store out of stock)
-  const cancelItem = async (itemId, reason) => {
+  const cancelItem = useCallback(async (itemId, reason) => {
     setLoading(true);
     try {
       const res = await cancelOrderItemAPI(itemId, reason);
@@ -242,10 +242,10 @@ export const StoreProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchStoreOrders, fetchStoreStats]);
 
   // Cancel all store items in an order
-  const cancelStoreOrder = async (orderId, reason) => {
+  const cancelStoreOrder = useCallback(async (orderId, reason) => {
     setLoading(true);
     try {
       const res = await storeCancelOrderAPI(orderId, reason);
@@ -261,9 +261,9 @@ export const StoreProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchStoreOrders, fetchStoreStats]);
 
-  const value = {
+  const value = useMemo(() => ({
     storeProfile,
     myProducts,
     storeOrders,
@@ -283,7 +283,27 @@ export const StoreProvider = ({ children }) => {
     cancelAbandonedStoreOrder,
     cancelItem,
     cancelStoreOrder,
-  };
+  }), [
+    storeProfile,
+    myProducts,
+    storeOrders,
+    storeStats,
+    loading,
+    error,
+    fetchProfile,
+    fetchStoreStats,
+    updateProfile,
+    fetchMyProducts,
+    createProduct,
+    updateProduct,
+    uploadImage,
+    deleteProduct,
+    fetchStoreOrders,
+    shipItem,
+    cancelAbandonedStoreOrder,
+    cancelItem,
+    cancelStoreOrder,
+  ]);
 
   return (
     <StoreContext.Provider value={value}>{children}</StoreContext.Provider>

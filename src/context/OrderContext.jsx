@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
 import {
   createOrder as createOrderAPI,
@@ -11,6 +11,7 @@ import {
   rejectPaymentAPI,
   confirmDeliveryAPI,
 } from "../services/api";
+import { uploadFileDirectly } from "../lib/upload";
 
 const OrderContext = createContext();
 
@@ -24,7 +25,7 @@ export const OrderProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const createOrder = async (orderData) => {
+  const createOrder = useCallback(async (orderData) => {
     setLoading(true);
     setError(null);
     try {
@@ -53,24 +54,22 @@ export const OrderProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const uploadPaymentProof = async (orderId, file, paymentDetails = {}) => {
+  const uploadPaymentProof = useCallback(async (orderId, file, paymentDetails = {}) => {
     setLoading(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append("file", file); // Must match multer/busboy field name expectations on backend
+      // 1. Upload payment proof directly to Supabase storage
+      const { publicUrl, path } = await uploadFileDirectly(file, "payment_proofs");
 
-      // Append payer details to the multipart FormData
-      if (paymentDetails.payer_name) formData.append("payer_name", paymentDetails.payer_name);
-      if (paymentDetails.payer_phone) formData.append("payer_phone", paymentDetails.payer_phone);
-      if (paymentDetails.payer_cedula) formData.append("payer_cedula", paymentDetails.payer_cedula);
-      if (paymentDetails.reference_number) formData.append("reference_number", paymentDetails.reference_number);
-      if (paymentDetails.payer_email) formData.append("payer_email", paymentDetails.payer_email);
-      if (paymentDetails.payment_date) formData.append("payment_date", paymentDetails.payment_date);
+      // 2. Submit payment proof details and storage reference to backend via JSON
+      const response = await uploadPaymentProofAPI(orderId, {
+        path,
+        url: publicUrl,
+        ...paymentDetails,
+      });
 
-      const response = await uploadPaymentProofAPI(orderId, formData);
       const updatedOrder = response.data.order || response.data;
       setCurrentOrder(updatedOrder);
       setOrders((prev) =>
@@ -78,13 +77,13 @@ export const OrderProvider = ({ children }) => {
       );
       return { success: true, order: updatedOrder };
     } catch (err) {
-      const msg = err.response?.data?.error || "Error al subir comprobante";
+      const msg = err.response?.data?.error || err.message || "Error al subir comprobante";
       setError(msg);
       return { success: false, error: msg };
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const fetchOrders = useCallback(async (filters = {}) => {
     // If we need to pass status='pending_approval' to backend
@@ -149,7 +148,7 @@ export const OrderProvider = ({ children }) => {
     }
   }, []);
 
-  const approvePayment = async (orderId) => {
+  const approvePayment = useCallback(async (orderId) => {
     setLoading(true);
     setError(null);
     try {
@@ -176,9 +175,9 @@ export const OrderProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentOrder]);
 
-  const rejectPayment = async (orderId, reason) => {
+  const rejectPayment = useCallback(async (orderId, reason) => {
     setLoading(true);
     setError(null);
     try {
@@ -205,9 +204,9 @@ export const OrderProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentOrder]);
 
-  const confirmDelivery = async (itemId) => {
+  const confirmDelivery = useCallback(async (itemId) => {
     setLoading(true);
     setError(null);
     try {
@@ -228,9 +227,9 @@ export const OrderProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentOrder]);
 
-  const value = {
+  const value = useMemo(() => ({
     orders,
     pagination,
     summary,
@@ -245,7 +244,22 @@ export const OrderProvider = ({ children }) => {
     approvePayment,
     rejectPayment,
     confirmDelivery,
-  };
+  }), [
+    orders,
+    pagination,
+    summary,
+    currentOrder,
+    loading,
+    error,
+    createOrder,
+    uploadPaymentProof,
+    fetchOrders,
+    fetchOrderById,
+    fetchOrdersByGroup,
+    approvePayment,
+    rejectPayment,
+    confirmDelivery,
+  ]);
 
   return (
     <OrderContext.Provider value={value}>{children}</OrderContext.Provider>

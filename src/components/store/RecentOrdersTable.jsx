@@ -87,7 +87,7 @@ export default function RecentOrdersTable({ orders = [], loading = false }) {
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-md" style={{ background: badge.bg, color: badge.color }}>
                     {badge.label}
                   </span>
-                  <span className="text-xs font-bold text-gray-700">${order.total.toFixed(2)}</span>
+                  <span className="text-xs font-bold text-gray-700">${Number(order.total).toFixed(2)}</span>
                 </div>
               </div>
             );

@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import PropTypes from "prop-types";
-import { createContext, useState, useEffect, useContext, useRef } from "react";
+import { createContext, useState, useEffect, useContext, useRef, useMemo, useCallback } from "react";
 import { useAuth } from "./AuthContext";
 import { useProducts } from "./ProductContext";
 import {
@@ -21,9 +21,51 @@ import {
 const CartContext = createContext();
 const CART_STORAGE_KEY = "dental_market_cart";
 
+const resolveMaxStock = (product, variation) => {
+  let maxStock;
+  if (variation && variation.stock != null) {
+    maxStock = variation.stock;
+  } else {
+    const defaultVar = product?.variations?.find(
+      (v) =>
+        v.attribute_name === "default" ||
+        v.attribute_value === '{"_default":"default"}' ||
+        v.attribute_value === "default",
+    );
+    if (defaultVar && defaultVar.stock != null) {
+      maxStock = defaultVar.stock;
+    } else if (
+      product?.product_variations?.length > 0 &&
+      product.product_variations[0].stock != null
+    ) {
+      maxStock = product.product_variations[0].stock;
+    } else if (product?.stock != null) {
+      maxStock = product.stock;
+    } else {
+      // No stock source found — use a safe cap and let the backend enforce the real limit.
+      // Using 0 would incorrectly block available products that simply lack frontend stock data.
+      maxStock = 99;
+      console.warn(
+        "[CartContext] resolveMaxStock: No stock source found for product",
+        product?.id,
+        "— using safe cap 99, backend will enforce actual limit",
+      );
+    }
+  }
+  if (product?.stock_status === "Sin stock") {
+    maxStock = 0;
+  }
+  return maxStock;
+};
+
 export const CartProvider = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
   const { bcvRate, products: allProducts } = useProducts();
+
+  // PERF: Keep a ref to allProducts so resolveMaxStockForCartItem
+  // can access the latest data without subscribing CartProvider to product changes
+  const allProductsRef = useRef(allProducts);
+  allProductsRef.current = allProducts;
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +77,37 @@ export const CartProvider = ({ children }) => {
 
   // UI State (Cart Drawer)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const toggleDrawer = () => setIsDrawerOpen((prev) => !prev);
+  const toggleDrawer = useCallback(() => setIsDrawerOpen((prev) => !prev), []);
+
+  // 2. Fetch Remote Helper
+  const loadRemoteCart = useCallback(async () => {
+    try {
+      const { data } = await fetchCart();
+      // Remap and deduplicate by frontend_id
+      const mapped = data.map((item) => ({
+        ...item,
+        id: item.frontend_id || item.id,
+        db_id: item.id,
+      }));
+
+      // Deduplicate: merge items with same frontend_id (same product+variation)
+      const deduped = [];
+      const seen = new Map();
+      for (const item of mapped) {
+        if (seen.has(item.id)) {
+          const existing = seen.get(item.id);
+          existing.quantity += item.quantity;
+        } else {
+          seen.set(item.id, { ...item });
+          deduped.push(seen.get(item.id));
+        }
+      }
+
+      setItems(deduped);
+    } catch (err) {
+      console.error("Error fetching remote cart", err);
+    }
+  }, []);
 
   // 1. Initial State Load (Local or Remote) and Merge logic
   useEffect(() => {
@@ -96,37 +168,7 @@ export const CartProvider = ({ children }) => {
     };
 
     initializeCart();
-  }, [user, authLoading]);
-
-  // 2. Fetch Remote Helper
-  const loadRemoteCart = async () => {
-    try {
-      const { data } = await fetchCart();
-      // Remap and deduplicate by frontend_id
-      const mapped = data.map((item) => ({
-        ...item,
-        id: item.frontend_id || item.id,
-        db_id: item.id,
-      }));
-
-      // Deduplicate: merge items with same frontend_id (same product+variation)
-      const deduped = [];
-      const seen = new Map();
-      for (const item of mapped) {
-        if (seen.has(item.id)) {
-          const existing = seen.get(item.id);
-          existing.quantity += item.quantity;
-        } else {
-          seen.set(item.id, { ...item });
-          deduped.push(seen.get(item.id));
-        }
-      }
-
-      setItems(deduped);
-    } catch (err) {
-      console.error("Error fetching remote cart", err);
-    }
-  };
+  }, [user, authLoading, loadRemoteCart]);
 
   // 3. Keep Totals and Local Storage in Sync
   useEffect(() => {
@@ -159,50 +201,13 @@ export const CartProvider = ({ children }) => {
   const isAddingRef = useRef(false);
   const isUpdatingRef = useRef(false);
 
-  const resolveMaxStock = (product, variation) => {
-    let maxStock;
-    if (variation && variation.stock != null) {
-      maxStock = variation.stock;
-    } else {
-      const defaultVar = product?.variations?.find(
-        (v) =>
-          v.attribute_name === "default" ||
-          v.attribute_value === '{"_default":"default"}' ||
-          v.attribute_value === "default",
-      );
-      if (defaultVar && defaultVar.stock != null) {
-        maxStock = defaultVar.stock;
-      } else if (
-        product?.product_variations?.length > 0 &&
-        product.product_variations[0].stock != null
-      ) {
-        maxStock = product.product_variations[0].stock;
-      } else if (product?.stock != null) {
-        maxStock = product.stock;
-      } else {
-        // No stock source found — use a safe cap and let the backend enforce the real limit.
-        // Using 0 would incorrectly block available products that simply lack frontend stock data.
-        maxStock = 99;
-        console.warn(
-          "[CartContext] resolveMaxStock: No stock source found for product",
-          product?.id,
-          "— using safe cap 99, backend will enforce actual limit",
-        );
-      }
-    }
-    if (product?.stock_status === "Sin stock") {
-      maxStock = 0;
-    }
-    return maxStock;
-  };
-
   /**
    * Resolves maxStock for a cart item by looking up the full product in the catalog.
    * This ensures items added before the fix (with max_stock=999) get correct limits.
    */
-  const resolveMaxStockForCartItem = (cartItem) => {
+  const resolveMaxStockForCartItem = useCallback((cartItem) => {
     // Try to find the real product data from the catalog
-    const product = allProducts?.find((p) => p.id === cartItem.product_id);
+    const product = allProductsRef.current?.find((p) => p.id === cartItem.product_id);
     if (product) {
       // Find the specific variation if the cart item has one
       const variation = cartItem.variation_id
@@ -220,9 +225,9 @@ export const CartProvider = ({ children }) => {
         "— using safe cap 99",
       );
     return fallbackStock;
-  };
+  }, []);
 
-  const addToCart = async (product, variation, quantity = 1) => {
+  const addToCart = useCallback(async (product, variation, quantity = 1) => {
     // MUTEX: Block concurrent calls from rapid clicking
     if (isAddingRef.current) {
       return false;
@@ -263,6 +268,32 @@ export const CartProvider = ({ children }) => {
         }
       }
 
+      // Resolve discount locally if present on the product
+      const discount = product.active_discount;
+      const basePrice = product.price + (variation?.price_modifier || 0);
+      let finalPrice = basePrice;
+      let resolvedDiscount = null;
+
+      if (discount) {
+        let discountAmount = 0;
+        if (discount.discount_type === "percentage") {
+          discountAmount = (basePrice * discount.discount_value) / 100;
+        } else {
+          discountAmount = Math.min(discount.discount_value, basePrice);
+        }
+        discountAmount = Math.round(discountAmount * 100) / 100;
+        finalPrice = Math.max(0, Math.round((basePrice - discountAmount) * 100) / 100);
+
+        resolvedDiscount = {
+          id: discount.id || discount.discount_id,
+          name: discount.name || discount.discount_name,
+          discount_type: discount.discount_type,
+          discount_value: discount.discount_value,
+          discount_amount: discountAmount,
+          ends_at: discount.ends_at,
+        };
+      }
+
       // Calculate new item shape
       const newItem = {
         id: frontendId,
@@ -270,7 +301,9 @@ export const CartProvider = ({ children }) => {
         store_id: product.store_id,
         variation_id: variation?.id || null,
         name: product.name,
-        price_usd: product.price + (variation?.price_modifier || 0),
+        price_usd: finalPrice,
+        original_price_usd: basePrice,
+        active_discount: resolvedDiscount,
         quantity: safeQuantity,
         image: product.images?.[0] || null,
         variation: variation || null,
@@ -344,9 +377,9 @@ export const CartProvider = ({ children }) => {
     } finally {
       isAddingRef.current = false;
     }
-  };
+  }, [items, user]);
 
-  const removeFromCart = async (itemId) => {
+  const removeFromCart = useCallback(async (itemId) => {
     const previousItems = [...items]; // Save for rollback
     const itemToDelete = items.find((i) => i.id === itemId);
 
@@ -361,9 +394,9 @@ export const CartProvider = ({ children }) => {
         setItems(previousItems); // Rollback
       }
     }
-  };
+  }, [items, user]);
 
-  const updateQuantity = async (itemId, requestedQuantity) => {
+  const updateQuantity = useCallback(async (itemId, requestedQuantity) => {
     // MUTEX: Block concurrent calls from rapid clicking
     if (isUpdatingRef.current) return;
     isUpdatingRef.current = true;
@@ -415,9 +448,9 @@ export const CartProvider = ({ children }) => {
     } finally {
       isUpdatingRef.current = false;
     }
-  };
+  }, [items, user, resolveMaxStockForCartItem]);
 
-  const changeItemVariation = async (itemId, newVariation) => {
+  const changeItemVariation = useCallback(async (itemId, newVariation) => {
     const itemToUpdate = items.find((i) => i.id === itemId);
     if (!itemToUpdate || !newVariation) return;
 
@@ -511,9 +544,9 @@ export const CartProvider = ({ children }) => {
         }
       });
     }
-  };
+  }, [items, user, loadRemoteCart]);
 
-  const clearCart = async () => {
+  const clearCart = useCallback(async () => {
     if (user) {
       try {
         await clearCartAPI(); // Sends DELETE /api/cart
@@ -524,34 +557,48 @@ export const CartProvider = ({ children }) => {
     } else {
       setItems([]);
     }
-  };
+  }, [user]);
 
   // Used exclusively for logging out, avoiding 401 Unauthorized API calls
-  const wipeLocalCartOnly = () => {
+  const wipeLocalCartOnly = useCallback(() => {
     setItems([]);
     setTotalUsd(0);
     setTotalVes(0);
     setItemCount(0);
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    items,
+    total_usd: totalUsd,
+    total_ves: totalVes,
+    itemCount,
+    loading,
+    isDrawerOpen,
+    toggleDrawer,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    changeItemVariation,
+    clearCart,
+    wipeLocalCartOnly,
+  }), [
+    items,
+    totalVes,
+    totalUsd,
+    itemCount,
+    loading,
+    isDrawerOpen,
+    toggleDrawer,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    changeItemVariation,
+    clearCart,
+    wipeLocalCartOnly,
+  ]);
 
   return (
-    <CartContext.Provider
-      value={{
-        items,
-        total_usd: totalUsd,
-        total_ves: totalVes,
-        itemCount,
-        loading,
-        isDrawerOpen,
-        toggleDrawer,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        changeItemVariation,
-        clearCart,
-        wipeLocalCartOnly,
-      }}
-    >
+    <CartContext.Provider value={contextValue}>
       {children}
     </CartContext.Provider>
   );

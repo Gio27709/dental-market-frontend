@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import PropTypes from "prop-types";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import LoadingSkeleton from "../../components/LoadingSkeleton";
@@ -31,7 +32,7 @@ const STATUS_BADGE_STYLES = {
   gray: { bg: "#f3f4f6", text: "#4b5563", dot: "#4b5563" },
 };
 
-function RefundRequestBox({ item, order, refundReq, onRefresh }) {
+function RefundRequestBox({ order, refundReq, onRefresh }) {
   const isZellePayment = order.payment_method === "zelle";
   const [method, setMethod] = useState(isZellePayment ? "zelle" : "pago_movil"); // pago_movil, transferencia, zelle
   const [loading, setLoading] = useState(false);
@@ -421,6 +422,30 @@ function RefundRequestBox({ item, order, refundReq, onRefresh }) {
   );
 }
 
+RefundRequestBox.propTypes = {
+  order: PropTypes.shape({
+    payment_method: PropTypes.string,
+  }).isRequired,
+  refundReq: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    status: PropTypes.string.isRequired,
+    amount_usd: PropTypes.number,
+    amount_ves: PropTypes.number,
+    admin_notes: PropTypes.string,
+    processed_at: PropTypes.string,
+    refund_details: PropTypes.shape({
+      method: PropTypes.string,
+      bank: PropTypes.string,
+      ci: PropTypes.string,
+      phone: PropTypes.string,
+      accountNumber: PropTypes.string,
+      holder: PropTypes.string,
+      email: PropTypes.string,
+    }),
+  }),
+  onRefresh: PropTypes.func,
+};
+
 export default function OrderDetail() {
   const { id } = useParams();
   const { fetchOrderById, confirmDelivery, loading: ctxLoading } = useOrder();
@@ -497,10 +522,26 @@ export default function OrderDetail() {
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Recibo_ORD-${order.id.substring(0,6).toUpperCase()}.pdf`);
+      // Calculate scaled height of canvas relative to A4 page width
+      const imgScaledHeight = (canvas.height * pdfWidth) / canvas.width;
+      let heightLeft = imgScaledHeight;
+      let position = 0;
+
+      // Add first page
+      pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, imgScaledHeight);
+      heightLeft -= pdfHeight;
+
+      // Add more pages dynamically if the template height overflows A4 height
+      while (heightLeft > 0) {
+        position = heightLeft - imgScaledHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, imgScaledHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save(`Recibo_ORD-${order.id.substring(0, 6).toUpperCase()}.pdf`);
     } catch (err) {
       console.error("Error generating PDF:", err);
     } finally {
@@ -535,7 +576,7 @@ export default function OrderDetail() {
     const isExpired = order.payment_status === "pending" && !order.payment_proof_url && ageInHours >= 2;
 
     const statuses = items.map((i) => i.delivery_status);
-    if (statuses.some((s) => s === "shipped" || s === "delivered")) return "shipped";
+    if (statuses.some((s) => ["shipped", "picked_up", "arrived", "delivered"].includes(s))) return "shipped";
     if (
       statuses.some((s) => s === "approved") ||
       order.payment_status === "approved"
@@ -585,7 +626,7 @@ export default function OrderDetail() {
   const ageInHours = order ? (Date.now() - new Date(order.created_at).getTime()) / (1000 * 60 * 60) : 0;
   const isExpired = order?.payment_status === "pending" && !order.payment_proof_url && ageInHours >= 2;
 
-  const shippedItems = order?.order_items?.filter((i) => i.delivery_status === "shipped") || [];
+  const shippedItems = order?.order_items?.filter((i) => ["shipped", "picked_up", "arrived", "delivered"].includes(i.delivery_status)) || [];
   const allDelivered =
     order?.order_items?.length > 0 &&
     order.order_items.every((item) => item.delivery_status === "delivered");
@@ -715,6 +756,15 @@ export default function OrderDetail() {
                         </span>
                       </div>
                     )}
+                    {item.delivery_type === "local_delivery" && (
+                      <div className="mt-2 bg-purple-50 rounded-2xl px-5 py-3 flex items-center gap-2.5 border border-purple-100/50" style={{ boxShadow: "0 4px 24px rgba(107,30,150,0.04)" }}>
+                        <span className="material-symbols-outlined text-[18px] flex-shrink-0" style={{ color: "#6b1e96" }}>two_wheeler</span>
+                        <div className="text-xs">
+                          <span className="font-bold text-[#6b1e96]">Envío por Repartidor Local:</span>
+                          <span className="text-gray-600 font-medium ml-1">Tu pedido está a cargo de un repartidor local asignado por la tienda.</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ),
             )}
@@ -751,7 +801,6 @@ export default function OrderDetail() {
                           )}
                           {order.payment_status === "approved" && (
                             <RefundRequestBox
-                              item={item}
                               order={order}
                               refundReq={order.refund_requests?.find(r => r.item_id === item.id)}
                               onRefresh={async () => {
@@ -771,7 +820,10 @@ export default function OrderDetail() {
                   </div>
 
                   {(item.delivery_status === "approved" ||
-                    item.delivery_status === "shipped") && (
+                    item.delivery_status === "shipped" ||
+                    item.delivery_status === "picked_up" ||
+                    item.delivery_status === "arrived" ||
+                    (item.delivery_status === "delivered" && item.delivered_at !== null)) && (
                     <div className="pl-16 md:pl-20 mt-2">
                       <DeliveryConfirmation
                         itemId={item.id}

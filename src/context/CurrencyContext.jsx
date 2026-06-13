@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useContext, useCallback } from "react";
+import { createContext, useState, useContext, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
 
 const CurrencyContext = createContext();
@@ -39,15 +39,15 @@ export const CurrencyProvider = ({ children }) => {
     }
   }, []);
 
+  const contextValue = useMemo(() => ({
+    currency,
+    setCurrency,
+    isVES: currency === "VES",
+    isUSD: currency === "USD",
+  }), [currency, setCurrency]);
+
   return (
-    <CurrencyContext.Provider
-      value={{
-        currency,
-        setCurrency,
-        isVES: currency === "VES",
-        isUSD: currency === "USD",
-      }}
-    >
+    <CurrencyContext.Provider value={contextValue}>
       {children}
     </CurrencyContext.Provider>
   );

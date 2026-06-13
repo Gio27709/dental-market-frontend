@@ -1,17 +1,23 @@
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
+import { memo } from "react";
 import { formatCurrencyUSD, formatCurrencyVES } from "../utils/formatters";
 import { useCurrency } from "../context/CurrencyContext";
 import { useProducts } from "../context/ProductContext";
 
-export default function RelatedProductCard({ product, badge }) {
+const RelatedProductCard = memo(function RelatedProductCard({ product, badge }) {
   const { isVES } = useCurrency();
   const { bcvRate, trendingProductIds } = useProducts();
   const isTrending = trendingProductIds?.has(product.id);
   const hasImage = product.images && product.images.length > 0;
-  const price = Number(product.price) || 0;
-  // Simula un precio original más alto para mostrar tachado si no hay uno real
-  const originalPrice = product.compare_at_price || Math.round(price * 1.35 * 100) / 100;
+  
+  const discount = product.active_discount;
+  const price = discount ? Number(discount.final_price) : (Number(product.price) || 0);
+  const originalPrice = discount ? Number(discount.original_price) : (product.compare_at_price || Math.round(price * 1.35 * 100) / 100);
+
+  const discountBadgeText = discount 
+    ? (discount.discount_type === "percentage" ? `-${discount.discount_value}%` : `-$${discount.discount_value}`)
+    : null;
 
   const formatPrice = (amount) => {
     if (isVES) return formatCurrencyVES(amount * Number(bcvRate || 1));
@@ -23,11 +29,13 @@ export default function RelatedProductCard({ product, badge }) {
       to={`/product/${product.id}`}
       className="flex flex-col bg-white rounded-md border border-gray-200 p-4 hover:shadow-md transition-shadow group relative min-h-[300px]"
     >
-      {/* Badge (SALE / NEW / HOT) */}
-      {(badge || isTrending) && (
+      {/* Badge (SALE / NEW / HOT / DISCOUNT) */}
+      {(discountBadgeText || badge || isTrending) && (
         <span
           className={`absolute top-3 left-3 px-2 py-0.5 text-[10px] font-bold uppercase rounded text-white z-10 flex items-center gap-0.5 ${
-            badge === "SALE"
+            discountBadgeText
+              ? "bg-gradient-to-r from-red-500 to-rose-600 shadow-md font-black"
+              : badge === "SALE"
               ? "bg-[#ef4444]" // red
               : badge === "NEW"
               ? "bg-[#2563eb]" // blue
@@ -36,8 +44,17 @@ export default function RelatedProductCard({ product, badge }) {
               : "bg-emerald-500"
           }`}
         >
-          {isTrending && !badge && <span className="material-symbols-outlined text-[11px] leading-none">local_fire_department</span>}
-          {badge || "HOT"}
+          {discountBadgeText ? (
+            <>
+              <span className="material-symbols-outlined text-[11px] leading-none">local_offer</span>
+              {discountBadgeText}
+            </>
+          ) : (
+            <>
+              {isTrending && !badge && <span className="material-symbols-outlined text-[11px] leading-none">local_fire_department</span>}
+              {badge || "HOT"}
+            </>
+          )}
         </span>
       )}
 
@@ -95,7 +112,9 @@ export default function RelatedProductCard({ product, badge }) {
       </div>
     </Link>
   );
-}
+})
+
+export default RelatedProductCard;
 
 RelatedProductCard.propTypes = {
   product: PropTypes.shape({
@@ -104,6 +123,12 @@ RelatedProductCard.propTypes = {
     price: PropTypes.number.isRequired,
     compare_at_price: PropTypes.number,
     images: PropTypes.arrayOf(PropTypes.string),
+    active_discount: PropTypes.shape({
+      final_price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      original_price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      discount_type: PropTypes.string,
+      discount_value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    }),
   }).isRequired,
   badge: PropTypes.oneOf(["SALE", "NEW"]),
 };

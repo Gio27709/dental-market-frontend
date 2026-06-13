@@ -188,7 +188,7 @@ export default function StoreLayout() {
   ];
 
   return (
-    <div className="flex min-h-screen relative" style={{ background: '#f9f7fc' }}>
+    <div className="flex min-h-screen relative" style={{ background: '#f1ecf6' }}>
       {/* Desktop Sidebar */}
       <StoreSidebar isProfileComplete={isComplete} />
 
@@ -364,7 +364,7 @@ export default function StoreLayout() {
       )}
       
       {/* Main Content */}
-      <div className="flex-1 pt-14 md:pt-6 p-4 md:p-8" style={{ background: '#f9f7fc' }}>
+      <div className="flex-1 pt-14 md:pt-6 p-4 md:p-8" style={{ background: '#f1ecf6' }}>
         <div className="max-w-6xl mx-auto">
           {renderContent()}
         </div>

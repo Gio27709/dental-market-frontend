@@ -14,18 +14,18 @@ export default function PaymentReviewSlideOver({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
 
-  if (!order) return null;
-
   // ── Find all sibling orders in the same group ──
   const groupOrders = useMemo(() => {
-    if (order.order_group_id && allOrders.length > 0) {
+    if (order?.order_group_id && allOrders.length > 0) {
       const siblings = allOrders.filter(
         (o) => o.order_group_id === order.order_group_id
       );
       return siblings.length > 1 ? siblings : [order];
     }
-    return [order];
+    return order ? [order] : [];
   }, [order, allOrders]);
+
+  if (!order) return null;
 
   const isGroup = groupOrders.length > 1;
   const groupTotalUsd = groupOrders.reduce((acc, o) => acc + (o.total_usd || 0), 0);

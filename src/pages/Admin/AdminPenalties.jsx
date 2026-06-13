@@ -273,7 +273,7 @@ export default function AdminPenalties() {
               </div>
               <span className="text-sm text-gray-500 font-bold">Multas Cobradas</span>
             </div>
-            <p className="text-3xl font-black text-gray-900 font-['Manrope'] mt-2">${kpis.finesTotal.toFixed(2)}</p>
+            <p className="text-3xl font-black text-gray-900 font-['Manrope'] mt-2">${Number(kpis.finesTotal || 0).toFixed(2)}</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-all duration-200">

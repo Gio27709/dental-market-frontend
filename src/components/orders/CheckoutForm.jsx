@@ -59,7 +59,6 @@ export default function CheckoutForm({
   }, [cartItems]);
 
   const isMultiStore = storeGroups.length > 1;
-  const allStoresOfferDelivery = storeGroups.every(g => g.offers_local_delivery);
 
   // ── Per-store delivery types (only for multi-store) ──
   const [perStoreDelivery, setPerStoreDelivery] = useState(() => {

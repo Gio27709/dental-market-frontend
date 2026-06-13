@@ -489,6 +489,20 @@ export default function RiderDashboard() {
                   </span>
                 </div>
 
+                {job.shipped_at && (
+                  <div className="text-[11px] text-gray-400 font-medium mb-3 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">calendar_today</span>
+                    <span>Asignado: {new Date(job.shipped_at).toLocaleString("es-VE", {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true
+                    })}</span>
+                  </div>
+                )}
+
                 {/* Product Info */}
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-[#f3e8ff] flex items-center justify-center flex-shrink-0">

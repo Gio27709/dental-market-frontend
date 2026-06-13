@@ -19,6 +19,13 @@ export default function SuggestedProductCard({ product, variant = "standard" }) 
   const { allProducts } = useProducts();
   const [isAdding, setIsAdding] = useState(false);
   const isOwnProduct = user?.id === product.store_id;
+  
+  const discount = product.active_discount;
+  const price = discount ? Number(discount.final_price) : (Number(product.price) || 0);
+  const originalPrice = discount ? Number(discount.original_price) : null;
+  const discountBadgeText = discount 
+    ? (discount.discount_type === "percentage" ? `-${discount.discount_value}%` : `-$${discount.discount_value}`)
+    : null;
   const isAvailable = (() => {
     if (product?.stock_status === "Sin stock") return false;
     const variations = product?.product_variations || product?.variations || [];
@@ -94,9 +101,21 @@ export default function SuggestedProductCard({ product, variant = "standard" }) 
               {product.name}
             </h4>
           </Link>
-          <span className="text-sm font-bold text-[#6b1e96] mt-0.5 block">
-            {formatCurrencyUSD(product.price)}
-          </span>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-sm font-bold text-[#6b1e96]">
+              {formatCurrencyUSD(price)}
+            </span>
+            {originalPrice > 0 && (
+              <>
+                <span className="text-[10px] text-gray-400 line-through">
+                  {formatCurrencyUSD(originalPrice)}
+                </span>
+                <span className="text-[9px] font-bold text-red-500">
+                  ({discountBadgeText})
+                </span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Add Button */}
@@ -149,6 +168,12 @@ export default function SuggestedProductCard({ product, variant = "standard" }) 
             <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
           </svg>
         )}
+        {discountBadgeText && (
+          <span className="absolute top-2 left-2 z-10 px-1.5 py-0.5 text-[9px] font-extrabold uppercase rounded bg-red-500 text-white flex items-center gap-0.5 shadow-sm animate-[fadeIn_0.3s_ease-out]">
+            <span className="material-symbols-outlined text-[10px] leading-none">local_offer</span>
+            {discountBadgeText}
+          </span>
+        )}
       </Link>
 
       {/* Card Body */}
@@ -168,9 +193,16 @@ export default function SuggestedProductCard({ product, variant = "standard" }) 
         </Link>
 
         {/* Price */}
-        <span className="text-lg font-bold text-[#6b1e96] mb-3">
-          {formatCurrencyUSD(product.price)}
-        </span>
+        <div className="flex items-baseline gap-2 mb-3">
+          <span className="text-lg font-bold text-[#6b1e96]">
+            {formatCurrencyUSD(price)}
+          </span>
+          {originalPrice > 0 && (
+            <span className="text-xs text-gray-400 line-through font-medium">
+              {formatCurrencyUSD(originalPrice)}
+            </span>
+          )}
+        </div>
 
         {/* Add to Cart */}
         <button
@@ -225,6 +257,12 @@ SuggestedProductCard.propTypes = {
     product_variations: PropTypes.array,
     stock: PropTypes.number,
     stock_status: PropTypes.string,
+    active_discount: PropTypes.shape({
+      final_price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      original_price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      discount_type: PropTypes.string,
+      discount_value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    }),
   }).isRequired,
   variant: PropTypes.oneOf(["standard", "compact"]),
 };

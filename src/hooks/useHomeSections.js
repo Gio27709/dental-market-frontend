@@ -4,77 +4,149 @@ import { getHomeSectionsAPI } from "../services/api";
 const CACHE_KEY = "dental_market_home_sections_cache";
 const CACHE_TTL = 3 * 60 * 1000; // 3 minutes
 
-export default function useHomeSections() {
-  const [sections, setSections] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+// Shared module-level state (Observable Store)
+let globalSections = null;
+let globalLoading = false;
+let globalError = null;
+let lastFetchedTimestamp = 0;
+const listeners = new Set();
 
-  const fetchSections = useCallback(async (force = false) => {
-    try {
-      setLoading(true);
-      setError(null);
+// Load initial value from localStorage cache synchronously on module load
+try {
+  const cachedStr = localStorage.getItem(CACHE_KEY);
+  if (cachedStr) {
+    const cachedNode = JSON.parse(cachedStr);
+    if (Date.now() - cachedNode.timestamp < CACHE_TTL) {
+      globalSections = cachedNode.data;
+      lastFetchedTimestamp = cachedNode.timestamp;
+    }
+  }
+} catch (e) {
+  console.error("[useHomeSections] Error parsing initial cache:", e);
+}
 
-      if (!force) {
-        const cachedStr = localStorage.getItem(CACHE_KEY);
-        if (cachedStr) {
-          const cachedNode = JSON.parse(cachedStr);
-          if (Date.now() - cachedNode.timestamp < CACHE_TTL) {
-            setSections(cachedNode.data);
-            setLoading(false);
-            return;
-          }
-        }
-      }
+const notifyListeners = () => {
+  const currentState = {
+    sections: globalSections || {},
+    loading: globalLoading,
+    error: globalError,
+  };
+  listeners.forEach((listener) => {
+    listener(currentState);
+  });
+};
 
-      const { data } = await getHomeSectionsAPI();
-      
-      if (data && data.success && data.data) {
-        // Build map section_key -> content
-        const sectionsMap = {};
-        data.data.forEach((section) => {
-          sectionsMap[section.section_key] = section.content;
-        });
+const fetchSectionsAPI = async (force = false) => {
+  if (globalLoading) return;
 
-        setSections(sectionsMap);
-        
+  // Check TTL if not forced
+  if (!force && globalSections && Date.now() - lastFetchedTimestamp < CACHE_TTL) {
+    return;
+  }
+
+  globalLoading = true;
+  globalError = null;
+  notifyListeners();
+
+  try {
+    const { data } = await getHomeSectionsAPI();
+    if (data && data.success && data.data) {
+      const sectionsMap = {};
+      data.data.forEach((section) => {
+        sectionsMap[section.section_key] = section.content;
+      });
+
+      globalSections = sectionsMap;
+      lastFetchedTimestamp = Date.now();
+
+      try {
         localStorage.setItem(
           CACHE_KEY,
           JSON.stringify({
-            timestamp: Date.now(),
+            timestamp: lastFetchedTimestamp,
             data: sectionsMap,
           })
         );
+      } catch (e) {
+        console.error("[useHomeSections] Error saving cache:", e);
       }
-    } catch (err) {
-      console.error("Error fetching home sections:", err);
-      setError(err);
-      
-      // Fallback to stale cache if API fails
-      const cachedStr = localStorage.getItem(CACHE_KEY);
-      if (cachedStr) {
-         setSections(JSON.parse(cachedStr).data);
-      }
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  } catch (err) {
+    console.error("[useHomeSections] Error fetching home sections:", err);
+    globalError = err;
+
+    // Fallback to stale cache if API fails
+    if (!globalSections) {
+      try {
+        const cachedStr = localStorage.getItem(CACHE_KEY);
+        if (cachedStr) {
+          globalSections = JSON.parse(cachedStr).data;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  } finally {
+    globalLoading = false;
+    notifyListeners();
+  }
+};
+
+// Listen to custom event for updating
+if (typeof window !== "undefined") {
+  window.addEventListener("home_sections_updated", () => {
+    fetchSectionsAPI(true);
+  });
+}
+
+export default function useHomeSections() {
+  const [state, setState] = useState(() => ({
+    sections: globalSections || {},
+    loading: globalSections ? false : globalLoading,
+    error: globalError,
+  }));
 
   useEffect(() => {
-    fetchSections();
+    // Subscribe
+    listeners.add(setState);
 
-    const handleUpdate = () => fetchSections(true);
-    window.addEventListener("home_sections_updated", handleUpdate);
-    
+    // If we don't have sections, or it's expired, and we aren't loading, trigger fetch
+    const hasCache = globalSections !== null;
+    const isExpired = Date.now() - lastFetchedTimestamp >= CACHE_TTL;
+    if ((!hasCache || isExpired) && !globalLoading) {
+      fetchSectionsAPI();
+    } else {
+      // Sync local state with current global state on mount
+      setState({
+        sections: globalSections || {},
+        loading: globalLoading,
+        error: globalError,
+      });
+    }
+
     return () => {
-      window.removeEventListener("home_sections_updated", handleUpdate);
+      // Unsubscribe
+      listeners.delete(setState);
     };
-  }, [fetchSections]);
+  }, []);
 
-  const getSectionContent = useCallback((sectionKey) => {
-    return sections[sectionKey] || null;
-  }, [sections]);
+  const getSectionContent = useCallback(
+    (sectionKey) => {
+      return state.sections[sectionKey] || null;
+    },
+    [state.sections]
+  );
 
-  const refetch = () => fetchSections(true);
+  const refetch = useCallback(() => {
+    fetchSectionsAPI(true);
+  }, []);
 
-  return { sections, loading, error, refetch, getSectionContent };
+  return {
+    sections: state.sections,
+    loading: state.loading,
+    error: state.error,
+    refetch,
+    getSectionContent,
+  };
 }
+export { fetchSectionsAPI };
