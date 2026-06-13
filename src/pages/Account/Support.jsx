@@ -48,6 +48,26 @@ export default function Support() {
   const lastTicketIdRef = useRef(null);
   const lastMessagesLengthRef = useRef(0);
 
+  const handleSelectTicket = useCallback(async (ticket) => {
+    setActiveTicket(ticket);
+    setShowCreateForm(false);
+    setTickets((prev) =>
+      prev.map((t) => (t.id === ticket.id ? { ...t, user_has_unread: false } : t))
+    );
+    try {
+      setLoadingDetails(true);
+      const res = await getTicketDetailsAPI(ticket.id);
+      if (res.data && res.data.success) {
+        setTicketDetails(res.data.data);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al cargar la conversación.");
+    } finally {
+      setLoadingDetails(false);
+    }
+  }, []);
+
   const fetchTickets = useCallback(async () => {
     try {
       setLoading(true);
@@ -180,26 +200,6 @@ export default function Support() {
       socket.off("ticket_updated", handleTicketUpdatedList);
     };
   }, [user]);
-
-  const handleSelectTicket = useCallback(async (ticket) => {
-    setActiveTicket(ticket);
-    setShowCreateForm(false);
-    setTickets((prev) =>
-      prev.map((t) => (t.id === ticket.id ? { ...t, user_has_unread: false } : t))
-    );
-    try {
-      setLoadingDetails(true);
-      const res = await getTicketDetailsAPI(ticket.id);
-      if (res.data && res.data.success) {
-        setTicketDetails(res.data.data);
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Error al cargar la conversación.");
-    } finally {
-      setLoadingDetails(false);
-    }
-  }, []);
 
   const handleCreateTicket = async (e) => {
     e.preventDefault();
