@@ -45,6 +45,25 @@ export default function AdminSupport() {
   const lastTicketIdRef = useRef(null);
   const lastMessagesLengthRef = useRef(0);
 
+  const handleSelectTicket = useCallback(async (ticket) => {
+    setActiveTicket(ticket);
+    setTickets((prev) =>
+      prev.map((t) => (t.id === ticket.id ? { ...t, admin_has_unread: false } : t))
+    );
+    try {
+      setLoadingDetails(true);
+      const res = await getTicketDetailsAPI(ticket.id);
+      if (res.data && res.data.success) {
+        setTicketDetails(res.data.data);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al cargar el detalle del ticket.");
+    } finally {
+      setLoadingDetails(false);
+    }
+  }, []);
+
   const fetchTickets = useCallback(async () => {
     try {
       setLoading(true);
@@ -164,25 +183,6 @@ export default function AdminSupport() {
       socket.off("ticket_updated", handleTicketUpdatedList);
     };
   }, [fetchTickets]);
-
-  const handleSelectTicket = useCallback(async (ticket) => {
-    setActiveTicket(ticket);
-    setTickets((prev) =>
-      prev.map((t) => (t.id === ticket.id ? { ...t, admin_has_unread: false } : t))
-    );
-    try {
-      setLoadingDetails(true);
-      const res = await getTicketDetailsAPI(ticket.id);
-      if (res.data && res.data.success) {
-        setTicketDetails(res.data.data);
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Error al cargar el detalle del ticket.");
-    } finally {
-      setLoadingDetails(false);
-    }
-  }, []);
 
   const handleSendReply = async (e) => {
     e.preventDefault();
