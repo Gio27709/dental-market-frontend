@@ -1,11 +1,9 @@
 import PropTypes from "prop-types";
-import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import useHomeSections from "../../hooks/useHomeSections";
-import useDragScroll from "../../hooks/useDragScroll";
 
 /* ────────────────────────────────────────────
-   Tarjeta compacta interna — estilo premium
+   Tarjeta compacta interna — estilo premium y minimalista
    ──────────────────────────────────────────── */
 function DealCard({ product, badge }) {
   const imageUrl = typeof product?.images?.[0] === 'string' ? product.images[0] : product?.images?.[0]?.url || product?.image || null;
@@ -25,41 +23,41 @@ function DealCard({ product, badge }) {
   return (
     <Link
       to={`/product/${product?.id || product?._id || ""}`}
-      className="group bg-white rounded-xl border border-gray-100 hover:border-purple-200 hover:shadow-[0_8px_35px_rgba(107,30,150,0.08)] hover:-translate-y-1 transition-all duration-300 p-3 flex flex-col relative overflow-hidden"
+      className="group bg-white rounded-xl border border-slate-100 hover:border-purple-200 hover:shadow-[0_8px_20px_rgba(83,21,117,0.04)] hover:-translate-y-0.5 transition-all duration-300 p-2.5 flex flex-col relative overflow-hidden"
     >
       {/* Badge Premium */}
       {(discountBadgeText || badge) && (
-        <span className="absolute top-2.5 right-2.5 z-10 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm uppercase tracking-wider">
+        <span className="absolute top-2 left-2 z-10 bg-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm uppercase tracking-wider">
           {discountBadgeText || badge}
         </span>
       )}
 
       {/* Imagen */}
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center h-24 sm:h-28 mb-3 overflow-hidden relative group-hover:from-purple-50 group-hover:to-white transition-colors duration-500">
+      <div className="bg-gradient-to-br from-slate-50 to-purple-50/10 rounded-lg flex items-center justify-center h-20 sm:h-24 mb-2 overflow-hidden relative group-hover:from-purple-50 group-hover:to-white transition-colors duration-500">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={name}
-            className="max-h-full max-w-full object-contain p-2 group-hover:scale-105 transition-transform duration-700 ease-out"
+            className="max-h-full max-w-full object-contain p-2 group-hover:scale-102 transition-transform duration-500 ease-out"
           />
         ) : (
-          <span className="material-symbols-outlined text-3xl text-gray-300 group-hover:text-purple-200 transition-colors duration-500">
+          <span className="material-symbols-outlined text-2xl text-gray-300 group-hover:text-purple-200 transition-colors duration-500">
             inventory_2
           </span>
         )}
       </div>
 
       {/* Info */}
-      <h4 className="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-2 leading-tight mb-2 group-hover:text-purple-700 transition-colors">
+      <h4 className="text-[11px] sm:text-xs font-bold text-slate-700 group-hover:text-[#531575] leading-snug line-clamp-2 h-8 mb-1.5 transition-colors">
         {name}
       </h4>
 
       {/* Estrellas */}
-      <div className="flex items-center gap-0.5 mb-2 mt-auto">
+      <div className="flex items-center gap-0.5 mb-1.5 mt-auto">
         {[1, 2, 3, 4, 5].map((star) => (
           <svg
             key={star}
-            className={`w-3 h-3 ${star <= rating ? "text-amber-400 drop-shadow-sm" : "text-gray-200"}`}
+            className={`w-2.5 h-2.5 ${star <= rating ? "text-amber-400 drop-shadow-sm" : "text-gray-200"}`}
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -69,18 +67,18 @@ function DealCard({ product, badge }) {
       </div>
 
       {/* Precio y Acción */}
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col">
-          <p className="text-sm sm:text-base font-extrabold text-gray-900 group-hover:text-purple-800 transition-colors">
+      <div className="flex items-center justify-between pt-0.5">
+        <div className="flex items-baseline gap-1 flex-wrap">
+          <p className="text-xs sm:text-sm font-extrabold text-[#531575] transition-colors">
             ${price.toLocaleString("en-US", { minimumFractionDigits: 2 })}
           </p>
           {originalPrice > 0 && (
-            <p className="text-[10px] text-gray-400 line-through">
+            <p className="text-[9px] text-slate-400 line-through">
               ${originalPrice.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </p>
           )}
         </div>
-        <div className="w-7 h-7 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+        <div className="w-7 h-7 rounded-full bg-purple-50 text-[#531575] hover:bg-[#531575] hover:text-white flex items-center justify-center transition-all duration-300 shadow-sm active:scale-90 flex-shrink-0">
           <span className="material-symbols-outlined text-[13px] font-bold">add_shopping_cart</span>
         </div>
       </div>
@@ -111,37 +109,11 @@ export default function DealOfTheDay({ products }) {
   const buttonLink = data.button_link || "/catalogo";
 
   const available = products || [];
-  const scrollRef = useRef(null);
-  const { handlers: dragHandlers } = useDragScroll({ externalRef: scrollRef });
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
 
   // Dynamic badge helper to avoid duplicates and handle arbitrary list lengths
   const getBadge = (index) => {
     const badgesList = [null, "HOT", null, null, "NEW", null, "SALE", null];
     return badgesList[index % badgesList.length];
-  };
-
-  const updateScrollButtons = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 5);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 5);
-  };
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    updateScrollButtons();
-    el.addEventListener("scroll", updateScrollButtons);
-    return () => el.removeEventListener("scroll", updateScrollButtons);
-  }, []);
-
-  const scroll = (dir) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const amount = el.clientWidth * 0.8;
-    el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
   };
 
   if (available.length === 0) return null;
@@ -151,32 +123,31 @@ export default function DealOfTheDay({ products }) {
   const featuredImage = typeof featuredProduct?.images?.[0] === 'string'
     ? featuredProduct.images[0]
     : featuredProduct?.images?.[0]?.url || featuredProduct?.image || null;
-    null;
 
   return (
-    <section className="mb-20">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 shadow-2xl shadow-purple-900/5 rounded-2xl overflow-hidden bg-white border border-gray-100 relative z-10">
+    <section className="mb-12">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 shadow-xl shadow-purple-900/5 rounded-2xl overflow-hidden bg-white border border-gray-100 relative z-10">
         
         {/* =========== BANNER IZQUIERDO (PREMIUM DARK MODE) =========== */}
-        <div className="lg:col-span-4 flex flex-col relative overflow-hidden bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 p-6 sm:p-8 text-white">
+        <div className="lg:col-span-4 flex flex-col relative overflow-hidden bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 p-5 sm:p-6 text-white min-h-[300px] lg:min-h-full">
           {/* Decorative elements */}
           <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-purple-500/20 blur-3xl pointer-events-none"></div>
           <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 rounded-full bg-pink-500/20 blur-3xl pointer-events-none"></div>
 
           {/* Encabezado interno del banner */}
-          <div className="relative z-10 mb-6 flex justify-between items-start">
-            <h2 className="text-lg font-bold tracking-tight text-white/90">
+          <div className="relative z-10 mb-4 flex justify-between items-start">
+            <h2 className="text-base font-bold tracking-tight text-white/90">
               {sectionTitle}
             </h2>
-            <span className="inline-flex items-center gap-1 bg-white/10 backdrop-blur-md border border-white/20 text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.1)]">
-              <span className="material-symbols-outlined text-xs">workspace_premium</span>
+            <span className="inline-flex items-center gap-1 bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.1)]">
+              <span className="material-symbols-outlined text-[10px]">workspace_premium</span>
               {badgeText}
             </span>
           </div>
 
           {/* Texto promocional */}
           <div className="relative z-10 flex flex-col flex-1">
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-purple-200 leading-tight mb-3 drop-shadow-sm">
+            <h3 className="text-xl sm:text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-purple-200 leading-tight mb-2 drop-shadow-sm">
               {promoLines.map((line, i) => (
                 <span key={i} className="block">
                   {line}
@@ -184,82 +155,52 @@ export default function DealOfTheDay({ products }) {
               ))}
             </h3>
 
-            <p className="text-xs text-purple-200 font-medium mb-6 max-w-xs">
+            <p className="text-[11px] text-purple-200 font-medium mb-4 max-w-xs">
               {promoSubtext}
             </p>
 
             {/* Botón */}
             <Link
               to={buttonLink}
-              className="inline-flex items-center self-start gap-1.5 bg-white text-purple-900 font-bold text-xs px-5 py-2.5 rounded-full hover:bg-purple-50 hover:shadow-[0_0_15px_rgba(255,255,255,0.2)] hover:scale-105 transition-all duration-300 group mt-auto z-20"
+              className="inline-flex items-center self-start gap-1.5 bg-white text-purple-900 font-bold text-[11px] px-4 py-2 rounded-full hover:bg-purple-50 hover:shadow-[0_0_15px_rgba(255,255,255,0.2)] hover:scale-105 transition-all duration-300 group mt-auto z-20"
             >
               {buttonText}
-              <span className="material-symbols-outlined text-xs group-hover:translate-x-1 transition-transform duration-300">
+              <span className="material-symbols-outlined text-[11px] group-hover:translate-x-1 transition-transform duration-300">
                 arrow_forward
               </span>
             </Link>
           </div>
 
           {/* Imagen del producto grande */}
-          <div className="absolute bottom-[-10%] right-[-5%] w-3/5 h-3/5 opacity-80 group hover:opacity-100 transition-opacity duration-500 z-10 flex items-end justify-end">
+          <div className="absolute bottom-[-5%] right-[-5%] w-[50%] h-[50%] opacity-85 group hover:opacity-100 transition-opacity duration-500 z-10 flex items-end justify-end">
             {featuredImage ? (
               <img
                 src={featuredImage}
                 alt={featuredProduct?.name || "Producto"}
-                className="max-h-full object-contain drop-shadow-2xl origin-bottom-right hover:scale-110 hover:-rotate-3 transition-transform duration-700 ease-out"
+                className="max-h-full object-contain drop-shadow-2xl origin-bottom-right hover:scale-105 hover:-rotate-2 transition-transform duration-700 ease-out"
               />
             ) : (
-              <div className="w-40 h-40 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.3)] mb-8 mr-8">
-                <span className="material-symbols-outlined text-6xl text-white/40">dentistry</span>
+              <div className="w-32 h-32 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.3)] mb-6 mr-6">
+                <span className="material-symbols-outlined text-4xl text-white/40">dentistry</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* =========== GRID DERECHO =========== */}
+        {/* =========== GRID DERECHO (ESTÁTICO Y CENTRADO COMPACTO) =========== */}
         <div className="lg:col-span-8 flex flex-col bg-gray-50/50 relative">
-          {/* Encabezado con flechas */}
-          <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100 bg-white">
-            <h2 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-              <span className="material-symbols-outlined text-amber-500">flash_on</span>
+          {/* Encabezado sin flechas de navegación */}
+          <div className="flex items-center justify-between p-4 pb-3 border-b border-gray-100 bg-white">
+            <h2 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
+              <span className="material-symbols-outlined text-amber-500 text-lg">flash_on</span>
               {gridTitle}
             </h2>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => scroll("left")}
-                disabled={!canScrollLeft}
-                className={`w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 ${
-                  canScrollLeft
-                    ? "bg-white border border-gray-200 text-gray-700 hover:bg-purple-600 hover:text-white hover:border-purple-600 shadow-sm active:scale-95"
-                    : "bg-gray-50 border border-gray-100 text-gray-300 cursor-not-allowed"
-                }`}
-              >
-                <span className="material-symbols-outlined text-lg">chevron_left</span>
-              </button>
-              <button
-                onClick={() => scroll("right")}
-                disabled={!canScrollRight}
-                className={`w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 ${
-                  canScrollRight
-                    ? "bg-white border border-gray-200 text-gray-700 hover:bg-purple-600 hover:text-white hover:border-purple-600 shadow-sm active:scale-95"
-                    : "bg-gray-50 border border-gray-100 text-gray-300 cursor-not-allowed"
-                }`}
-              >
-                <span className="material-symbols-outlined text-lg">chevron_right</span>
-              </button>
-            </div>
           </div>
 
-          {/* Grid de 3 filas (vertical) y 4 columnas (horizontal) en desktop, deslizable */}
-          <div
-            ref={scrollRef}
-            {...dragHandlers}
-            className="overflow-x-auto scrollbar-hide p-4 md:px-0 md:py-4 drag-scroll-container h-[450px] lg:h-[660px]"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
-            <div className="grid grid-rows-2 lg:grid-rows-3 grid-flow-col auto-cols-[180px] sm:auto-cols-[200px] lg:auto-cols-[calc(25%-12px)] gap-4 min-w-max h-full">
-              {available.map((product, index) => (
+          {/* Grid de 3 columnas horizontales y hasta 2 filas verticales (6 productos máx) */}
+          <div className="p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 w-full">
+              {available.slice(0, 6).map((product, index) => (
                 <DealCard
                   key={`deal-${product?.id || product?._id || index}-${index}`}
                   product={product}
