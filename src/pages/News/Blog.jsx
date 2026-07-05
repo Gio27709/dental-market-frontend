@@ -12,6 +12,7 @@ import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import PostModal from "../../components/posts/PostModal";
+import AuthPromptModal from "../../components/auth/AuthPromptModal";
 import { 
   Heart, 
   MessageCircle, 
@@ -78,6 +79,7 @@ export default function Blog() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [modalInitialCategory, setModalInitialCategory] = useState("Noticias");
   const [modalAutoTriggerUpload, setModalAutoTriggerUpload] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   // Likes state
   const [likedPosts, setLikedPosts] = useState({});
@@ -145,8 +147,7 @@ export default function Blog() {
 
   const handleOpenModal = (category = "Noticias", triggerUpload = false) => {
     if (!user) {
-      toast.error("Debes iniciar sesión para proponer una publicación");
-      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      setAuthModalOpen(true);
       return;
     }
 
@@ -836,6 +837,13 @@ export default function Blog() {
           onClose={() => setCreateModalOpen(false)}
         />
       )}
+
+      {/* Auth Prompt Modal */}
+      <AuthPromptModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        redirectPath="/news"
+      />
     </div>
   );
 }
