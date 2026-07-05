@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Outlet } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ProductProvider } from "./context/ProductContext";
 import { CartProvider } from "./context/CartContext";
@@ -52,6 +52,8 @@ const AdminPenalties = lazy(() => import("./pages/Admin/AdminPenalties"));
 const AdminPayouts = lazy(() => import("./pages/Admin/AdminPayouts"));
 const AdminSupport = lazy(() => import("./pages/Admin/AdminSupport"));
 const AdminPromotions = lazy(() => import("./pages/Admin/AdminPromotions"));
+const ProfessionalVerification = lazy(() => import("./pages/Account/ProfessionalVerification"));
+const ProfessionalVerifications = lazy(() => import("./pages/Admin/ProfessionalVerifications"));
 
 const Orders = lazy(() => import("./pages/Account/Orders"));
 const OrderDetail = lazy(() => import("./pages/Account/OrderDetail"));
@@ -93,6 +95,18 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 const TermsConditions = lazy(() => import("./pages/TermsConditions"));
 
+function EcommerceLayout() {
+  return (
+    <div className="min-h-screen flex flex-col font-sans">
+      <Header />
+      <main className="flex-grow bg-gray-50">
+        <Outlet />
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <Router>
@@ -106,11 +120,96 @@ export default function App() {
               <OrderProvider>
                 <StoreProvider>
                 <NotificationProvider>
-                  <div className="min-h-screen flex flex-col font-sans">
-                  <Header />
-                  <main className="flex-grow bg-gray-50">
-                    <Suspense fallback={<LoadingSkeleton />}>
-                      <Routes>
+                  <Suspense fallback={<LoadingSkeleton />}>
+                    <Routes>
+                      {/* --- RUTAS PRIVADAS / PANELES INTERNOS (Sin Header/Footer públicos) --- */}
+                      
+                      {/* Admin Routes */}
+                      <Route
+                        path="/admin"
+                        element={
+                          <ProtectedRoute
+                            redirectTo="/login"
+                            requiredRole={["admin", "owner"]}
+                          >
+                            <AdminLayout />
+                          </ProtectedRoute>
+                        }
+                      >
+                        <Route index element={<AdminDashboard />} />
+                        <Route path="analytics" element={<AdminAnalytics />} />
+                        <Route path="users" element={<AdminUsers />} />
+                        <Route path="payment-approvals" element={<PaymentApprovals />} />
+                        <Route path="orders" element={<AllOrders />} />
+                        <Route path="orders/:id" element={<AdminOrderDetail />} />
+                        <Route path="refunds" element={<AdminRefunds />} />
+                        <Route path="penalties" element={<AdminPenalties />} />
+                        <Route path="payouts" element={<AdminPayouts />} />
+                        <Route path="payment-history" element={<PaymentHistory />} />
+                        <Route path="product-moderation" element={<ProductModeration />} />
+                        <Route path="store-applications" element={<StoreApplications />} />
+                        <Route path="rider-applications" element={<AdminRiderApplications />} />
+                        <Route path="categories" element={<CategoryManagement />} />
+                        <Route path="courses" element={<AdminCourses />} />
+                        <Route path="posts" element={<AdminPosts />} />
+                        <Route path="settings" element={<PlatformSettings />} />
+                        <Route path="newsletter" element={<AdminNewsletter />} />
+                        <Route path="notifications" element={<AdminNotifications />} />
+                        <Route path="home-content" element={<HomeContentManager />} />
+                        <Route path="support" element={<AdminSupport />} />
+                        <Route path="promotions" element={<AdminPromotions />} />
+                        <Route path="professional-verifications" element={<ProfessionalVerifications />} />
+                      </Route>
+
+                      {/* Rider Dashboard Routes */}
+                      <Route
+                        path="/delivery"
+                        element={
+                          <ProtectedRoute
+                            redirectTo="/login"
+                            requiredRole={["delivery", "owner"]}
+                          >
+                            <RiderLayout />
+                          </ProtectedRoute>
+                        }
+                      >
+                        <Route index element={<RiderDashboard />} />
+                      </Route>
+
+                      {/* Store Dashboard Routes */}
+                      <Route
+                        path="/store"
+                        element={
+                          <ProtectedRoute
+                            redirectTo="/login"
+                            requiredRole={["store", "owner"]}
+                          >
+                            <StoreLayout />
+                          </ProtectedRoute>
+                        }
+                      >
+                        <Route index element={<StoreDashboard />} />
+                        <Route path="products" element={<StoreProducts />} />
+                        <Route path="products/new" element={<ProductForm />} />
+                        <Route
+                          path="products/edit/:id"
+                          element={<ProductForm />}
+                        />
+                        <Route
+                          path="products/:id/stats"
+                          element={<ProductStats />}
+                        />
+                        <Route path="orders" element={<StoreOrders />} />
+                        <Route path="wallet" element={<StoreWallet />} />
+                        <Route path="analytics" element={<StoreDashboard />} />
+                        <Route path="riders" element={<StoreRiders />} />
+                        <Route path="profile" element={<StoreProfile />} />
+                        <Route path="penalties" element={<StorePenalties />} />
+                        <Route path="discounts" element={<StoreDiscounts />} />
+                      </Route>
+
+                      {/* --- RUTAS PÚBLICAS / CLIENTE (Con Header y Footer de E-commerce) --- */}
+                      <Route element={<EcommerceLayout />}>
                         <Route path="/" element={<Home />} />
                         <Route path="/product/:id" element={<ProductDetail />} />
                         <Route path="/login" element={<Login />} />
@@ -131,6 +230,7 @@ export default function App() {
                         <Route path="/news/:id" element={<PostDetail />} />
                         <Route path="/store/:id" element={<StorePublicProfile />} />
                         <Route path="/user/:id" element={<UserPublicProfile />} />
+                        
                         {/* Account Routes (Nested Layout) */}
                         <Route
                           path="/account"
@@ -152,7 +252,9 @@ export default function App() {
                           <Route path="payment-methods" element={<PaymentMethods />} />
                           <Route path="support" element={<Support />} />
                           <Route path="posts" element={<UserPosts />} />
+                          <Route path="professional-verification" element={<ProfessionalVerification />} />
                         </Route>
+
                         <Route
                           path="/checkout"
                           element={
@@ -169,95 +271,11 @@ export default function App() {
                             </ProtectedRoute>
                           }
                         />
-                        {/* Admin Routes (Nested Layout) */}
-                        <Route
-                          path="/admin"
-                          element={
-                            <ProtectedRoute
-                              redirectTo="/login"
-                              requiredRole={["admin", "owner"]}
-                            >
-                              <AdminLayout />
-                            </ProtectedRoute>
-                          }
-                        >
-                          <Route index element={<AdminDashboard />} />
-                          <Route path="analytics" element={<AdminAnalytics />} />
-                          <Route path="users" element={<AdminUsers />} />
-                          <Route path="payment-approvals" element={<PaymentApprovals />} />
-                          <Route path="orders" element={<AllOrders />} />
-                          <Route path="orders/:id" element={<AdminOrderDetail />} />
-                          <Route path="refunds" element={<AdminRefunds />} />
-                          <Route path="penalties" element={<AdminPenalties />} />
-                          <Route path="payouts" element={<AdminPayouts />} />
-                          <Route path="payment-history" element={<PaymentHistory />} />
-                          <Route path="product-moderation" element={<ProductModeration />} />
-                          <Route path="store-applications" element={<StoreApplications />} />
-                          <Route path="rider-applications" element={<AdminRiderApplications />} />
-                          <Route path="categories" element={<CategoryManagement />} />
-                          <Route path="courses" element={<AdminCourses />} />
-                          <Route path="posts" element={<AdminPosts />} />
-                          <Route path="settings" element={<PlatformSettings />} />
-                          <Route path="newsletter" element={<AdminNewsletter />} />
-                          <Route path="notifications" element={<AdminNotifications />} />
-                          <Route path="home-content" element={<HomeContentManager />} />
-                          <Route path="support" element={<AdminSupport />} />
-                          <Route path="promotions" element={<AdminPromotions />} />
-                        </Route>
-
-                        {/* Rider Dashboard Routes */}
-                        <Route
-                          path="/delivery"
-                          element={
-                            <ProtectedRoute
-                              redirectTo="/login"
-                              requiredRole={["delivery", "owner"]}
-                            >
-                              <RiderLayout />
-                            </ProtectedRoute>
-                          }
-                        >
-                          <Route index element={<RiderDashboard />} />
-                        </Route>
-
-                        {/* Store Dashboard Routes (Nested Layout) */}
-                        <Route
-                          path="/store"
-                          element={
-                            <ProtectedRoute
-                              redirectTo="/login"
-                              requiredRole={["store", "owner"]}
-                            >
-                              <StoreLayout />
-                            </ProtectedRoute>
-                          }
-                        >
-                          <Route index element={<StoreDashboard />} />
-                          <Route path="products" element={<StoreProducts />} />
-                          <Route path="products/new" element={<ProductForm />} />
-                          <Route
-                            path="products/edit/:id"
-                            element={<ProductForm />}
-                          />
-                          <Route
-                            path="products/:id/stats"
-                            element={<ProductStats />}
-                          />
-                          <Route path="orders" element={<StoreOrders />} />
-                          <Route path="wallet" element={<StoreWallet />} />
-                          <Route path="analytics" element={<StoreDashboard />} />
-                          <Route path="riders" element={<StoreRiders />} />
-                          <Route path="profile" element={<StoreProfile />} />
-                          <Route path="penalties" element={<StorePenalties />} />
-                          <Route path="discounts" element={<StoreDiscounts />} />
-                        </Route>
-
                         <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </Suspense>
-                  </main>
+                      </Route>
+                    </Routes>
+                  </Suspense>
 
-                  <Footer />
                   <Toaster
                     position="bottom-center"
                     toastOptions={{
@@ -268,14 +286,13 @@ export default function App() {
                       },
                     }}
                   />
-                </div>
                 </NotificationProvider>
                 </StoreProvider>
               </OrderProvider>
-            </CartProvider>
-          </FavoriteProvider>
+              </CartProvider>
+            </FavoriteProvider>
             </CurrencyProvider>
-        </ProductProvider>
+          </ProductProvider>
         </AuthProvider>
       </LocationProvider>
     </Router>

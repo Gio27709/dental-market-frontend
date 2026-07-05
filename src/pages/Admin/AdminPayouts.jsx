@@ -196,7 +196,7 @@ export default function AdminPayouts() {
       ) : (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse hidden md:table">
               <thead>
                 <tr className="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
                   <th className="px-6 py-4">Fecha / Hora</th>
@@ -246,6 +246,51 @@ export default function AdminPayouts() {
                 })}
               </tbody>
             </table>
+
+            {/* Vista responsiva de tarjetas en móvil */}
+            <div className="grid grid-cols-1 gap-4 p-4 md:hidden">
+              {payouts.map((p) => {
+                const status = STATUS_CONFIG[p.status] || { label: p.status, bg: "bg-gray-100 text-gray-600 border-gray-200", dot: "bg-gray-400" };
+                return (
+                  <div 
+                    key={p.id} 
+                    className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm space-y-3"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex flex-col">
+                        <span className="text-xs text-gray-400 font-semibold">{formatDate(p.created_at)}</span>
+                        <span className="font-bold text-gray-900 text-sm mt-1">{p.store?.business_name || "Tienda Desconocida"}</span>
+                        <span className="text-[10px] text-gray-400 font-mono">RIF: {p.store?.rif || "N/A"}</span>
+                      </div>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${status.bg}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                        {status.label}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-xs pt-2 border-t border-gray-100">
+                      <div className="flex flex-col">
+                        <span className="text-gray-400">Método:</span>
+                        <span className="font-bold text-gray-700 mt-0.5">{formatMethodLabel(p.method)}</span>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-gray-400">Monto:</span>
+                        <span className="font-black text-[#6b1e96] font-mono text-sm mt-0.5">${Number(p.amount).toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        onClick={() => handleOpenDetails(p)}
+                        className="w-full py-2 text-center text-xs font-bold text-[#6b1e96] hover:bg-[#6b1e96]/10 rounded-xl transition-colors border border-[#6b1e96]/20 bg-white"
+                      >
+                        {p.status === "pending" || p.status === "processing" ? "Procesar" : "Ver Detalle"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

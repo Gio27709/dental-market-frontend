@@ -81,7 +81,7 @@ export default function UserPublicProfile() {
             {levelName}
           </p>
           <p className="text-sm text-gray-400 mt-2">
-            Miembro de Dental Market desde el {joinDate}
+            Miembro de Forcepx desde el {joinDate}
           </p>
         </div>
 

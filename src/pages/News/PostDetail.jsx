@@ -100,7 +100,7 @@ export default function PostDetail() {
     );
   }
 
-  const authorName = post.author?.full_name || (post.author_type === 'admin' || post.author_type === 'owner' ? 'Equipo Dentix' : 'Doctor Invitado');
+  const authorName = post.author?.full_name || (post.author_type === 'admin' || post.author_type === 'owner' ? 'Equipo Forcepx' : 'Doctor Invitado');
   const authorAvatar = post.author?.avatar_url || null;
   const dateText = new Date(post.created_at).toLocaleDateString('es-ES', { 
     year: 'numeric', 
@@ -164,10 +164,10 @@ export default function PostDetail() {
             {/* Back to feed support card */}
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-md hidden lg:block">
               <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
-                Dental Market Journal
+                Forcepx Journal
               </span>
               <p className="text-[11px] text-gray-500 leading-relaxed font-normal">
-                Esta publicación forma parte del espacio de difusión científica de Dentix. Todos los artículos y opiniones son responsabilidad de sus autores.
+                Esta publicación forma parte del espacio de difusión científica de Forcepx. Todos los artículos y opiniones son responsabilidad de sus autores.
               </p>
             </div>
           </div>

@@ -11,7 +11,7 @@ function exportToCSV(analytics, period) {
   const dateLabel = analytics.period === "custom" ? "Rango personalizado" : period;
 
   // Header section
-  rows.push(["Reporte de Estadísticas - Dental Market"]);
+  rows.push(["Reporte de Estadísticas - Forcepx"]);
   rows.push([`Periodo: ${dateLabel}`]);
   rows.push([`Generado: ${new Date().toLocaleString("es-VE")}`]);
   rows.push([]);

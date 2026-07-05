@@ -2,8 +2,14 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import api, { getTrendingAPI, subscribeNewsletterAPI } from "../../services/api";
 import toast from "react-hot-toast";
+import useHomeSections from "../../hooks/useHomeSections";
 
 export default function Footer() {
+  const { sections } = useHomeSections();
+  const headerSection = sections?.header || {};
+  const brandName = headerSection.brand_name || "Forcepx";
+  const brandLogo = headerSection.brand_logo || "";
+
   const currentYear = new Date().getFullYear();
   const [categories, setCategories] = useState([]);
   const [email, setEmail] = useState("");
@@ -161,24 +167,53 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-x-8 gap-y-10">
         {/* COLUMNA 1: Marca y Redes (lg:col-span-2) */}
         <div className="lg:col-span-2 flex flex-col">
-          {/* Logo Dentix Oficial */}
+          {/* Logo Forcepx Oficial */}
           <Link to="/" className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 rounded-md bg-[#c3ff00] flex items-center justify-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-5 h-5 text-[#531575]"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 4.5v15m7.5-7.5h-15"
+            {brandLogo ? (
+              <div className="w-8 h-8 flex items-center justify-center">
+                <img
+                  src={brandLogo}
+                  alt="Logo"
+                  className="w-full h-full object-contain rounded-md"
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                    const sibling = e.target.nextSibling;
+                    if (sibling) sibling.style.display = "flex";
+                  }}
                 />
-              </svg>
-            </div>
+                <div className="hidden w-full h-full rounded-md bg-[#c3ff00] items-center justify-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="w-5 h-5 text-[#531575]"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 4.5v15m7.5-7.5h-15"
+                    />
+                  </svg>
+                </div>
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-md bg-[#c3ff00] flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="w-5 h-5 text-[#531575]"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 4.5v15m7.5-7.5h-15"
+                  />
+                </svg>
+              </div>
+            )}
             <span className="text-2xl font-bold tracking-widest text-[#531575] uppercase">
-              Dentix
+              {brandName}
             </span>
           </Link>
 

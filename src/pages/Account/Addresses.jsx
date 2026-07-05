@@ -148,7 +148,7 @@ export default function Addresses() {
             Mis Direcciones
           </h1>
           <p className="text-sm mt-1" style={{ color: "#727785" }}>
-            Gestiona tus direcciones de envío para agilizar tus compras en Dentix.
+            Gestiona tus direcciones de envío para agilizar tus compras en Forcepx.
           </p>
         </div>
         <div>

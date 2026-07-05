@@ -86,7 +86,6 @@ export default function AllOrders() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [knownStores, setKnownStores] = useState([]);
-
   // Fetch store list on mount (one-time)
   useEffect(() => {
     const fetchStores = async () => {

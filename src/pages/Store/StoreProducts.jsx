@@ -611,6 +611,7 @@ export default function StoreProducts() {
         <>
           {/* ── Product Table ── */}
           <div
+            className="hidden md:block"
             style={{
               background: "#fff",
               borderRadius: "16px",
@@ -1056,6 +1057,197 @@ export default function StoreProducts() {
                         {(!product.product_variations || product.product_variations.length === 0) && (
                           <div style={{ fontSize: "13px", color: "#9ca3af", fontStyle: "italic", padding: "8px 0" }}>Este producto no tiene variaciones registradas.</div>
                         )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Vista responsiva de tarjetas en móvil */}
+          <div className="grid grid-cols-1 gap-4 p-4 md:hidden">
+            {paginated.map((product) => {
+              const imageUrl = product.images?.[0];
+              const variationCount = product.product_variations?.length || 0;
+              const categoryName = product.categories?.name || "—";
+              const brandName = product.brands?.name || "—";
+              const totalStock = product.product_variations?.reduce((acc, v) => acc + (v.stock || 0), 0) || 0;
+              const isExpanded = expandedRows.has(product.id);
+
+              return (
+                <div 
+                  key={product.id} 
+                  className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm transition-all"
+                >
+                  {/* Cabecera: Thumbnail, Nombre, Precio, Switch */}
+                  <div className="flex gap-3 items-start">
+                    <div
+                      onClick={() => setPreviewProduct(product)}
+                      className="w-14 h-14 rounded-xl overflow-hidden bg-gray-50 border border-gray-150 flex-shrink-0 relative cursor-zoom-in flex items-center justify-center"
+                    >
+                      {imageUrl ? (
+                        <img src={imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xl bg-red-50 text-red-500 border border-red-200" title="Necesita imagen">
+                          📷
+                        </div>
+                      )}
+                      {imageUrl && (
+                        <div className="absolute bottom-1 right-1 w-4 h-4 rounded bg-black/60 flex items-center justify-center">
+                          <svg width="8" height="8" fill="none" viewBox="0 0 24 24" stroke="#c3ff00" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-gray-900 text-sm flex items-center gap-1.5 leading-snug">
+                        <span className="truncate">{product.name}</span>
+                        {(!product.images || product.images.length === 0) && (
+                          <span className="text-[8px] font-bold bg-red-100 text-red-600 px-1.5 py-0.2 rounded border border-red-200 uppercase flex-shrink-0">
+                            Sin imagen
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        <strong className="text-[#6b1e96] font-bold">{formatCurrencyUSD(product.price)}</strong> · {variationCount} var.
+                      </p>
+                    </div>
+
+                    {/* Switch de publicar/pausar */}
+                    <div
+                      onClick={(e) => handleToggleActive(e, product)}
+                      className="w-10 h-5.5 rounded-full relative cursor-pointer transition-colors duration-300 border-2 border-transparent flex-shrink-0"
+                      style={{ backgroundColor: product.is_active ? "#10b981" : "#e5e7eb" }}
+                      title={product.is_active ? "Pausar" : "Activar"}
+                    >
+                      <div
+                        className="w-4.5 h-4.5 rounded-full bg-white absolute top-0.5 transition-all duration-300 shadow-sm"
+                        style={{ left: product.is_active ? "18px" : "2px" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Detalles: Categoría, Marca e Inventario */}
+                  <div className="mt-3 space-y-2 text-xs text-gray-600 border-t border-gray-100 pt-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500">Categoría:</span>
+                      <span className="font-medium text-gray-700">{categoryName}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500">Marca:</span>
+                      <span className="font-medium text-gray-700">{brandName}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500">Inventario:</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-gray-800">{totalStock} uds</span>
+                        {totalStock === 0 ? (
+                          <span className="text-[9px] font-bold text-red-600 bg-red-50 border border-red-100 px-1.5 py-0.2 rounded-md">Agotado</span>
+                        ) : totalStock < 5 ? (
+                          <span className="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.2 rounded-md">Poco Stock</span>
+                        ) : (
+                          <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.2 rounded-md font-bold">En Stock</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Botones de acción y colapsable */}
+                  <div className="mt-4 border-t border-gray-100 pt-3 flex items-center justify-between gap-2">
+                    {/* Botón de expandir variaciones */}
+                    <button 
+                      onClick={() => toggleRow(product.id)}
+                      className="px-3 py-2 border border-gray-200 hover:border-[#6b1e96]/30 text-gray-500 hover:text-[#6b1e96] hover:bg-[#6b1e96]/5 rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors"
+                    >
+                      <span>Variantes</span>
+                      <svg 
+                        className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} 
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                      </svg>
+                    </button>
+
+                    {/* Botones de acción rápida con iconos redondeados */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => {
+                          setRestockProduct(product);
+                          setRestockForm({ variation_id: "", quantity: "", notes: "" });
+                        }}
+                        title="Reponer Inventario"
+                        className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+                      >
+                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4 4m0 0L8 8m4 4V3" />
+                        </svg>
+                      </button>
+
+                      <Link
+                        to={`/store/products/${product.id}/stats`}
+                        title="Estadísticas"
+                        className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                      >
+                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h18M7 17v-4m4 4V9m4 8v-6m4 6V5" />
+                        </svg>
+                      </Link>
+
+                      <Link
+                        to={`/store/products/edit/${product.id}`}
+                        title="Editar"
+                        className="w-8 h-8 rounded-full bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center hover:bg-purple-600 hover:text-white transition-all shadow-sm"
+                      >
+                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                      </Link>
+
+                      <button
+                        onClick={() => handleDelete(product.id, product.name)}
+                        title="Eliminar"
+                        className="w-8 h-8 rounded-full bg-red-50 text-red-600 border border-red-100 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all shadow-sm"
+                      >
+                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Desglose de variaciones expandido (móvil) */}
+                  {isExpanded && (
+                    <div className="mt-4 bg-slate-50 border-t border-dashed border-gray-200 pt-3 -mx-4 px-4 pb-1 rounded-b-2xl">
+                      <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Desglose de Variaciones</h4>
+                      <div className="space-y-2">
+                        {product.product_variations?.map((v) => {
+                          let vName = "—";
+                          try {
+                            const obj = typeof v.attribute_value === "string" ? JSON.parse(v.attribute_value) : v.attribute_value;
+                            vName = Object.values(obj).join(" / ");
+                          } catch {
+                            vName = v.attribute_value || "—";
+                          }
+                          const price = product.price + (v.price_modifier || 0);
+
+                          return (
+                            <div key={v.id} className="bg-white p-2.5 rounded-xl border border-gray-150 text-xs shadow-[0_1px_2px_rgba(0,0,0,0.01)] space-y-1">
+                              <div className="flex justify-between items-center font-bold text-gray-800">
+                                <span className="truncate max-w-[150px]">{vName}</span>
+                                <span className="text-[#10b981]">{formatCurrencyUSD(price)}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-[10px] text-gray-400 font-semibold">
+                                <span>SKU: {v.sku || "—"}</span>
+                                <span className={v.stock === 0 ? "text-red-500" : (v.stock < 5 ? "text-amber-500" : "text-emerald-500")}>
+                                  {v.stock || 0} uds
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

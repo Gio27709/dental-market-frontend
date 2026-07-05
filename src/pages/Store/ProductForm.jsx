@@ -559,7 +559,7 @@ export default function ProductForm() {
                 <div>
                   <p className="text-xs font-bold text-[#6b1e96] uppercase tracking-wider">Comisión de la Plataforma ({storeFeePercentage}%)</p>
                   <p className="text-xs text-purple-950 mt-1 leading-relaxed">
-                    DentalMarket aplica una comisión del {storeFeePercentage}% sobre las ventas. 
+                    Forcepx aplica una comisión del {storeFeePercentage}% sobre las ventas. 
                     {form.price && parseFloat(form.price) > 0 && (
                       <span> Si vendes a <strong>${parseFloat(form.price).toFixed(2)}</strong>, recibirás aproximadamente <strong>${(parseFloat(form.price) * (1 - storeFeePercentage / 100)).toFixed(2)}</strong>.</span>
                     )}
@@ -811,7 +811,9 @@ export default function ProductForm() {
                       {form.variations.length} Combinaciones
                     </span>
                   </div>
-                  <div className="overflow-x-auto">
+                  
+                  {/* Vista en Tabla para Escritorio */}
+                  <div className="overflow-x-auto hidden md:block">
                     <table className="w-full text-left text-sm whitespace-nowrap">
                       <thead className="text-[10px] font-bold text-gray-400 bg-slate-50/30 uppercase tracking-wider border-b border-slate-100">
                         <tr>
@@ -889,6 +891,82 @@ export default function ProductForm() {
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Vista de variaciones responsiva en móvil (cards editables) */}
+                  <div className="grid grid-cols-1 gap-4 p-4 md:hidden border-t border-slate-100 bg-slate-50/20">
+                    {form.variations.map((v, i) => {
+                      let parsedCombo = {};
+                      let label = v.attribute_value;
+                      try {
+                        parsedCombo = JSON.parse(v.attribute_value);
+                        label = Object.entries(parsedCombo)
+                          .map(([, val]) => typeof val === 'string' && val.includes('|') ? val.split('|')[0] : `${val}`)
+                          .join(" / ");
+                      } catch {
+                        // Fallback
+                      }
+
+                      return (
+                        <div 
+                          key={i} 
+                          className="bg-white rounded-2xl border border-slate-150 p-4 shadow-sm space-y-4"
+                        >
+                          {/* Cabecera de la variante */}
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 flex-shrink-0 rounded-xl border border-slate-150 bg-slate-50 flex items-center justify-center text-gray-400 text-xs overflow-hidden shadow-inner">
+                               {form.images.length > 0 ? (
+                                 <img src={form.images[0]} alt="Variante" loading="lazy" className="w-full h-full object-cover" />
+                               ) : '📷'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-gray-900 font-bold text-sm block truncate">{label}</span>
+                              <span className="text-[10px] text-gray-400 font-semibold bg-gray-100 px-1.5 py-0.5 rounded w-fit block mt-1">Variación #{i + 1}</span>
+                            </div>
+                          </div>
+
+                          {/* Campos de edición */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-gray-100">
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Precio (USD) *</label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">$</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={v.v_price ?? (parseFloat(form.price) + parseFloat(v.price_modifier || 0))}
+                                  onChange={(e) => handleVariationFieldChange(i, "v_price", e.target.value)}
+                                  className="w-full pl-7 pr-2 py-2 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] bg-white transition-all text-gray-950"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Inventario *</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={v.stock}
+                                onChange={(e) => handleVariationFieldChange(i, "stock", e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] bg-white transition-all text-center text-gray-950"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">SKU Código</label>
+                              <input
+                                type="text"
+                                value={v.sku}
+                                onChange={(e) => handleVariationFieldChange(i, "sku", e.target.value)}
+                                placeholder="Ej. SKU-A2"
+                                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-purple-500/10 focus:border-[#6b1e96] bg-white transition-all font-mono font-semibold text-gray-950"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </>
@@ -951,7 +1029,7 @@ export default function ProductForm() {
               </select>
               <p className="text-[11px] text-gray-400 mt-2.5 leading-relaxed">
                 {form.status === "Borrador" && "El producto no se publicará y no será visible para los clientes. Úsalo para planificar."}
-                {form.status === "Activo" && "El producto estará publicado, disponible para compra y visible en DentalMarket."}
+                {form.status === "Activo" && "El producto estará publicado, disponible para compra y visible en Forcepx."}
                 {form.status === "Sin stock" && "El producto se mostrará como agotado para la compra pero seguirá visible."}
               </p>
             </div>

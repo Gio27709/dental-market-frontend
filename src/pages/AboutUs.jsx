@@ -30,7 +30,7 @@ export default function AboutUs() {
     {
       year: "2024",
       title: "Fundación y Primeros Pasos",
-      desc: "Dental Market nace como respuesta a la escasez de canales directos de distribución digital de insumos clínicos.",
+      desc: "Forcepx nace como respuesta a la escasez de canales directos de distribución digital de insumos clínicos.",
     },
     {
       year: "2025",
@@ -92,10 +92,10 @@ export default function AboutUs() {
         <div className="bg-white rounded-3xl shadow-[0_20px_40px_rgba(25,28,32,0.03)] border border-gray-100 p-8 sm:p-14 mb-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <h2 className="text-3xl font-extrabold text-[#30004a] font-manrope tracking-tight">
-              ¿Por qué creamos Dental Market?
+              ¿Por qué creamos Forcepx?
             </h2>
             <p className="text-gray-600 font-inter leading-relaxed text-sm sm:text-base">
-              Tradicionalmente, comprar instrumental y consumibles clínicos ha sido un proceso fragmentado, lento y sujeto a variaciones imprevistas de precios. Dental Market consolida toda la oferta en un solo portal seguro.
+              Tradicionalmente, comprar instrumental y consumibles clínicos ha sido un proceso fragmentado, lento y sujeto a variaciones imprevistas de precios. Forcepx consolida toda la oferta en un solo portal seguro.
             </p>
             <p className="text-gray-600 font-inter leading-relaxed text-sm sm:text-base">
               Buscamos que los odontólogos se concentren en lo que realmente importa: la salud de sus pacientes. Nosotros nos encargamos de asegurar que sus materiales clínicos lleguen a tiempo y con las garantías oficiales de fábrica.

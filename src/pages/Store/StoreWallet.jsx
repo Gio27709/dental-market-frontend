@@ -371,7 +371,7 @@ export default function StoreWallet() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse hidden md:table">
               <thead>
                 <tr className="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
                   <th className="px-6 py-4">Fecha Solicitud</th>
@@ -434,6 +434,65 @@ export default function StoreWallet() {
                 })}
               </tbody>
             </table>
+
+            {/* Vista responsiva de tarjetas en móvil para retiros */}
+            <div className="grid grid-cols-1 gap-4 p-4 md:hidden border-t border-gray-150 bg-gray-50/10">
+              {payouts.map((p) => (
+                <div 
+                  key={p.id} 
+                  className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm space-y-3"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-400 font-semibold">{formatDate(p.created_at)}</span>
+                      <span className="font-mono text-[11px] text-gray-400 mt-0.5">#{p.id.substring(0, 8).toUpperCase()}</span>
+                    </div>
+                    {/* Badge de Estado */}
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                      p.status === "completed" ? "bg-green-50 text-green-700 border-green-100" :
+                      p.status === "rejected" ? "bg-red-50 text-red-700 border-red-100" :
+                      "bg-yellow-50 text-yellow-700 border-yellow-100"
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        p.status === "completed" ? "bg-green-500" :
+                        p.status === "rejected" ? "bg-red-500" :
+                        "bg-yellow-500"
+                      }`} />
+                      {p.status === "completed" ? "Procesado" :
+                       p.status === "rejected" ? "Rechazado" :
+                       "En Proceso"}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs pt-2 border-t border-gray-100">
+                    <div className="flex flex-col">
+                      <span className="text-gray-400">Método:</span>
+                      <span className="font-bold text-gray-800 mt-0.5">
+                        {p.method === "pago_movil" ? "📱 Pago Móvil" : "🏦 Transferencia"}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-gray-400">Monto:</span>
+                      <span className="font-black text-[#6b1e96] font-mono text-sm mt-0.5">${Number(p.amount).toFixed(2)}</span>
+                      {p.payment_details?.amount_ves && (
+                        <span className="text-[10px] text-emerald-600 font-bold font-mono">
+                          {Number(p.payment_details.amount_ves).toLocaleString("es-VE", { minimumFractionDigits: 2 })} VES
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      onClick={() => setViewDetailsPayout(p)}
+                      className="w-full py-2 text-center text-xs font-bold text-[#6b1e96] hover:bg-[#6b1e96]/10 rounded-xl transition-all border border-[#6b1e96]/20 bg-white"
+                    >
+                      Ver Detalles
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -459,7 +518,7 @@ export default function StoreWallet() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse hidden md:table">
               <thead>
                 <tr className="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
                   <th className="px-6 py-4">Fecha / Hora</th>
@@ -498,6 +557,46 @@ export default function StoreWallet() {
                 })}
               </tbody>
             </table>
+
+            {/* Vista responsiva de tarjetas en móvil para transacciones */}
+            <div className="grid grid-cols-1 gap-4 p-4 md:hidden border-t border-gray-150 bg-gray-50/10">
+              {transactions.map((tx) => {
+                const typeConf = TX_TYPE_CONFIG[tx.type] || { label: tx.type, bg: "bg-gray-100 text-gray-600 border-gray-200" };
+                const isNegative = parseFloat(tx.amount) < 0;
+
+                return (
+                  <div 
+                    key={tx.id} 
+                    className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm space-y-3"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex flex-col">
+                        <span className="text-xs text-gray-400 font-semibold">{formatDate(tx.created_at)}</span>
+                        <span className="font-mono text-[11px] text-gray-400 mt-0.5">#{tx.id.substring(0, 8).toUpperCase()}</span>
+                      </div>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${typeConf.bg}`}>
+                        {typeConf.label}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-end text-xs pt-2 border-t border-gray-100">
+                      <div className="flex-1 min-w-0 pr-3">
+                        <span className="text-gray-400 block mb-0.5">Concepto:</span>
+                        <span className="text-gray-700 font-medium text-[11px] line-clamp-2 leading-tight" title={tx.description}>
+                          {tx.description}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-end flex-shrink-0">
+                        <span className="text-gray-400">Monto:</span>
+                        <span className={`font-black font-mono text-sm mt-0.5 ${isNegative ? "text-red-600" : "text-green-600"}`}>
+                          {isNegative ? "-" : "+"}${Math.abs(parseFloat(tx.amount)).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

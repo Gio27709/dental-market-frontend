@@ -6,6 +6,11 @@
   --color-secondary-500: #10b981;
 }
 
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   background-color: #f8fafc;
   color: #0f172a;
@@ -47,3 +52,36 @@ body {
 .admin-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.3);
 }
+
+/* Custom scrollbar para el carrusel de productos */
+.trending-scrollbar::-webkit-scrollbar {
+  height: 5px;
+}
+.trending-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+.trending-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2d1eb;
+  border-radius: 10px;
+}
+.trending-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6b1e96;
+}
+
+/* Drag-to-scroll: utility styles (no special cursors) */
+.drag-scroll-container.drag-scroll-grabbing {
+  scroll-behavior: auto !important;
+  scroll-snap-type: none !important;
+}
+.drag-scroll-container.drag-scroll-grabbing * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  pointer-events: none;
+}
+/* Disable snap & smooth-scroll during drag release momentum deceleration */
+.drag-scroll-container.drag-scroll-no-snap {
+  scroll-snap-type: none !important;
+  scroll-behavior: auto !important;
+}
+

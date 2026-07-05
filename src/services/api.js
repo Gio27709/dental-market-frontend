@@ -402,5 +402,18 @@ export const deletePromotionAPI = (id) => api.delete(`/admin/promotions/${id}`);
 export const getAdminDiscountsAPI = (params) => api.get("/admin/discounts", { params });
 export const moderateDiscountAPI = (id, action) => api.put(`/admin/discounts/${id}/moderate`, { action });
 
+// ==========================================
+// PROFESSIONAL/DENTIST VERIFICATION API
+// ==========================================
+export const uploadProfessionalLicenseAPI = (formData) =>
+  api.post("/professional/license-upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+export const getProfessionalStatusAPI = () => api.get("/professional/status");
+export const getAdminProfessionalLicensesAPI = () => api.get("/professional/admin/professional-licenses");
+export const verifyProfessionalLicenseAPI = (id, data) => api.put(`/professional/admin/professionals/${id}/verify`, data);
+
 // Exporting standard API for frontend endpoints
 export default api;

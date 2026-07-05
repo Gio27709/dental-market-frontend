@@ -33,12 +33,14 @@ const ProductCardInner = memo(function ProductCardInner({
 
   return (
     <>
-      <article className="w-full max-w-[342px] mx-auto sm:mx-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col group hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+      <article className="w-full h-full max-w-[340px] mx-auto sm:mx-0 bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col group hover:-translate-y-1.5 hover:shadow-[0_20px_40px_-10px_rgba(107,30,150,0.15)] hover:border-[#6b1e96]/20 transition-all duration-300 relative">
+        {/* Línea de acento superior */}
+        <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-[#6b1e96] via-[#9333ea] to-[#c3ff00] opacity-80 z-20"></div>
         {/* Sección de la Imagen con Altura Fija Uniforme */}
-        <div className="relative h-[220px] w-full bg-white border-b border-slate-50 overflow-hidden">
+        <div className="relative h-[185px] sm:h-[215px] w-full bg-gradient-to-br from-slate-50/80 via-white to-purple-50/30 border-b border-slate-100/80 overflow-hidden">
           <Link
             to={`/product/${product.id}`}
-            className="block w-full h-full p-6 flex items-center justify-center"
+            className="block w-full h-full p-5 flex items-center justify-center"
           >
             {hasImage ? (
               <img
@@ -53,10 +55,10 @@ const ProductCardInner = memo(function ProductCardInner({
           </Link>
 
           {/* Acciones Superiores Derechas (Favoritos) */}
-          <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+          <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-10">
             <button
               onClick={onToggleFavorite}
-              className={`p-2 bg-white/90 backdrop-blur-sm border rounded-full shadow-sm transition-colors ${
+              className={`p-1.5 bg-white/90 backdrop-blur-sm border rounded-full shadow-sm transition-colors ${
                 isFavorite
                   ? "border-rose-200 bg-rose-50 text-rose-500"
                   : "border-slate-100 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100 text-slate-400"
@@ -66,7 +68,7 @@ const ProductCardInner = memo(function ProductCardInner({
               }
             >
               <svg
-                className={`h-4 w-4 transition-all duration-300 ${isFavorite ? "fill-current scale-110" : "fill-none scale-100"}`}
+                className={`h-3.5 w-3.5 transition-all duration-300 ${isFavorite ? "fill-current scale-110" : "fill-none scale-100"}`}
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
@@ -85,11 +87,11 @@ const ProductCardInner = memo(function ProductCardInner({
                   e.preventDefault();
                   setIsCompareOpen(true);
                 }}
-                className="p-2 bg-white/90 backdrop-blur-sm border border-slate-100 rounded-full shadow-sm text-slate-400 hover:text-[#2563eb] hover:border-[#2563eb]/30 hover:bg-blue-50 transition-colors"
+                className="p-1.5 bg-white/90 backdrop-blur-sm border border-slate-100 rounded-full shadow-sm text-slate-400 hover:text-[#2563eb] hover:border-[#2563eb]/30 hover:bg-blue-50 transition-colors"
                 title="Comparar Precios"
               >
                 <svg
-                  className="h-4 w-4"
+                  className="h-3.5 w-3.5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -106,10 +108,10 @@ const ProductCardInner = memo(function ProductCardInner({
           </div>
 
           {/* Badge Vendedor Superior Izquierdo y Tendencia */}
-          <div className="absolute top-4 left-4 z-10 max-w-[70%] flex flex-col gap-2">
+          <div className="absolute top-3 left-3 z-10 max-w-[70%] flex flex-col gap-1.5">
             {isTrending && (
-              <span className="px-2 py-1 text-[9px] font-bold tracking-wider uppercase bg-orange-500 text-white shadow-sm rounded-md block w-max flex items-center gap-1">
-                <span className="material-symbols-outlined text-[10px]">
+              <span className="px-1.5 py-0.5 text-[8px] font-bold tracking-wider uppercase bg-orange-500 text-white shadow-sm rounded-md block w-max flex items-center gap-1">
+                <span className="material-symbols-outlined text-[9px]">
                   local_fire_department
                 </span>
                 MÁS VENDIDO
@@ -118,7 +120,7 @@ const ProductCardInner = memo(function ProductCardInner({
             <Link
               to={`/store/${product.store_id}`}
               onClick={(e) => e.stopPropagation()}
-              className="px-2.5 py-1 text-[9.5px] font-extrabold tracking-wider uppercase bg-white/95 backdrop-blur-sm text-[#6b1e96] shadow-sm border border-slate-200/50 rounded-md block whitespace-nowrap overflow-hidden text-ellipsis hover:bg-[#6b1e96] hover:text-white transition-all duration-300 w-max"
+              className="px-2 py-0.5 text-[8.5px] font-extrabold tracking-wider uppercase bg-white/95 backdrop-blur-sm text-[#6b1e96] shadow-sm border border-slate-200/50 rounded-md block whitespace-nowrap overflow-hidden text-ellipsis hover:bg-[#6b1e96] hover:text-white transition-all duration-300 w-max"
             >
               {storeName}
             </Link>
@@ -126,9 +128,9 @@ const ProductCardInner = memo(function ProductCardInner({
 
           {/* Discount Badge */}
           {discount && (
-            <div className="absolute bottom-3 left-3 z-10">
-              <span className="px-2.5 py-1 text-[11px] font-black uppercase tracking-wide bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg rounded-lg flex items-center gap-1 animate-[fadeIn_0.3s_ease-out]">
-                <span className="material-symbols-outlined" style={{ fontSize: "13px" }}>local_offer</span>
+            <div className="absolute bottom-2.5 left-2.5 z-10">
+              <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wide bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg rounded-lg flex items-center gap-1 animate-[fadeIn_0.3s_ease-out]">
+                <span className="material-symbols-outlined" style={{ fontSize: "11px" }}>local_offer</span>
                 {discount.discount_type === "percentage" ? `-${discount.discount_value}%` : `-$${discount.discount_value}`}
               </span>
             </div>
@@ -136,39 +138,33 @@ const ProductCardInner = memo(function ProductCardInner({
         </div>
 
         {/* Sección de Contenido Inferior */}
-        <div className="p-5 flex flex-col flex-grow bg-white">
+        <div className="p-4 sm:p-5 flex flex-col flex-grow bg-white">
           {/* Indicador de Disponibilidad + Proximidad */}
-          <div className="mb-2 flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <div
-                className={`h-1.5 w-1.5 rounded-full ${isAvailable ? "bg-emerald-500" : "bg-amber-500"}`}
-              ></div>
-              <span
-                className={`text-[11px] font-medium tracking-wide uppercase ${isAvailable ? "text-emerald-600" : "text-amber-600"}`}
-              >
-                {isAvailable ? "Disponible" : "Sin Stock"}
-              </span>
-            </div>
+          <div className="flex flex-wrap items-center gap-1.5 mb-2">
+            <span className={`inline-flex items-center gap-1 text-[10px] font-semibold tracking-wide ${isAvailable ? "text-emerald-600" : "text-amber-600"}`}>
+              <span className="material-symbols-outlined text-[12px]">{isAvailable ? "inventory_2" : "block"}</span>
+              {isAvailable ? "Disponible" : "Sin Stock"}
+            </span>
 
             {/* Proximity Badges */}
             {proximityLabel === "same_state" && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold tracking-wide uppercase bg-emerald-50 text-emerald-700 border border-emerald-200/60 rounded-md animate-[fadeIn_0.3s_ease-out]">
+              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-purple-50 text-[#6b1e96] border border-purple-200/60 rounded-full animate-[fadeIn_0.3s_ease-out] whitespace-nowrap">
                 <span className="material-symbols-outlined text-[10px]">
                   location_on
                 </span>
-                En tu estado
+                Tu estado
               </span>
             )}
             {proximityLabel === "neighbor" && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold tracking-wide uppercase bg-blue-50 text-blue-600 border border-blue-200/60 rounded-md animate-[fadeIn_0.3s_ease-out]">
+              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-blue-50 text-blue-600 border border-blue-200/60 rounded-full animate-[fadeIn_0.3s_ease-out] whitespace-nowrap">
                 <span className="material-symbols-outlined text-[10px]">
                   near_me
                 </span>
-                Cerca de ti
+                Cerca
               </span>
             )}
             {proximityLabel === "regional" && product.store?.state && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium tracking-wide uppercase bg-slate-50 text-slate-500 border border-slate-200/60 rounded-md">
+              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-medium tracking-wide bg-slate-50 text-slate-500 border border-slate-200/60 rounded-full whitespace-nowrap">
                 <span className="material-symbols-outlined text-[10px]">
                   local_shipping
                 </span>
@@ -180,7 +176,7 @@ const ProductCardInner = memo(function ProductCardInner({
           {/* Título de Producto linkeado */}
           <Link to={`/product/${product.id}`}>
             <h2
-              className="text-[16px] font-medium text-slate-900 leading-tight mb-2 hover:text-[#6b1e96] cursor-pointer transition-colors line-clamp-2"
+              className="text-sm sm:text-[15px] font-semibold text-slate-900 leading-tight mb-1.5 hover:text-[#6b1e96] cursor-pointer transition-colors line-clamp-2 h-10 overflow-hidden"
               title={product.name}
             >
               {product.name}
@@ -188,31 +184,31 @@ const ProductCardInner = memo(function ProductCardInner({
           </Link>
 
           {/* Product Rating */}
-          <div className="flex items-center mb-4 text-[#facc15] gap-0.5">
+          <div className="flex items-center mb-2 text-[#facc15] gap-0.5">
             {[...Array(5)].map((_, i) => (
               <span
                 key={i}
-                className={`material-symbols-outlined text-[14px] ${i < Math.round(product.rating_avg || 0) ? "text-[#facc15]" : "text-slate-200"}`}
+                className={`material-symbols-outlined text-[13px] ${i < Math.round(product.rating_avg || 0) ? "text-[#facc15]" : "text-slate-200"}`}
               >
                 star
               </span>
             ))}
-            <span className="ml-2 text-[10px] font-medium text-slate-400">
+            <span className="ml-1.5 text-[9px] font-medium text-slate-400">
               {product.review_count || 0} valoraciones
             </span>
           </div>
 
           {/* Precio */}
-          <div className="mb-4">
+          <div className="min-h-[48px] mb-3 flex flex-col justify-center">
             {discount ? (
               <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <span className="text-lg font-black text-[#6b1e96]">
                     {isVES
                       ? formatCurrencyVES(discount.final_price * (Number(bcvRate) || 1))
                       : formatCurrencyUSD(discount.final_price)}
                   </span>
-                  <span className="text-sm text-slate-400 line-through font-medium">
+                  <span className="text-xs text-slate-400 line-through font-medium">
                     {isVES
                       ? formatCurrencyVES(discount.original_price * (Number(bcvRate) || 1))
                       : formatCurrencyUSD(discount.original_price)}
@@ -226,7 +222,7 @@ const ProductCardInner = memo(function ProductCardInner({
                 )}
               </div>
             ) : (
-              <PriceDisplay amountUSD={product.price} />
+              <PriceDisplay amountUSD={product.price} priceClassName="text-lg font-bold text-[#6b1e96]" />
             )}
           </div>
 
@@ -265,12 +261,12 @@ const ProductCardInner = memo(function ProductCardInner({
               <button
                 onClick={onAddToCart}
                 disabled={isAdding || isCartAtMax}
-                className={`w-full font-medium py-2 px-4 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 text-sm ${
+                className={`w-full font-semibold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 text-sm ${
                   isCartAtMax
                     ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                     : isAdding
-                    ? "bg-[#531575] text-white cursor-wait"
-                    : "bg-[#6b1e96] hover:bg-[#531575] active:bg-[#43105e] text-white group"
+                    ? "bg-[#531575] text-white cursor-wait shadow-lg"
+                    : "bg-gradient-to-r from-[#6b1e96] to-[#531575] hover:from-[#531575] hover:to-[#43105e] text-white shadow-[0_4px_15px_-3px_rgba(107,30,150,0.4)] hover:shadow-[0_6px_20px_-3px_rgba(107,30,150,0.5)] active:scale-[0.97]"
                 }`}
                 title={isCartAtMax ? "Máximo en carrito" : "Agregar al carrito"}
               >

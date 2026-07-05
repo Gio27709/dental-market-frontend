@@ -1,13 +1,13 @@
-# DentalMarket Frontend MVP
+# Forcepx Frontend MVP
 
-Este es el Producto Mínimo Viable (MVP) para DentalMarket, diseñado con foco prioritario en funcionalidad y velocidad sobre estética. Esta aplicación se conecta a nuestro API robusto ya desplegado en Render.
+Este es el Producto Mínimo Viable (MVP) para Forcepx, diseñado con foco prioritario en funcionalidad y velocidad sobre estética. Esta aplicación se conecta a nuestro API robusto ya desplegado en Render.
 
 ## Características Incluidas
 
 - ✅ **Home**: Vista de catálogo tipo grilla trayendo productos reales desde Supabase a través del API en Render.
 - ✅ **Exploración (Fase 1.1)**: Los usuarios pueden buscar productos (búsqueda reactiva), aplicar filtros básicos, y entrar al Detalle Individual para elegir variaciones disponibles.
 - ✅ **Autenticación (JWT)**: Login y Registro completos, persistiendo la sesión en localStorage.
-- ✅ **Carrito de Compras (Fase 1.2)**: Sistema avanzado de carrito con persistencia local (`dental_market_cart`). Permite agregar, remover, cambiar cantidades (validando stock disponible) y observar los totales reactivamente en USD y Bolívares (VES) a través de un moderno Drawer lateral.
+- ✅ **Carrito de Compras (Fase 1.2)**: Sistema avanzado de carrito con persistencia local (`forcepx_cart`). Permite agregar, remover, cambiar cantidades (validando stock disponible) y observar los totales reactivamente en USD y Bolívares (VES) a través de un moderno Drawer lateral.
 - ✅ **Checkout**: Procesamiento de órdenes enviando la compra al Backend.
 - ✅ **Mi Perfil**: Ruta protegida que refleja la información de usuario y lista todas las órdenes previas.
 - ✅ **Diseño Tailwind V4**: Estructuras limpias y responsivas (mobile-first).

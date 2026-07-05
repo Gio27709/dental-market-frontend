@@ -97,10 +97,11 @@ export const AuthProvider = ({ children }) => {
     return data;
   }, []);
 
-  const register = useCallback(async ({ email, password, name, role }) => {
+  const register = useCallback(async ({ email, password, name, role, ...extraData }) => {
     const { data, error } = await signUpWithEmail(email, password, {
       full_name: name,
       role,
+      ...extraData,
     });
     if (error) throw error;
     return data;

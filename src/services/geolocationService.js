@@ -1,7 +1,7 @@
 /**
  * geolocationService.js
  * 
- * Servicio de geolocalización del navegador para Dental Market.
+ * Servicio de geolocalización del navegador para Forcepx.
  * Encapsula la lógica de:
  * - Verificar soporte del navegador
  * - Solicitar permisos GPS al usuario

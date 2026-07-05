@@ -157,7 +157,7 @@ export default function StorePublicProfile() {
             </div>
 
             <p className="mt-4 text-gray-600 max-w-2xl leading-relaxed text-sm">
-              {store.description || "Nuestra tienda oficial en Dental Market Vzla. Aquí encontrarás todos nuestros productos asegurando máxima calidad e inmediatez."}
+              {store.description || "Nuestra tienda oficial en Forcepx Vzla. Aquí encontrarás todos nuestros productos asegurando máxima calidad e inmediatez."}
             </p>
           </div>
         </div>

@@ -379,10 +379,10 @@ export default function Blog() {
         <div className="max-w-4xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-center sm:text-left">
             <span className="bg-[#531575]/5 text-[#531575] font-extrabold tracking-wider uppercase text-[10px] px-2.5 py-1 rounded-md">
-              Dental Market Journal
+              Forcepx Journal
             </span>
             <h1 className="text-2xl font-black text-gray-900 tracking-tight font-sans mt-1">
-              Dentix Feed
+              Forcepx Feed
             </h1>
             <p className="text-xs text-gray-500 font-normal mt-0.5">
               Casos clínicos, ciencia y actualidad compartida por odontólogos
@@ -567,7 +567,7 @@ export default function Blog() {
               const isExpanded = !!expandedPosts[post.id];
               const isCommentListLoading = !!loadingComments[post.id];
 
-              const authorName = post.author?.full_name || (post.author_type === 'admin' || post.author_type === 'owner' ? 'Equipo Dentix' : 'Doctor Invitado');
+              const authorName = post.author?.full_name || (post.author_type === 'admin' || post.author_type === 'owner' ? 'Equipo Forcepx' : 'Doctor Invitado');
               const authorAvatar = post.author?.avatar_url || null;
               
               const createdDate = new Date(post.created_at);

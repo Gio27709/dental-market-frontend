@@ -15,7 +15,7 @@ export default function AccountLayout() {
     return false;
   };
 
-  const menuItems = [
+  const baseMenuItems = [
     {
       name: "Mi Perfil",
       path: "/account",
@@ -73,6 +73,16 @@ export default function AccountLayout() {
     },
   ];
 
+  // Inyectar dinámicamente la pestaña de verificación para Odontólogos
+  const menuItems = [...baseMenuItems];
+  if (user.role === "professional") {
+    menuItems.splice(1, 0, {
+      name: "Verificación Profesional",
+      path: "/account/professional-verification",
+      icon: "verified",
+    });
+  }
+
   return (
     <div className="min-h-screen" style={{ background: "#f9f9ff" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
@@ -110,7 +120,7 @@ export default function AccountLayout() {
                     {user.firstName ? `${user.firstName} ${user.lastName || ""}` : "Usuario"}
                   </h2>
                   <p className="text-xs text-white/70 mt-0.5">
-                    {user.role === 'user' ? 'Usuario' : user.role === 'delivery' ? 'Repartidor 🛵' : user.role === 'admin' ? 'Administrador' : user.role === 'owner' ? 'Owner 👑' : (user.role === 'store' || user.role === 'store/owner') ? 'Tienda' : user.role}
+                    {user.role === 'user' ? 'Usuario' : user.role === 'delivery' ? 'Repartidor 🛵' : user.role === 'admin' ? 'Administrador' : user.role === 'owner' ? 'Owner 👑' : user.role === 'professional' ? 'Odontólogo 🦷' : (user.role === 'store' || user.role === 'store/owner') ? 'Tienda' : user.role}
                   </p>
                 </div>
               </div>
@@ -120,7 +130,7 @@ export default function AccountLayout() {
                 onClick={async () => {
                   await logout();
                   wipeLocalCartOnly();
-                  localStorage.removeItem("dental_market_cart");
+                  localStorage.removeItem("forcepx_cart");
                   window.location.href = "/login";
                 }}
                 className="mt-5 w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer"

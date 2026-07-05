@@ -1,10 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
 import { navGroups, backToStoreIcon } from '../../../config/adminNavConfig';
 import { useAdminStats } from '../../../context/AdminStatsContext';
+import useHomeSections from '../../../hooks/useHomeSections';
 
 export default function AdminSidebar() {
   const location = useLocation();
   const { stats } = useAdminStats();
+  const { sections } = useHomeSections();
+  const headerSection = sections?.header || {};
+  const brandName = headerSection.brand_name || "Forcepx";
+  const brandLogo = headerSection.brand_logo || "";
 
   // Helper para determinar si la ruta actual coincide (y aplicar la forma "pill")
   const isActive = (path) => {
@@ -42,7 +47,7 @@ export default function AdminSidebar() {
 
   return (
     <aside
-      className="w-[270px] flex-shrink-0 sticky top-[80px] md:top-[96px] h-[calc(100vh-80px)] md:h-[calc(100vh-96px)] flex-col hidden md:flex relative overflow-hidden"
+      className="w-[270px] flex-shrink-0 sticky top-0 h-screen flex-col hidden md:flex relative overflow-hidden"
       style={{
         background: 'linear-gradient(180deg, #1a0a2e 0%, #2d1452 50%, #1a0a2e 100%)',
       }}
@@ -56,19 +61,44 @@ export default function AdminSidebar() {
       {/* ── Branding / Logo Area ── */}
       <div className="px-6 pt-6 pb-4 relative z-10">
         <Link to="/admin" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 rounded-lg bg-[#c3ff00] flex items-center justify-center shadow-lg shadow-[#c3ff00]/20 group-hover:shadow-[#c3ff00]/40 transition-shadow duration-300">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="w-5 h-5 text-[#531575]"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-          </div>
+          {brandLogo ? (
+            <div className="w-9 h-9 flex items-center justify-center shadow-lg shadow-[#c3ff00]/10 group-hover:shadow-[#c3ff00]/30 transition-shadow duration-300">
+              <img
+                src={brandLogo}
+                alt="Logo"
+                className="w-full h-full object-contain rounded-lg"
+                onError={(e) => {
+                  e.target.style.display = "none";
+                  const sibling = e.target.nextSibling;
+                  if (sibling) sibling.style.display = "flex";
+                }}
+              />
+              <div className="hidden w-full h-full rounded-lg bg-[#c3ff00] items-center justify-center shadow-lg shadow-[#c3ff00]/20">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="w-5 h-5 text-[#531575]"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+              </div>
+            </div>
+          ) : (
+            <div className="w-9 h-9 rounded-lg bg-[#c3ff00] flex items-center justify-center shadow-lg shadow-[#c3ff00]/20 group-hover:shadow-[#c3ff00]/40 transition-shadow duration-300">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="w-5 h-5 text-[#531575]"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </div>
+          )}
           <div className="flex flex-col">
             <span className="text-lg font-bold tracking-widest text-white uppercase leading-tight">
-              Dentix
+              {brandName}
             </span>
             <span className="text-[10px] font-medium tracking-[0.2em] text-[#c3ff00]/70 uppercase">
               Admin Panel

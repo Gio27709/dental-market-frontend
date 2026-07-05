@@ -21,7 +21,7 @@ export default function RefundPolicy() {
     {
       num: "03",
       title: "Mediación de Soporte",
-      desc: "El vendedor evalúa tu caso. Si no hay acuerdo en 24 horas, un administrador de Dental Market interviene.",
+      desc: "El vendedor evalúa tu caso. Si no hay acuerdo en 24 horas, un administrador de Forcepx interviene.",
       icon: RefreshCw,
     },
     {
@@ -58,7 +58,7 @@ export default function RefundPolicy() {
   const faqs = [
     {
       q: "¿Cómo se maneja el envío de retorno de un producto?",
-      a: "Si la devolución es imputable a un error de la tienda (producto incorrecto o defectuoso), la tienda o el rider asignado de Dental Market recogerá el producto en tu consultorio sin ningún costo. Si es por arrepentimiento de compra (y el empaque no se ha abierto), el comprador asume el costo logístico de retorno.",
+      a: "Si la devolución es imputable a un error de la tienda (producto incorrecto o defectuoso), la tienda o el rider asignado de Forcepx recogerá el producto en tu consultorio sin ningún costo. Si es por arrepentimiento de compra (y el empaque no se ha abierto), el comprador asume el costo logístico de retorno.",
     },
     {
       q: "¿Cuánto tiempo tarda en reflejarse el dinero en mi cuenta?",
@@ -99,7 +99,7 @@ export default function RefundPolicy() {
           <div className="space-y-2 text-center md:text-left">
             <h3 className="text-xl font-bold text-gray-900 font-manrope">Tu compra está 100% protegida</h3>
             <p className="text-gray-500 font-inter text-sm leading-relaxed">
-              En Dental Market tu dinero no va directamente al vendedor. Permanece en custodia segura hasta que confirmas la conformidad del pedido. Si algo sale mal, estamos listos para intervenir y reembolsarte.
+              En Forcepx tu dinero no va directamente al vendedor. Permanece en custodia segura hasta que confirmas la conformidad del pedido. Si algo sale mal, estamos listos para intervenir y reembolsarte.
             </p>
           </div>
         </div>

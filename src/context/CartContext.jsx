@@ -19,7 +19,7 @@ import {
 } from "../services/api";
 
 const CartContext = createContext();
-const CART_STORAGE_KEY = "dental_market_cart";
+const CART_STORAGE_KEY = "forcepx_cart";
 
 const resolveMaxStock = (product, variation) => {
   let maxStock;

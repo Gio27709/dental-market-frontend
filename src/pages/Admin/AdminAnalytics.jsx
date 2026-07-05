@@ -55,7 +55,7 @@ export default function AdminAnalytics() {
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Estadísticas de la Plataforma</h1>
           <p className="text-white/40 text-sm max-w-lg">
-            Vista panorámica de todas las tiendas, ventas, comisiones y crecimiento de Dental Market.
+            Vista panorámica de todas las tiendas, ventas, comisiones y crecimiento de Forcepx.
           </p>
         </div>
       </div>

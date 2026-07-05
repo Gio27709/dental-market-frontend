@@ -16,13 +16,14 @@ const HEADER_TOP_BAR = {
   promo_link_text: "Comprar esenciales de clínica",
   promo_link_url: "/store-catalog"
 };
-const HEADER_BRAND_NAME = "Dentix";
+const HEADER_BRAND_NAME = "Forcepx";
 const HEADER_NAV_LINKS = [
   { text: "Inicio", url: "/" },
   { text: "Tienda", url: "/store-catalog" },
-  { text: "Ortodoncia", url: "#" },
-  { text: "Esterilización", url: "#" },
-  { text: "Contacto", url: "#" },
+  { text: "Promociones", url: "/promociones" },
+  { text: "Estudios y Cursos", url: "/courses" },
+  { text: "Publicaciones y Noticias", url: "/news" },
+  { text: "Contacto", url: "/contacto" },
   { text: "Afíliate con nosotros", url: "/afiliate" }
 ];
 
@@ -302,24 +303,55 @@ export default function Header() {
             </svg>
           </button>
 
-          {/* Logo Dentix */}
+          {/* Logo Forcepx */}
           <div className="flex-shrink-0 flex items-center gap-2">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-8 h-8 md:w-7 md:h-7 rounded-md bg-[#c3ff00] flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="w-5 h-5 md:w-4 md:h-4 text-[#531575]"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 4.5v15m7.5-7.5h-15"
+              {headerSection.brand_logo ? (
+                <div className="w-8 h-8 md:w-7 md:h-7 flex items-center justify-center">
+                  <img
+                    src={headerSection.brand_logo}
+                    alt="Logo"
+                    loading="eager"
+                    fetchPriority="high"
+                    className="w-full h-full object-contain rounded-md"
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                      const sibling = e.target.nextSibling;
+                      if (sibling) sibling.style.display = "flex";
+                    }}
                   />
-                </svg>
-              </div>
-              <span className="text-2xl md:text-xl font-bold tracking-widest text-white uppercase">
+                  <div className="hidden w-full h-full rounded-md bg-[#c3ff00] items-center justify-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="w-5 h-5 md:w-4 md:h-4 text-[#531575]"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 4.5v15m7.5-7.5h-15"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-8 h-8 md:w-7 md:h-7 rounded-md bg-[#c3ff00] flex items-center justify-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="w-5 h-5 md:w-4 md:h-4 text-[#531575]"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 4.5v15m7.5-7.5h-15"
+                    />
+                  </svg>
+                </div>
+              )}
+              <span className="text-lg sm:text-xl md:text-2xl font-bold tracking-widest text-white uppercase">
                 {brandName}
               </span>
             </Link>
@@ -384,7 +416,7 @@ export default function Header() {
           </div>
 
           {/* User Actions (Avatar y Carrito) */}
-          <div className="flex items-center space-x-6 text-white">
+          <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-6 text-white">
             {/* Action Item: Avatar / Login */}
             <div className="relative group cursor-pointer hover:text-gray-200 transition-colors">
               <button
@@ -415,7 +447,7 @@ export default function Header() {
             {user?.role === "delivery" && (
               <button
                 onClick={() => navigate("/delivery")}
-                className="relative flex items-center gap-2 justify-center outline-none bg-transparent border-none p-0 cursor-pointer hover:text-gray-200 transition-colors group"
+                className="relative flex items-center gap-1 lg:gap-2 justify-center outline-none bg-transparent border-none p-0 cursor-pointer hover:text-gray-200 transition-colors group"
                 title="Mis Entregas"
               >
                 <span className="material-symbols-outlined text-[22px] md:text-[20px] text-[#c3ff00] group-hover:text-white transition-colors">two_wheeler</span>
@@ -429,7 +461,7 @@ export default function Header() {
             {user?.role === "store" && (
               <button
                 onClick={() => navigate("/store")}
-                className="relative flex items-center gap-2 justify-center outline-none bg-transparent border-none p-0 cursor-pointer hover:text-gray-200 transition-colors group"
+                className="relative flex items-center gap-1 lg:gap-2 justify-center outline-none bg-transparent border-none p-0 cursor-pointer hover:text-gray-200 transition-colors group"
                 title="Mi Tienda"
               >
                 <span className="material-symbols-outlined text-[22px] md:text-[20px] text-[#c3ff00] group-hover:text-white transition-colors">storefront</span>
@@ -443,7 +475,7 @@ export default function Header() {
             {(user?.role === "admin" || user?.role === "owner") && (
               <button
                 onClick={() => navigate("/admin")}
-                className="relative flex items-center gap-2 justify-center outline-none bg-transparent border-none p-0 cursor-pointer hover:text-gray-200 transition-colors group"
+                className="relative flex items-center gap-1 lg:gap-2 justify-center outline-none bg-transparent border-none p-0 cursor-pointer hover:text-gray-200 transition-colors group"
                 title="Panel Admin"
               >
                 <span className="material-symbols-outlined text-[22px] md:text-[20px] text-[#c3ff00] group-hover:text-white transition-colors">admin_panel_settings</span>
@@ -545,11 +577,32 @@ export default function Header() {
             {/* Drawer Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-[#6b1e96]">
               <Link to="/" className="flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
-                <div className="w-7 h-7 rounded-md bg-[#c3ff00] flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#531575]">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                  </svg>
-                </div>
+                {headerSection.brand_logo ? (
+                  <div className="w-7 h-7 flex items-center justify-center">
+                    <img
+                      src={headerSection.brand_logo}
+                      alt="Logo"
+                      loading="eager"
+                      className="w-full h-full object-contain rounded-md"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                        const sibling = e.target.nextSibling;
+                        if (sibling) sibling.style.display = "flex";
+                      }}
+                    />
+                    <div className="hidden w-full h-full rounded-md bg-[#c3ff00] items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#531575]">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                      </svg>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-7 h-7 rounded-md bg-[#c3ff00] flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#531575]">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                  </div>
+                )}
                 <span className="text-lg font-bold tracking-widest text-white uppercase">{brandName}</span>
               </Link>
               <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-white">
@@ -573,6 +626,27 @@ export default function Header() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                 </svg>
               </form>
+            </div>
+
+            {/* Mobile Location Selector */}
+            <div className="px-4 py-3 border-b border-gray-100">
+              <button
+                onClick={() => {
+                  setLocationModalOpen(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-50 text-gray-700 text-sm font-semibold hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-gray-400">
+                    <path fillRule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a16.975 16.975 0 0 0 1.144-.742 19.58 19.58 0 0 0 2.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 0 0-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 0 0 2.682 2.282 16.975 16.975 0 0 0 1.145.742ZM12 13.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-gray-600">Enviar a: <span className="font-bold text-[#6b1e96]">{buyerState || "Venezuela"}</span></span>
+                </div>
+                <span className="material-symbols-outlined text-gray-400" style={{ fontSize: '18px' }}>
+                  edit
+                </span>
+              </button>
             </div>
 
             {/* Navigation Links */}
@@ -724,11 +798,32 @@ export default function Header() {
             <div className="flex items-center justify-between px-5 py-5 border-b border-gray-100 bg-gradient-to-r from-[#531575] via-[#6b1e96] to-[#531575] relative overflow-hidden">
               <div className="absolute -left-10 -top-10 w-24 h-24 bg-[#c3ff00]/10 rounded-full blur-xl"></div>
               <div className="flex items-center gap-2.5 relative z-10">
-                <div className="w-8 h-8 rounded-lg bg-[#c3ff00] flex items-center justify-center shadow-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-[#531575]">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                  </svg>
-                </div>
+                {headerSection.brand_logo ? (
+                  <div className="w-8 h-8 flex items-center justify-center">
+                    <img
+                      src={headerSection.brand_logo}
+                      alt="Logo"
+                      loading="eager"
+                      className="w-full h-full object-contain rounded-lg"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                        const sibling = e.target.nextSibling;
+                        if (sibling) sibling.style.display = "flex";
+                      }}
+                    />
+                    <div className="hidden w-full h-full rounded-lg bg-[#c3ff00] items-center justify-center shadow-sm">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-[#531575]">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                      </svg>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-8 h-8 rounded-lg bg-[#c3ff00] flex items-center justify-center shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-[#531575]">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                  </div>
+                )}
                 <div className="flex flex-col">
                   <span className="text-lg font-extrabold tracking-widest text-white uppercase leading-none">{brandName}</span>
                   <span className="text-[10px] text-purple-200 font-semibold tracking-wider mt-0.5">Categorías</span>

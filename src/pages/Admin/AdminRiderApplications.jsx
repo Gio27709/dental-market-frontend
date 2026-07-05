@@ -246,7 +246,7 @@ export default function AdminRiderApplications() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
           {loading && <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6b1e96]"></div></div>}
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse hidden md:table">
               <thead>
                 <tr className="bg-gray-50/80 border-b border-gray-100">
                   <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Repartidor</th>
@@ -325,6 +325,89 @@ export default function AdminRiderApplications() {
                 ))}
               </tbody>
             </table>
+
+            {/* Vista responsiva de tarjetas en móvil */}
+            <div className="grid grid-cols-1 gap-4 p-4 md:hidden">
+              {paginatedData.map((app) => (
+                <div 
+                  key={app.id} 
+                  className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm transition-all relative"
+                >
+                  {/* Cabecera de la tarjeta */}
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-bold text-gray-900 text-base truncate">{app.full_name}</span>
+                      <span className="text-xs text-gray-400 truncate">{app.users?.email || "N/A"}</span>
+                    </div>
+                    
+                    {/* Badges de Estado */}
+                    {activeTab === "approved" && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-100">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        Aprobado
+                      </span>
+                    )}
+                    {activeTab === "rejected" && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-100">
+                        Rechazado
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Información detallada */}
+                  <div className="mt-3 space-y-2 text-xs text-gray-600 border-t border-gray-100 pt-3">
+                    <div className="flex items-center gap-1">
+                      <span className="font-semibold text-gray-500 min-w-[70px]">Cédula:</span>
+                      <span>{app.cedula}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-semibold text-gray-500 min-w-[70px]">Teléfono:</span>
+                      <span>{app.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-semibold text-gray-500 min-w-[70px]">Ubicación:</span>
+                      <span className="font-medium text-gray-800">{app.city}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-semibold text-gray-500 min-w-[70px]">Vehículo:</span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-600 uppercase">
+                        {app.vehicle_type}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-semibold text-gray-500 min-w-[70px]">Registro:</span>
+                      <span>
+                        {new Date(app.created_at).toLocaleDateString("es-VE", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Acciones */}
+                  {activeTab === "pending" && (
+                    <div className="mt-4 border-t border-gray-100 pt-3 flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleReject(app.id, app.full_name)}
+                        disabled={loading}
+                        className="flex-1 py-2 text-center text-red-600 bg-red-50 hover:bg-red-100 rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
+                      >
+                        Rechazar
+                      </button>
+                      <button
+                        onClick={() => handleApprove(app.id, app.full_name)}
+                        disabled={loading}
+                        className="flex-1 py-2 text-center text-[#531575] bg-[#c3ff00] hover:bg-[#aade00] rounded-xl text-xs font-bold transition-colors disabled:opacity-50 shadow-sm"
+                      >
+                        Aprobar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* ── Pagination Footer ── */}

@@ -283,7 +283,7 @@ export default function AdminDashboard() {
             Bienvenido, <span className="text-[#c3ff00]">{user?.firstName || 'Administrador'}</span>
           </h1>
           <p className="text-white/50 text-sm md:text-base max-w-lg leading-relaxed">
-            Gestiona todas las operaciones de DentalMarket desde aquí. Selecciona una opción del menú o usa los accesos rápidos.
+            Gestiona todas las operaciones de Forcepx desde aquí. Selecciona una opción del menú o usa los accesos rápidos.
           </p>
         </div>
       </div>

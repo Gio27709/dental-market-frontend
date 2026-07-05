@@ -135,7 +135,7 @@ export default function CourseDetail() {
                      )}
                      <div>
                        <p className="font-bold text-gray-900">{course.instructor_name || 'Instructor Invitado'}</p>
-                       <p className="text-xs text-gray-500">Autorizado por Dental Market</p>
+                       <p className="text-xs text-gray-500">Autorizado por Forcepx</p>
                      </div>
                   </div>
                 </div>

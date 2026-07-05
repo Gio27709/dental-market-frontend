@@ -182,7 +182,7 @@ export default function PlatformSettings() {
          <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
          <h1 className="text-3xl font-bold font-['Manrope'] mb-2 relative z-10">Configuraciones del Sitio</h1>
          <p className="text-purple-200 text-sm max-w-2xl relative z-10 leading-relaxed">
-            Administra las reglas maestras de DentalMarket. Estos ajustes aplican globalmente e inmediatamente a todas las tiendas y todos los productos de la plataforma.
+            Administra las reglas maestras de Forcepx. Estos ajustes aplican globalmente e inmediatamente a todas las tiendas y todos los productos de la plataforma.
          </p>
       </div>
 
@@ -315,7 +315,7 @@ export default function PlatformSettings() {
                     <span className={`material-symbols-outlined mt-0.5 ${allowOpenReviews ? 'text-[#6b1e96]' : 'text-gray-400'}`}>public</span>
                     <div>
                        <strong className={`block text-[15px] ${allowOpenReviews ? 'text-[#6b1e96]' : 'text-gray-500'}`}>Modo Libre (Cualquier Usuario)</strong>
-                       <span className="text-sm">Todo usuario registrado en DentalMarket puede reseñar cualquier producto y afecta su global.</span>
+                       <span className="text-sm">Todo usuario registrado en Forcepx puede reseñar cualquier producto y afecta su global.</span>
                     </div>
                  </div>
 
@@ -376,7 +376,7 @@ export default function PlatformSettings() {
                 <h3 className="font-bold text-gray-900 text-[15px] font-['Manrope']">Comisión a Tiendas</h3>
               </div>
               <p className="text-gray-500 text-sm leading-relaxed">
-                Porcentaje que DentalMarket retiene sobre cada venta de la tienda. <strong>No afecta el precio que ve el comprador.</strong>
+                Porcentaje que Forcepx retiene sobre cada venta de la tienda. <strong>No afecta el precio que ve el comprador.</strong>
               </p>
 
               <div className="flex items-start gap-2 p-3 rounded-lg bg-purple-50 border border-purple-200">

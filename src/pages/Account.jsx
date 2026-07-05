@@ -195,7 +195,7 @@ export default function Account() {
               Información Personal
             </h1>
             <p className="text-sm mt-1" style={{ color: "#727785" }}>
-              Información sobre ti y tus preferencias en Dentix. Esta información nos ayuda a brindarte una experiencia más personalizada.
+              Información sobre ti y tus preferencias en Forcepx. Esta información nos ayuda a brindarte una experiencia más personalizada.
             </p>
           </div>
 
@@ -252,7 +252,7 @@ export default function Account() {
               {/* Rol */}
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#727785" }}>
-                  Rol en Dentix
+                  Rol en Forcepx
                 </label>
                 <div className="px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2" style={{ background: "#f9f9ff", color: "#6b1e96", border: "1px solid rgba(0,0,0,0.06)" }}>
                   <span className="w-2 h-2 rounded-full" style={{ background: "#6b1e96" }}></span>

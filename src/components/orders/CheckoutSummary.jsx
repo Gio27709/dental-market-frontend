@@ -49,7 +49,7 @@ export default function CheckoutSummary({ cartItems, total_usd, total_ves, deliv
   const handleApplyCoupon = (e) => {
     e.preventDefault();
     const code = couponCodeInput.trim().toUpperCase();
-    const expectedCode = `DENTIX${activeNewsletterPercent}`;
+    const expectedCode = `FORCEPX${activeNewsletterPercent}`;
     if (code === expectedCode) {
       setAppliedCoupon(code);
       setCouponPercentage(activeNewsletterPercent);

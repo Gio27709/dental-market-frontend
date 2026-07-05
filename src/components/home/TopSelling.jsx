@@ -2,6 +2,7 @@ import PropTypes from "prop-types";
 import { useState, useRef, useEffect } from "react";
 import ProductCard from "../ProductCard";
 import useHomeSections from "../../hooks/useHomeSections";
+import useDragScroll from "../../hooks/useDragScroll";
 
 const DEFAULT_TABS = [
   { id: "all", label: "Todos" },
@@ -21,6 +22,7 @@ export default function TopSelling({ products }) {
 
   const available = products || [];
   const scrollRef = useRef(null);
+  const { handlers: dragHandlers } = useDragScroll({ externalRef: scrollRef });
 
   const [activeTab, setActiveTab] = useState("all");
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -126,13 +128,14 @@ export default function TopSelling({ products }) {
         {/* Contenedor del Carrusel (5 items por vista) */}
         <div
           ref={scrollRef}
-          className="flex overflow-x-auto gap-4 scrollbar-hide snap-x snap-mandatory pt-2 pb-6 px-1"
+          {...dragHandlers}
+          className="flex overflow-x-auto gap-4 scrollbar-hide snap-x snap-mandatory pt-2 pb-6 px-1 md:px-0 drag-scroll-container"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {displayProducts.map((product, index) => (
             <div
               key={`top-selling-${product?._id || index}-${index}`}
-              className="snap-start flex-none w-[200px] sm:w-[240px] md:w-[calc(25%-12px)] lg:w-[calc(20%-13px)] transform transition-transform duration-300 hover:-translate-y-1"
+              className="snap-start flex-none w-[200px] sm:w-[240px] md:w-[calc(25%-12px)] lg:w-[calc(20%-13px)] flex flex-col"
             >
               <ProductCard product={product} />
             </div>

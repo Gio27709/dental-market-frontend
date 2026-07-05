@@ -134,7 +134,7 @@ export default function StoreSidebar({ isProfileComplete = true }) {
 
   return (
     <aside
-      className="w-[270px] flex-shrink-0 sticky top-[80px] md:top-[96px] h-[calc(100vh-80px)] md:h-[calc(100vh-96px)] flex-col hidden md:flex relative overflow-y-auto"
+      className="w-[270px] flex-shrink-0 sticky top-0 h-screen flex-col hidden md:flex relative overflow-y-auto"
       style={{
         background: 'linear-gradient(180deg, #1a0a2e 0%, #2d1452 50%, #1a0a2e 100%)',
       }}
@@ -156,7 +156,7 @@ export default function StoreSidebar({ isProfileComplete = true }) {
           </div>
           <div className="flex flex-col">
             <span className="text-lg font-bold tracking-widest text-white uppercase leading-tight">
-              Dentix
+              Forcepx
             </span>
             <span className="text-[10px] font-medium tracking-[0.2em] text-[#c3ff00]/70 uppercase">
               Store Panel

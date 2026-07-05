@@ -113,7 +113,7 @@ export default function Contact() {
                 </div>
                 <div className="ml-6">
                   <h3 className="text-sm font-semibold text-[#e6b4ff] uppercase tracking-widest font-inter mb-1">Correo Electrónico</h3>
-                  <p className="text-2xl font-bold font-manrope text-white">soporte@dentalmarket.com</p>
+                  <p className="text-2xl font-bold font-manrope text-white">soporte@forcepx.com</p>
                 </div>
               </div>
 
@@ -133,7 +133,7 @@ export default function Contact() {
                 </div>
                 <div className="ml-6">
                   <h3 className="text-sm font-semibold text-[#e6b4ff] uppercase tracking-widest font-inter mb-1">Ubicación Principal</h3>
-                  <p className="text-xl font-semibold font-manrope text-white">Dental Market HQ</p>
+                  <p className="text-xl font-semibold font-manrope text-white">Forcepx HQ</p>
                   <p className="text-[#e6b4ff] font-inter mt-1">Av. Las Américas, Centro Empresarial Médico</p>
                 </div>
               </div>

@@ -18,7 +18,7 @@ export default function TermsConditions() {
               Debes registrarte con datos reales y proporcionar una copia legible de tu licencia profesional odontológica durante el registro.
             </li>
             <li>
-              Dental Market se reserva el derecho de rechazar temporal o definitivamente cuentas cuyas credenciales profesionales no puedan ser validadas.
+              Forcepx se reserva el derecho de rechazar temporal o definitivamente cuentas cuyas credenciales profesionales no puedan ser validadas.
             </li>
             <li>
               Eres el único responsable de mantener la confidencialidad de tu contraseña y de toda actividad realizada bajo tu perfil.
@@ -37,7 +37,7 @@ export default function TermsConditions() {
           </p>
           <ul className="list-disc pl-6 space-y-2 text-gray-600 text-sm">
             <li>
-              Al realizar una compra, el dinero se retiene en las cuentas de Dental Market y no se transfiere directamente al vendedor.
+              Al realizar una compra, el dinero se retiene en las cuentas de Forcepx y no se transfiere directamente al vendedor.
             </li>
             <li>
               Una vez que recibas el producto, tienes un plazo de <strong>48 horas</strong> para confirmar que todo está conforme y liberar los fondos a la tienda.
@@ -62,7 +62,7 @@ export default function TermsConditions() {
               Las tarifas de envío se calculan automáticamente según la distancia geográfica del vendedor respecto a tu ubicación.
             </li>
             <li>
-              Los tiempos estimados de entrega son referenciales y Dental Market no se hace responsable por retrasos fortuitos o de fuerza mayor ajenos a su operación.
+              Los tiempos estimados de entrega son referenciales y Forcepx no se hace responsable por retrasos fortuitos o de fuerza mayor ajenos a su operación.
             </li>
           </ul>
         </div>
@@ -77,7 +77,7 @@ export default function TermsConditions() {
       content: (
         <div className="space-y-3">
           <p>
-            Las tiendas que vendan productos en Dental Market deben pasar por un proceso de aprobación riguroso.
+            Las tiendas que vendan productos en Forcepx deben pasar por un proceso de aprobación riguroso.
           </p>
           <ul className="list-disc pl-6 space-y-2 text-gray-600 text-sm">
             <li>
@@ -140,12 +140,12 @@ export default function TermsConditions() {
     {
       title: "Propiedad Intelectual",
       content:
-        "Todo el diseño, código, logotipos, marcas comerciales y contenido CMS expuesto en Dental Market son propiedad de Dental Market o de sus respectivos licenciantes, protegidos por tratados de propiedad intelectual nacionales e internacionales.",
+        "Todo el diseño, código, logotipos, marcas comerciales y contenido CMS expuesto en Forcepx son propiedad de Forcepx o de sus respectivos licenciantes, protegidos por tratados de propiedad intelectual nacionales e internacionales.",
     },
     {
       title: "Limitación de Responsabilidad",
       content:
-        "Dental Market actúa como un intermediario y agente escrow. No asumimos responsabilidad sobre la idoneidad clínica de los productos médicos vendidos por terceros ni por los daños derivados del uso inadecuado o impericia en la manipulación de insumos odontológicos.",
+        "Forcepx actúa como un intermediario y agente escrow. No asumimos responsabilidad sobre la idoneidad clínica de los productos médicos vendidos por terceros ni por los daños derivados del uso inadecuado o impericia en la manipulación de insumos odontológicos.",
     },
     {
       title: "Modificación de Términos",
@@ -254,7 +254,7 @@ export default function TermsConditions() {
           <FileText className="w-10 h-10 text-[#c3ff00]" />
           <h3 className="text-2xl font-bold font-manrope">¿Entendido todo el acuerdo?</h3>
           <p className="text-gray-400 text-sm max-w-lg font-inter">
-            Al continuar navegando y utilizando los servicios de Dental Market, aceptas implícitamente estos Términos y Condiciones.
+            Al continuar navegando y utilizando los servicios de Forcepx, aceptas implícitamente estos Términos y Condiciones.
           </p>
         </div>
       </div>

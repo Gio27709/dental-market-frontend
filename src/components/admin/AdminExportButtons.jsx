@@ -20,7 +20,7 @@ export default function AdminExportButtons({ analytics, period, loading }) {
       const now = new Date().toLocaleString();
 
       // Header
-      lines.push("DENTAL MARKET — REPORTE ADMINISTRATIVO DE PLATAFORMA");
+      lines.push("FORCEPX — REPORTE ADMINISTRATIVO DE PLATAFORMA");
       lines.push(`Generado: ${now}`);
       lines.push(`Periodo: ${period}`);
       if (analytics.appliedFilters?.store_ids) {

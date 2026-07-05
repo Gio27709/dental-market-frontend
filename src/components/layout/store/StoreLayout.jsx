@@ -209,7 +209,13 @@ export default function StoreLayout() {
               <path fillRule="evenodd" d="M3.087 9h17.826a.75.75 0 0 1 .743.858l-1.53 11.25a1.5 1.5 0 0 1-1.486 1.142H5.36a1.5 1.5 0 0 1-1.486-1.142L2.344 9.858A.75.75 0 0 1 3.087 9Z" clipRule="evenodd" />
             </svg>
           </div>
-          <span className="font-bold text-sm tracking-widest uppercase">Dentix <span className="font-normal text-[#c3ff00]/70 text-[10px] tracking-[0.15em]">Store</span></span>
+          <span className="font-bold text-sm tracking-widest uppercase flex items-center gap-1.5">
+            Forcepx 
+            <span className="font-normal text-[#c3ff00]/70 text-[10px] tracking-[0.15em]">Store</span>
+            {storeProfile && (
+              <span className={`w-1.5 h-1.5 rounded-full ${storeProfile.is_open ? "bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" : "bg-red-500"}`} title={storeProfile.is_open ? "Tienda Abierta" : "Tienda Cerrada"} />
+            )}
+          </span>
         </div>
         <Link to="/" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -236,8 +242,16 @@ export default function StoreLayout() {
                   </svg>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold tracking-widest text-white uppercase leading-tight">Dentix</span>
-                  <span className="text-[9px] font-medium tracking-[0.15em] text-[#c3ff00]/60 uppercase">Store Panel</span>
+                  <span className="text-sm font-bold tracking-widest text-white uppercase leading-tight">Forcepx</span>
+                  <span className="text-[9px] font-medium tracking-[0.15em] text-[#c3ff00]/60 uppercase flex items-center gap-1.5">
+                    Store Panel
+                    {storeProfile && (
+                      <span className={`inline-flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.2 rounded ${storeProfile.is_open ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30"}`}>
+                        <span className={`w-1 h-1 rounded-full ${storeProfile.is_open ? "bg-emerald-400 animate-pulse" : "bg-red-400"}`} />
+                        {storeProfile.is_open ? "Activo" : "Cerrado"}
+                      </span>
+                    )}
+                  </span>
                 </div>
               </div>
               <button onClick={() => setMobileOpen(false)} className="p-1.5 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-colors">

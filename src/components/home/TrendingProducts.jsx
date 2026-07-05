@@ -2,6 +2,7 @@ import ProductCard from "../ProductCard";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { getTrendingAPI } from "../../services/api";
 import useHomeSections from "../../hooks/useHomeSections";
+import useDragScroll from "../../hooks/useDragScroll";
 import { useLocationContext } from "../../hooks/useLocationContext";
 
 export default function TrendingProducts() {
@@ -11,6 +12,7 @@ export default function TrendingProducts() {
   const { buyerState } = useLocationContext();
 
   const scrollRef = useRef(null);
+  const { handlers: dragHandlers } = useDragScroll({ externalRef: scrollRef });
   const [trendingProducts, setTrendingProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -95,11 +97,12 @@ export default function TrendingProducts() {
       <div 
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex gap-6 overflow-x-auto snap-x snap-mandatory pb-10 px-4 pt-4 -mx-4"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        {...dragHandlers}
+        className="flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory pb-6 px-4 md:px-0 pt-4 -mx-4 md:mx-0 trending-scrollbar drag-scroll-container"
+        style={{ scrollbarWidth: "thin" }}
       >
         {trendingProducts.map((product) => (
-          <div key={product.id} className="snap-start flex-shrink-0 w-[280px] sm:w-[320px] lg:w-[calc(25%-18px)]">
+          <div key={product.id} className="w-[200px] sm:w-[260px] md:w-[calc(25%-18px)] flex-shrink-0 snap-start flex flex-col">
             <ProductCard product={product} />
           </div>
         ))}

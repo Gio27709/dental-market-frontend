@@ -9,6 +9,8 @@ export default function Register() {
     password: "",
     confirmPassword: "",
     role: "user",
+    specialty: "Odontología General",
+    license_number: "",
   });
 
   const [passwordValidations, setPasswordValidations] = useState({
@@ -83,15 +85,26 @@ export default function Register() {
         "Por favor cumple con todos los requisitos de la contraseña",
       );
     }
+    if (formData.role === "professional" && !formData.license_number.trim()) {
+      return setError("El número de licencia/matrícula es obligatorio para profesionales dentales");
+    }
     try {
       setLoading(true);
       setError(null);
-      await register({
+      
+      const registerData = {
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        role: formData.role, // Saved in metadata, trigger handles sync
-      });
+        role: formData.role,
+      };
+
+      if (formData.role === "professional") {
+        registerData.specialty = formData.specialty;
+        registerData.license_number = formData.license_number;
+      }
+
+      await register(registerData);
       navigate(redirectPath);
     } catch (err) {
       setError(err.message || "Error al registrar usuario");
@@ -128,7 +141,7 @@ export default function Register() {
               Crear una cuenta
             </h2>
             <p className="text-gray-500 text-sm">
-              Únete a Dentix y optimiza el abastecimiento de tu clínica.
+              Únete a Forcepx y optimiza el abastecimiento de tu clínica.
             </p>
           </div>
 
@@ -159,6 +172,104 @@ export default function Register() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Account Type Selector */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-900 mb-3">
+                Tipo de Cuenta
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Regular Buyer */}
+                <div
+                  onClick={() => setFormData(prev => ({ ...prev, role: "user" }))}
+                  className={`cursor-pointer p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center text-center gap-2 group relative overflow-hidden ${
+                    formData.role === "user"
+                      ? "border-primary-600 bg-primary-50/30 shadow-sm ring-1 ring-primary-600/30"
+                      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50/50"
+                  }`}
+                >
+                  {formData.role === "user" && (
+                    <div className="absolute top-2 right-2 w-4 h-4 bg-primary-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
+                      ✓
+                    </div>
+                  )}
+                  <div className={`p-2 rounded-lg transition-colors ${formData.role === "user" ? "bg-primary-100 text-primary-700" : "bg-gray-100 text-gray-500 group-hover:bg-gray-200"}`}>
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                  </div>
+                  <span className="font-semibold text-sm text-gray-900">Comprador</span>
+                  <span className="text-xs text-gray-500">Clínicas e insumos</span>
+                </div>
+
+                {/* Professional Dentist */}
+                <div
+                  onClick={() => setFormData(prev => ({ ...prev, role: "professional" }))}
+                  className={`cursor-pointer p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center text-center gap-2 group relative overflow-hidden ${
+                    formData.role === "professional"
+                      ? "border-primary-600 bg-primary-50/30 shadow-sm ring-1 ring-primary-600/30"
+                      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50/50"
+                  }`}
+                >
+                  {formData.role === "professional" && (
+                    <div className="absolute top-2 right-2 w-4 h-4 bg-primary-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
+                      ✓
+                    </div>
+                  )}
+                  <div className={`p-2 rounded-lg transition-colors ${formData.role === "professional" ? "bg-primary-100 text-primary-700" : "bg-gray-100 text-gray-500 group-hover:bg-gray-200"}`}>
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <span className="font-semibold text-sm text-gray-900">Odontólogo</span>
+                  <span className="text-xs text-gray-500">Precios de distribuidor</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Campos condicionales para el Odontólogo */}
+            {formData.role === "professional" && (
+              <div className="space-y-4 p-4 bg-gray-50 border border-gray-100 rounded-xl transition-all duration-300">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Especialidad Dental
+                  </label>
+                  <select
+                    name="specialty"
+                    value={formData.specialty}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-900"
+                  >
+                    <option value="Odontología General">Odontología General</option>
+                    <option value="Ortodoncia">Ortodoncia</option>
+                    <option value="Endodoncia">Endodoncia</option>
+                    <option value="Periodoncia">Periodoncia</option>
+                    <option value="Odontopediatría">Odontopediatría</option>
+                    <option value="Cirugía Maxilofacial">Cirugía Maxilofacial</option>
+                    <option value="Rehabilitación Oral">Rehabilitación Oral</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Número de Licencia / Matrícula Profesional *
+                  </label>
+                  <input
+                    type="text"
+                    name="license_number"
+                    value={formData.license_number}
+                    onChange={handleChange}
+                    required={formData.role === "professional"}
+                    disabled={loading}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-900"
+                    placeholder="Ej. MP-12345"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Obligatorio para validar tu acceso como profesional de la salud dental.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-900 mb-2">

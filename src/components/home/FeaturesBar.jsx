@@ -8,7 +8,7 @@ export default function FeaturesBar() {
     { icon: "support_agent", title: "Soporte 24/7", description: "Asistencia especializada" },
     { icon: "payments", title: "Pago Seguro", description: "Transacciones protegidas" },
     { icon: "local_shipping", title: "Envío Gratis", description: "En pedidos mayores a $500" },
-    { icon: "assignment_return", title: "Garantía DENTIX", description: "30 días de satisfacción" }
+    { icon: "assignment_return", title: "Garantía FORCEPX", description: "30 días de satisfacción" }
   ];
 
   return (

@@ -1044,7 +1044,7 @@ export default function OrderDetail() {
             <button
               className="w-full flex justify-center items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-90"
               style={{ background: "linear-gradient(135deg, #6b1e96 0%, #531575 100%)" }}
-              onClick={() => window.open(`mailto:soporte@dentix.com?subject=Orden ${formatOrderNumber(order.id)}`, '_blank')}
+              onClick={() => window.open(`mailto:soporte@forcepx.com?subject=Orden ${formatOrderNumber(order.id)}`, '_blank')}
             >
               <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>support_agent</span>
               Contactar Vendedor

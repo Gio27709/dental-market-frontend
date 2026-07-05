@@ -61,6 +61,7 @@ export default function AdminOrderList({ orders }) {
 
   return (
     <div
+      className="hidden md:block"
       style={{
         background: "#fff",
         borderRadius: "16px",
@@ -238,6 +239,109 @@ export default function AdminOrderList({ orders }) {
           </tbody>
         </table>
       </div>
+    </div>
+
+    {/* Vista responsiva de tarjetas en móvil */}
+    <div className="grid grid-cols-1 gap-4 p-4 md:hidden">
+      {orders.map((order) => {
+        const dateObj = new Date(order.created_at);
+        const formattedDate = dateObj.toLocaleDateString("es-VE", { day: "2-digit", month: "numeric", year: "numeric" });
+        const formattedTime = dateObj.toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" });
+        
+        const allCancelled = order.order_items?.length > 0 && order.order_items.every(i => i.delivery_status === "cancelled");
+        
+        let computedPaymentStatus = order.payment_status;
+        if (allCancelled && order.payment_status === "approved") {
+          computedPaymentStatus = order.escrow_status === "refunded" ? "refunded" : "to_refund";
+        }
+
+        const statusBadge = getStatusBadge(computedPaymentStatus);
+        const deliveryBadge = getDeliveryBadge(order.order_items);
+        
+        const totalItemsCount = order.order_items?.reduce((acc, current) => acc + (current.quantity || 1), 0) || 0;
+        const firstProductName = order.order_items?.[0]?.products?.name || "—";
+
+        // Extract store names uniquely
+        const storesSet = new Set();
+        order.order_items?.forEach((item) => {
+          if (item.store_profiles?.business_name) {
+            storesSet.add(item.store_profiles.business_name);
+          }
+        });
+        const storeNames = Array.from(storesSet);
+        const storeDisplay = storeNames.length === 0 ? "N/A" : storeNames.length === 1 ? storeNames[0] : `${storeNames[0]} (+${storeNames.length - 1})`;
+
+        return (
+          <div 
+            key={order.id} 
+            className="bg-white rounded-2xl border border-gray-150 p-4 shadow-sm space-y-3"
+          >
+            <div className="flex justify-between items-start">
+              <div className="flex flex-col">
+                <span className="font-mono font-bold text-gray-900 text-sm">
+                  #{order.id.split("-")[0].toUpperCase()}
+                </span>
+                <span className="text-[10px] text-gray-400 font-semibold mt-0.5">{formattedDate} · {formattedTime}</span>
+              </div>
+
+              <div className="flex flex-col gap-1 items-end">
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border`} style={{ background: statusBadge.bg, color: statusBadge.color }}>
+                  {statusBadge.icon && <span className="text-[10px]">{statusBadge.icon}</span>}
+                  {statusBadge.label}
+                </span>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold`} style={{ background: deliveryBadge.bg, color: deliveryBadge.color }}>
+                  {deliveryBadge.label}
+                </span>
+              </div>
+            </div>
+
+            {/* Información detallada */}
+            <div className="mt-3 space-y-2 text-xs text-gray-600 border-t border-gray-100 pt-3">
+              <div className="flex justify-between items-start">
+                <span className="text-gray-400 min-w-[70px]">Cliente:</span>
+                <div className="flex flex-col items-end">
+                  <span className="font-bold text-gray-800">{order.users?.full_name || "Eliminado"}</span>
+                  <span className="text-gray-400 text-[10px]">{order.users?.email || ""}</span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Tienda:</span>
+                <span className="font-semibold text-gray-700">{storeDisplay}</span>
+              </div>
+
+              <div className="flex justify-between items-start">
+                <span className="text-gray-400">Productos:</span>
+                <span className="font-medium text-gray-800 text-right truncate max-w-[200px]" title={firstProductName}>
+                  <strong className="text-[#6b1e96]">{totalItemsCount}</strong> ítem{totalItemsCount !== 1 ? "s" : ""} · {firstProductName}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Método de Pago:</span>
+                <span className="text-gray-600 font-medium capitalize">{getMethodIcon(order.payment_method)}</span>
+              </div>
+
+              <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                <span className="text-gray-400">Total:</span>
+                <div className="flex flex-col items-end">
+                  <span className="font-black text-[#6b1e96] text-sm">{formatCurrency(order.total_usd)}</span>
+                  <span className="text-[10px] text-gray-400 font-mono">Bs {Number(order.total_ves || 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <Link
+                to={`/admin/orders/${order.id}`}
+                className="w-full py-2.5 bg-gradient-to-r from-[#531575] to-[#6b1e96] text-[#c3ff00] font-extrabold rounded-xl text-center text-xs uppercase tracking-wider block transition-all shadow-sm active:scale-95"
+              >
+                Ver Detalles de Orden
+              </Link>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

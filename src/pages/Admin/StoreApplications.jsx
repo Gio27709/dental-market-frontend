@@ -280,7 +280,7 @@ export default function StoreApplications() {
           Gestión de Tiendas y Solicitudes
         </h1>
         <p className="text-gray-500 mt-1 text-sm">
-          Filtra, administra y audita el estado de todos los comercios afiliados a Dentix.
+          Filtra, administra y audita el estado de todos los comercios afiliados a Forcepx.
         </p>
       </div>
 
@@ -430,7 +430,7 @@ export default function StoreApplications() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
           {loading && <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6b1e96]"></div></div>}
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse hidden md:table">
               <thead>
                 <tr className="bg-gray-50/80 border-b border-gray-100">
                   {activeTab === "rejected" && (
@@ -603,6 +603,170 @@ export default function StoreApplications() {
                 ))}
               </tbody>
             </table>
+
+            {/* Vista responsiva de tarjetas en móvil */}
+            <div className="grid grid-cols-1 gap-4 p-4 md:hidden">
+              {paginatedData.map((app) => (
+                <div 
+                  key={app.id} 
+                  className={`bg-white rounded-2xl border p-4 shadow-sm transition-all relative ${selectedIds.has(app.id) ? 'border-[#6b1e96] bg-[#6b1e96]/[0.01]' : 'border-gray-100'}`}
+                >
+                  {/* Checkbox para el borrado masivo en rechazadas */}
+                  {activeTab === "rejected" && (
+                    <div className="absolute top-4 left-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(app.id)}
+                        onChange={() => toggleSelect(app.id)}
+                        className="w-5 h-5 rounded border-gray-300 text-[#6b1e96] focus:ring-[#6b1e96]/30 cursor-pointer"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Cabecera de la tarjeta */}
+                  <div className={`${activeTab === "rejected" ? "pl-8" : ""} flex justify-between items-start gap-2`}>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-bold text-gray-900 text-base truncate">{app.business_name}</span>
+                      {app.store_code && (
+                        <span className="inline-flex items-center w-fit px-2 py-0.5 rounded text-[9px] font-black mt-1 bg-purple-100 text-[#6b1e96] tracking-wider uppercase">
+                          #{app.store_code}
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Badges de Estado */}
+                    {activeTab === "approved" && (
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${app.is_suspended ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-green-50 text-green-700 border-green-100'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${app.is_suspended ? 'bg-amber-500' : 'bg-green-500'}`} />
+                        {app.is_suspended ? 'Suspendida' : 'Activa'}
+                      </span>
+                    )}
+                    {activeTab === "rejected" && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-100">
+                        Rechazada
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Información detallada */}
+                  <div className="mt-3 space-y-2 text-xs text-gray-600 border-t border-gray-100 pt-3">
+                    <div className="flex items-start gap-1">
+                      <span className="font-semibold text-gray-500 min-w-[70px]">Dirección:</span>
+                      <span className="truncate flex-1" title={app.business_address}>{app.business_address || "Sin dirección"}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-semibold text-gray-500 min-w-[70px]">RIF / Tlf:</span>
+                      <span>{app.rif} / {app.business_phone}</span>
+                    </div>
+                    <div className="flex items-start gap-1">
+                      <span className="font-semibold text-gray-500 min-w-[70px]">Titular:</span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-medium text-gray-800">{app.users?.raw_user_meta_data?.full_name || "N/A"}</span>
+                        <span className="text-gray-400 text-[11px] truncate">{app.users?.email}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-semibold text-gray-500 min-w-[70px]">Registro:</span>
+                      <span>
+                        {new Date(app.created_at).toLocaleDateString("es-VE", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Acciones */}
+                  <div className="mt-4 border-t border-gray-100 pt-3 flex items-center justify-end gap-2">
+                    {activeTab === "pending" ? (
+                      <>
+                        <button
+                          onClick={() => handleReject(app.id, app.business_name)}
+                          disabled={loading}
+                          className="flex-1 py-2 text-center text-red-600 bg-red-50 hover:bg-red-100 rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
+                        >
+                          Rechazar
+                        </button>
+                        <button
+                          onClick={() => handleApprove(app.id, app.business_name)}
+                          disabled={loading}
+                          className="flex-1 py-2 text-center text-[#531575] bg-[#c3ff00] hover:bg-[#aade00] rounded-xl text-xs font-bold transition-colors disabled:opacity-50 shadow-sm"
+                        >
+                          Aprobar
+                        </button>
+                      </>
+                    ) : activeTab === "approved" ? (
+                      <div className="flex w-full items-center justify-between gap-2">
+                        <button 
+                          onClick={() => setSlideOverStore(app)} 
+                          className="px-4 py-2 border border-gray-200 hover:border-[#6b1e96]/30 text-gray-600 hover:text-[#6b1e96] hover:bg-[#6b1e96]/5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                          Detalles
+                        </button>
+                        
+                        <div className="relative">
+                          <button
+                            onClick={() => setOpenDropdown(openDropdown === app.user_id ? null : app.user_id)}
+                            className="px-4 py-2 bg-gray-50 hover:bg-[#6b1e96]/5 text-gray-600 hover:text-[#6b1e96] border border-gray-200 rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors"
+                          >
+                            Opciones
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                          </button>
+                          {openDropdown === app.user_id && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
+                              <div className="absolute right-0 bottom-10 z-50 w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 animate-in fade-in zoom-in-95 duration-150">
+                                <a href={`/store/${app.user_id}`} target="_blank" rel="noopener noreferrer" onClick={() => setOpenDropdown(null)} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2.5 transition-colors">
+                                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                  Ver Pública
+                                </a>
+                                <div className="border-t border-gray-100 my-1" />
+                                {app.is_suspended ? (
+                                  <button onClick={() => { setOpenDropdown(null); setReactivateModal({ open: true, store: app }); }} className="w-full text-left px-4 py-2.5 text-sm text-green-600 hover:bg-green-50 flex items-center gap-2.5 transition-colors">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    Reactivar
+                                  </button>
+                                ) : (
+                                  <button onClick={() => { setOpenDropdown(null); setSuspendModal({ open: true, store: app }); }} className="w-full text-left px-4 py-2.5 text-sm text-amber-600 hover:bg-amber-50 flex items-center gap-2.5 transition-colors">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                                    Suspender
+                                  </button>
+                                )}
+                                <button onClick={() => { setOpenDropdown(null); setRevokeModal({ open: true, store: app }); }} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors">
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                                  Revocar Tienda
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex w-full items-center justify-between gap-2">
+                        <button 
+                          onClick={() => handleApprove(app.id, app.business_name)}
+                          className="px-4 py-2 bg-[#6b1e96]/10 hover:bg-[#6b1e96]/20 text-[#6b1e96] rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M5 13l4 4L19 7" /></svg>
+                          Aprobar
+                        </button>
+                        <button 
+                          onClick={() => setDeleteModal({ open: true, id: app.id, name: app.business_name })}
+                          className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          Eliminar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* ── Pagination Footer ── */}

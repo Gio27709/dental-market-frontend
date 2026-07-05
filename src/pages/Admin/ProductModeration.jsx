@@ -237,7 +237,7 @@ export default function ProductModeration() {
       {/* Table */}
       <div className="bg-white border border-gray-200 rounded-b-xl shadow-sm overflow-hidden mb-8">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 hidden md:table">
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -366,6 +366,132 @@ export default function ProductModeration() {
               )}
             </tbody>
           </table>
+
+          {/* Vista responsiva de tarjetas en móvil */}
+          <div className="grid grid-cols-1 gap-4 p-4 md:hidden">
+            {loading ? (
+              <div className="py-4">
+                <LoadingSkeleton variant="product-card" count={3} />
+              </div>
+            ) : products.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                  <MagnifyingGlassIcon className="h-6 w-6 text-gray-400" />
+                </div>
+                <h3 className="text-sm font-medium text-gray-900">No se encontraron productos</h3>
+                <p className="mt-1 text-sm text-gray-500">Intenta cambiar los filtros o el término de búsqueda.</p>
+              </div>
+            ) : (
+              products.map((product) => {
+                const storeName = product.store_profiles?.business_name || "Tienda desconocida";
+                const imageUrl = product.images?.[0] || null;
+                
+                // Determine status badge
+                let statusBadge = null;
+                if (!product.is_active && product.moderation_status === 'rejected') {
+                   statusBadge = <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800">Baneado / Inactivo</span>;
+                } else if (product.moderation_status === 'pending') {
+                   statusBadge = <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-800 border border-yellow-200">Pendiente</span>;
+                } else if (product.moderation_status === 'approved') {
+                   statusBadge = <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800 border border-green-200">Aprobado</span>;
+                } else if (product.moderation_status === 'rejected') {
+                   statusBadge = <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800 border border-orange-200">Rechazado</span>;
+                } else if (!product.is_active) {
+                   statusBadge = <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-800 border border-gray-200">Inactivo</span>;
+                }
+
+                return (
+                  <div 
+                    key={product.id} 
+                    className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm transition-all"
+                  >
+                    {/* Fila principal */}
+                    <div className="flex gap-3 items-start">
+                      <div className="flex-shrink-0 h-14 w-14 rounded-xl bg-gray-50 overflow-hidden flex items-center justify-center border border-gray-150">
+                        {imageUrl ? (
+                          <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="text-gray-400 text-2xl">🦷</span>
+                        )}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <span className="font-bold text-gray-900 text-sm block truncate" title={product.name}>
+                          {product.name}
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] text-gray-400 font-bold bg-slate-100 px-1.5 py-0.2 rounded">
+                            ID: {product.id.slice(0, 8)}
+                          </span>
+                          {statusBadge}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Información adicional */}
+                    <div className="mt-3 space-y-2 text-xs text-gray-600 border-t border-gray-100 pt-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-500">Tienda:</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-gray-800">{storeName}</span>
+                          {product.store_profiles?.store_code && (
+                            <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-50 text-[#6b1e96]">
+                              #{product.store_profiles.store_code}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-500">Precio unitario:</span>
+                        <span className="font-black text-[#6b1e96] text-sm">{formatCurrencyUSD(product.price)}</span>
+                      </div>
+                    </div>
+
+                    {/* Acciones */}
+                    <div className="mt-4 border-t border-gray-100 pt-3 flex items-center justify-between gap-2">
+                      <button 
+                        onClick={() => setSelectedProduct(product)}
+                        className="px-3.5 py-2 border border-gray-200 hover:border-[#6b1e96]/30 text-gray-500 hover:text-[#6b1e96] hover:bg-[#6b1e96]/5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                      >
+                        <EyeIcon className="h-4 w-4" />
+                        Detalles
+                      </button>
+
+                      <div className="flex items-center gap-1.5">
+                        {product.moderation_status !== 'approved' && (
+                          <button
+                            onClick={() => handleModerate(product.id, "approve", product.name)}
+                            className="p-2 text-green-600 bg-green-50 hover:bg-green-600 hover:text-white rounded-xl transition-colors shadow-sm"
+                            title="Aprobar"
+                          >
+                            <CheckCircleIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                        {product.moderation_status !== 'rejected' && (
+                          <button
+                            onClick={() => handleModerate(product.id, "reject", product.name)}
+                            className="p-2 text-orange-600 bg-orange-50 hover:bg-orange-500 hover:text-white rounded-xl transition-colors shadow-sm"
+                            title="Rechazar"
+                          >
+                            <XCircleIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                        {product.is_active && (
+                          <button
+                            onClick={() => handleModerate(product.id, "ban", product.name)}
+                            className="p-2 text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-xl transition-colors shadow-sm"
+                            title="Banear / Desactivar"
+                          >
+                            <NoSymbolIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
         
         {/* Pagination Footer */}

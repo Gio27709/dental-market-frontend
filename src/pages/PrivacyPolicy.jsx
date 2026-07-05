@@ -13,7 +13,7 @@ export default function PrivacyPolicy() {
       content: (
         <div className="space-y-4">
           <p>
-            En <strong>Dental Market</strong>, recopilamos información para proporcionar mejores servicios a todos nuestros usuarios. Esto incluye:
+            En <strong>Forcepx</strong>, recopilamos información para proporcionar mejores servicios a todos nuestros usuarios. Esto incluye:
           </p>
           <ul className="list-disc pl-6 space-y-2 text-gray-600">
             <li>
@@ -96,7 +96,7 @@ export default function PrivacyPolicy() {
 
   const faqs = [
     {
-      q: "¿Dental Market comparte mis métodos de pago con los vendedores?",
+      q: "¿Forcepx comparte mis métodos de pago con los vendedores?",
       a: "No. Todas las transacciones se realizan mediante nuestro sistema Escrow. El vendedor solo recibe los fondos liberados una vez confirmada la entrega exitosa del pedido. Tus comprobantes de pago solo son visibles para los administradores del sistema.",
     },
     {
@@ -272,7 +272,7 @@ export default function PrivacyPolicy() {
                 </p>
               </div>
               <a
-                href="mailto:privacidad@dentalmarket.com"
+                href="mailto:privacidad@forcepx.com"
                 className="flex items-center gap-2 bg-[#c3ff00] hover:bg-[#bcf600] text-[#151f00] font-bold py-3.5 px-6 rounded-xl transition-all shadow-md active:transform active:scale-95 font-inter text-sm whitespace-nowrap"
               >
                 <Mail className="w-4 h-4" />

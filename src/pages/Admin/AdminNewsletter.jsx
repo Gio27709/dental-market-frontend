@@ -247,7 +247,7 @@ export default function AdminNewsletter() {
         <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
         <h1 className="text-3xl font-bold font-['Manrope'] mb-2 relative z-10">Boletín y Suscriptores</h1>
         <p className="text-purple-200 text-sm max-w-2xl relative z-10 leading-relaxed">
-          Administra la lista de correos del boletín promocional de DentalMarket y cambia dinámicamente la oferta de suscripción de bienvenida.
+          Administra la lista de correos del boletín promocional de Forcepx y cambia dinámicamente la oferta de suscripción de bienvenida.
         </p>
       </div>
 
@@ -568,7 +568,7 @@ export default function AdminNewsletter() {
                     <div className="inline-block w-8 h-8 rounded-lg bg-[#c3ff00] text-[#531575] text-center font-bold text-lg leading-8 align-middle">
                       +
                     </div>
-                    <span className="text-xl font-extrabold tracking-widest text-white ml-2 align-middle">DENTIX</span>
+                    <span className="text-xl font-extrabold tracking-widest text-white ml-2 align-middle">FORCEPX</span>
                     <div className="mt-2 text-[10px] font-bold text-purple-200 uppercase tracking-widest">
                       Boletín Semanal de Promociones
                     </div>
@@ -578,7 +578,7 @@ export default function AdminNewsletter() {
                   <div className="p-8">
                     <h1 className="text-lg font-bold text-gray-800 text-center mb-2">🦷 ¡Las ofertas más calientes de la semana!</h1>
                     <p className="text-xs text-gray-500 text-center leading-relaxed mb-6">
-                      Estimado profesional de la salud oral, hemos reunido para ti los descuentos más importantes y las campañas activas esta semana en <strong>Dental Market</strong>. ¡Adquiere tus insumos clínicos al mejor precio hoy mismo!
+                      Estimado profesional de la salud oral, hemos reunido para ti los descuentos más importantes y las campañas activas esta semana en <strong>Forcepx</strong>. ¡Adquiere tus insumos clínicos al mejor precio hoy mismo!
                     </p>
 
                     {/* Campañas de la Semana */}
@@ -666,8 +666,8 @@ export default function AdminNewsletter() {
 
                   {/* Email Footer */}
                   <div className="bg-gray-50 border-t border-gray-100 p-6 text-center text-[10px] text-gray-400 leading-normal">
-                    <p className="m-0 mb-1.5">Este correo fue enviado por Dental Market a sus suscriptores activos.<br />Si ya no deseas recibir este boletín semanal, puedes darte de baja en la plataforma.</p>
-                    <p className="m-0 text-[#6b1e96] font-semibold">© 2026 Dental Market. Todos los derechos reservados.</p>
+                    <p className="m-0 mb-1.5">Este correo fue enviado por Forcepx a sus suscriptores activos.<br />Si ya no deseas recibir este boletín semanal, puedes darte de baja en la plataforma.</p>
+                    <p className="m-0 text-[#6b1e96] font-semibold">© 2026 Forcepx. Todos los derechos reservados.</p>
                   </div>
 
                 </div>

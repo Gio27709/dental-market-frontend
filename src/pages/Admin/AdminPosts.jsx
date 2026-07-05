@@ -971,7 +971,7 @@ function AdminInteractionModal({ post, onClose, onCommentDeleted }) {
             ) : (
               <div className="space-y-3">
                 {likes.map((like) => {
-                  const userName = like.user?.full_name || "Usuario de Dental Market";
+                  const userName = like.user?.full_name || "Usuario de Forcepx";
                   const avatar = like.user?.avatar_url;
                   return (
                     <div key={like.id} className="flex items-center justify-between hover:bg-gray-50/50 p-2 rounded-xl transition-all">
@@ -1077,7 +1077,7 @@ function AdminInteractionModal({ post, onClose, onCommentDeleted }) {
             ) : (
               <div className="space-y-3">
                 {saves.map((save) => {
-                  const userName = save.user?.full_name || "Usuario de Dental Market";
+                  const userName = save.user?.full_name || "Usuario de Forcepx";
                   const avatar = save.user?.avatar_url;
                   return (
                     <div key={save.id} className="flex items-center justify-between hover:bg-gray-50/50 p-2 rounded-xl transition-all">

@@ -543,7 +543,7 @@ export default function ProductDetail() {
                   <div className="border border-gray-200 rounded-xl overflow-hidden mb-8">
                     <table className="w-full text-sm text-left text-gray-600">
                       <tbody>
-                        <tr className="border-b border-gray-200 bg-gray-50"><th className="px-6 py-4 font-semibold text-gray-900 w-1/3">Marca</th><td className="px-6 py-4">{product.store?.business_name || "DENTIX Certified"}</td></tr>
+                        <tr className="border-b border-gray-200 bg-gray-50"><th className="px-6 py-4 font-semibold text-gray-900 w-1/3">Marca</th><td className="px-6 py-4">{product.store?.business_name || "FORCEPX Certified"}</td></tr>
                         <tr className="border-b border-gray-200"><th className="px-6 py-4 font-semibold text-gray-900">Modelo</th><td className="px-6 py-4">{product.name}</td></tr>
                         <tr className="border-b border-gray-200 bg-gray-50"><th className="px-6 py-4 font-semibold text-gray-900">Categoría</th><td className="px-6 py-4">Equipamiento Clínico</td></tr>
                         <tr className="border-b border-gray-200"><th className="px-6 py-4 font-semibold text-gray-900">Condición</th><td className="px-6 py-4">Nuevo / Sellado de Fábrica</td></tr>

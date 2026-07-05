@@ -181,7 +181,7 @@ export default function UserPosts() {
         <div>
           <h1 className="text-xl font-extrabold text-gray-900 font-['Manrope']">Mis Publicaciones</h1>
           <p className="text-xs text-gray-500 mt-1">
-            Redacta artículos científicos, comparte casos clínicos y participa en el blog de Dental Market.
+            Redacta artículos científicos, comparte casos clínicos y participa en el blog de Forcepx.
           </p>
         </div>
         {(!loadingSettings && postMode !== "disabled") && (

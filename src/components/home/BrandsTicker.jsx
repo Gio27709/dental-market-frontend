@@ -149,7 +149,7 @@ export default function BrandsTicker() {
         {/* Track infinito */}
         <div
           ref={trackRef}
-          className="flex items-center gap-16 md:gap-20 w-max will-change-transform py-4"
+          className="flex items-center gap-16 md:gap-24 w-max will-change-transform py-6"
         >
           {BRANDS.map((brand, index) => (
             <div
@@ -160,7 +160,7 @@ export default function BrandsTicker() {
                 src={brand.img}
                 alt={brand.name}
                 draggable="false"
-                className="h-10 md:h-12 lg:h-14 w-auto object-contain pointer-events-none drop-shadow-sm"
+                className="h-14 sm:h-16 md:h-20 lg:h-24 w-auto object-contain pointer-events-none drop-shadow-sm"
                 onError={(e) => {
                   // Fallback: mostrar el nombre como texto si la imagen falla
                   e.target.style.display = "none";

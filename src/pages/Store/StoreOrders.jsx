@@ -664,13 +664,17 @@ export default function StoreOrders() {
   };
 
   const renderPaginatedOrders = () => {
-    if (viewMode === "table") {
-      return renderTableView();
-    }
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-fadeIn">
-        {paginated.map(renderOrder)}
-      </div>
+      <>
+        {viewMode === "table" && (
+          <div className="hidden lg:block">
+            {renderTableView()}
+          </div>
+        )}
+        <div className={viewMode === "table" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-fadeIn lg:hidden" : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-fadeIn"}>
+          {paginated.map(renderOrder)}
+        </div>
+      </>
     );
   };
 
@@ -1018,11 +1022,14 @@ export default function StoreOrders() {
                 </div>
 
                 {/* Table Header */}
-                <div style={{
-                  display: "grid", gridTemplateColumns: "48px 1fr 60px 70px 80px",
-                  gap: "8px", padding: "8px 0", borderBottom: "2px solid #e5e7eb",
-                  fontSize: "10px", fontWeight: 800, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em",
-                }}>
+                <div 
+                  className="hidden sm:grid"
+                  style={{
+                    gridTemplateColumns: "48px 1fr 60px 70px 80px",
+                    gap: "8px", padding: "8px 0", borderBottom: "2px solid #e5e7eb",
+                    fontSize: "10px", fontWeight: 800, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em",
+                  }}
+                >
                   <div></div>
                   <div>Producto</div>
                   <div style={{ textAlign: "center" }}>Cant.</div>
@@ -1041,9 +1048,8 @@ export default function StoreOrders() {
                   return (
                     <div
                       key={item.id}
+                      className="grid grid-cols-[48px_1fr] sm:grid-cols-[48px_1fr_60px_70px_80px] gap-2 sm:gap-3 py-3 items-center"
                       style={{
-                        display: "grid", gridTemplateColumns: "48px 1fr 60px 70px 80px",
-                        gap: "8px", padding: "12px 0", alignItems: "center",
                         borderBottom: idx < invoiceOrder.items.length - 1 ? "1px solid #f5f5f5" : "none",
                       }}
                     >
@@ -1056,7 +1062,7 @@ export default function StoreOrders() {
                         )}
                       </div>
 
-                      {/* Product Name + Variation */}
+                      {/* Product Name + Variation + Mobile Price Breakdown */}
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: "13px", color: "#1a0a2e", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {product.name || "Producto desconocido"}
@@ -1071,10 +1077,16 @@ export default function StoreOrders() {
                             {statusLabel}
                           </span>
                         </div>
+                        
+                        {/* Mobile Price Breakdown */}
+                        <div className="flex sm:hidden items-center justify-between mt-2 pt-1 border-t border-gray-50 text-[11px]">
+                          <span className="text-gray-500 font-medium">Cant: <strong className="text-gray-900">{item.quantity}</strong> x {formatCurrencyUSD(item.unit_price)}</span>
+                          <span className="font-extrabold text-[#6b1e96]">{formatCurrencyUSD(itemSubtotal)}</span>
+                        </div>
                       </div>
 
-                      {/* Quantity — prominent */}
-                      <div style={{ textAlign: "center" }}>
+                      {/* Quantity — prominent (Desktop Only) */}
+                      <div className="hidden sm:block" style={{ textAlign: "center" }}>
                         <span style={{
                           display: "inline-flex", alignItems: "center", justifyContent: "center",
                           width: "32px", height: "32px", borderRadius: "8px",
@@ -1085,13 +1097,13 @@ export default function StoreOrders() {
                         </span>
                       </div>
 
-                      {/* Unit Price */}
-                      <div style={{ textAlign: "right", fontSize: "12px", color: "#6b7280", fontWeight: 600 }}>
+                      {/* Unit Price (Desktop Only) */}
+                      <div className="hidden sm:block" style={{ textAlign: "right", fontSize: "12px", color: "#6b7280", fontWeight: 600 }}>
                         {formatCurrencyUSD(item.unit_price)}
                       </div>
 
-                      {/* Subtotal */}
-                      <div style={{ textAlign: "right", fontSize: "13px", color: "#1a0a2e", fontWeight: 800 }}>
+                      {/* Subtotal (Desktop Only) */}
+                      <div className="hidden sm:block" style={{ textAlign: "right", fontSize: "13px", color: "#1a0a2e", fontWeight: 800 }}>
                         {formatCurrencyUSD(itemSubtotal)}
                       </div>
                     </div>

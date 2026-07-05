@@ -126,6 +126,13 @@ export const navGroups = [
           <span className="material-symbols-outlined text-[20px]">two_wheeler</span>
         )
       },
+      {
+        name: 'Verificar Odontólogos',
+        path: '/admin/professional-verifications',
+        icon: (
+          <span className="material-symbols-outlined text-[20px]">verified_user</span>
+        )
+      },
     ]
   },
   {

@@ -226,7 +226,7 @@ export default function PaymentMethods() {
             Métodos de Pago
           </h1>
           <p className="text-sm mt-1" style={{ color: "#727785" }}>
-            Gestiona tus cuentas de retiro para recibir pagos y liquidaciones de tu billetera Dentix.
+            Gestiona tus cuentas de retiro para recibir pagos y liquidaciones de tu billetera Forcepx.
           </p>
         </div>
         <div>

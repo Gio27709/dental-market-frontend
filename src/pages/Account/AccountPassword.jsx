@@ -88,7 +88,7 @@ export default function AccountPassword() {
           </div>
           <div>
             <h2 className="text-lg font-bold" style={{ color: "#191c23" }}>Cambiar Contraseña</h2>
-            <p className="text-sm" style={{ color: "#727785" }}>Establece una nueva contraseña para iniciar sesión en Dentix.</p>
+            <p className="text-sm" style={{ color: "#727785" }}>Establece una nueva contraseña para iniciar sesión en Forcepx.</p>
           </div>
         </div>
 

@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { getTrendingAPI } from "../../services/api";
 import useHomeSections from "../../hooks/useHomeSections";
+import useDragScroll from "../../hooks/useDragScroll";
 
 export default function TopCategoriesRow() {
   const { sections } = useHomeSections();
@@ -11,6 +12,8 @@ export default function TopCategoriesRow() {
   
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const categoriesScrollRef = useRef(null);
+  const { handlers: dragHandlers } = useDragScroll({ externalRef: categoriesScrollRef });
 
   // Helper para asignar iconos dinámicos a las categorías
   const getCategoryIcon = (name) => {
@@ -71,25 +74,29 @@ export default function TopCategoriesRow() {
 
       {/* Fila de Categorías en Tendencia (máx 7, ordenadas por ventas) */}
       <div 
-        className="flex gap-4 overflow-x-auto pb-4 snap-x"
+        ref={categoriesScrollRef}
+        {...dragHandlers}
+        className="grid grid-cols-2 sm:grid-cols-3 md:flex md:overflow-x-auto pb-4 gap-4 snap-x drag-scroll-container"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {categories.map((cat) => (
-          <Link
-            key={cat.id}
-            to={`/store-catalog?category=${cat.id}`}
-            className="flex-shrink-0 snap-start w-[140px] md:w-[160px] flex flex-col items-center justify-center p-6 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-[0_15px_30px_-5px_rgba(107,30,150,0.15)] hover:-translate-y-1.5 transition-all duration-300 group relative overflow-hidden"
-          >
+        {categories.map((cat, idx) => {
+          const isExtraForGrid = idx >= 6;
+          return (
+            <Link
+              key={cat.id}
+              to={`/store-catalog?category=${cat.id}`}
+              className={`${isExtraForGrid ? 'hidden md:flex' : 'flex'} w-full md:w-[160px] flex-shrink-0 snap-start flex flex-col items-center justify-center p-4 sm:p-6 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-[0_15px_30px_-5px_rgba(107,30,150,0.15)] hover:-translate-y-1.5 transition-all duration-300 group relative overflow-hidden`}
+            >
             {/* Subtle glow background on hover */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#6b1e96]/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-            <div className="relative z-10 w-16 h-16 mb-4 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-[#6b1e96]/5 transition-colors duration-300">
-              <span className="material-symbols-outlined text-4xl text-slate-400 group-hover:text-[#6b1e96] transition-colors">
+            <div className="relative z-10 w-12 h-12 sm:w-16 sm:h-16 mb-3 sm:mb-4 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-[#6b1e96]/5 transition-colors duration-300">
+              <span className="material-symbols-outlined text-3xl sm:text-4xl text-slate-400 group-hover:text-[#6b1e96] transition-colors">
                 {cat.icon || getCategoryIcon(cat.name)}
               </span>
             </div>
             
-            <span className="relative z-10 text-[14px] font-bold text-[#163152] group-hover:text-[#6b1e96] text-center leading-tight">
+            <span className="relative z-10 text-xs sm:text-[14px] font-bold text-[#163152] group-hover:text-[#6b1e96] text-center leading-tight">
               {cat.name}
             </span>
 
@@ -103,7 +110,8 @@ export default function TopCategoriesRow() {
               </div>
             )}
           </Link>
-        ))}
+        );
+      })}
       </div>
     </div>
   );

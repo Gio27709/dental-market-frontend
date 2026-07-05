@@ -11,7 +11,7 @@ import {
 
 export default function AffiliateLanding() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshSession } = useAuth();
 
   const [type, setType] = useState("store"); // "store" | "rider"
 
@@ -50,10 +50,32 @@ export default function AffiliateLanding() {
     try {
       if (type === "store") {
         const res = await getMyStoreApplicationAPI();
-        if (res.data?.data) setApplicationStatus(res.data.data.status);
+        if (res.data?.data) {
+          const status = res.data.data.status;
+          setApplicationStatus(status);
+          // Si la solicitud está aprobada pero el rol local todavía no es tienda, intentar auto-refrescar
+          if (status === "approved" && user && user.role !== "store") {
+            const refreshRes = await refreshSession();
+            if (refreshRes?.success) {
+              toast.success("¡Tu cuenta de tienda ha sido activada!");
+              navigate("/store");
+            }
+          }
+        }
       } else {
         const res = await getMyRiderApplicationAPI();
-        if (res.data?.data) setApplicationStatus(res.data.data.status);
+        if (res.data?.data) {
+          const status = res.data.data.status;
+          setApplicationStatus(status);
+          // Si la solicitud está aprobada pero el rol local todavía no es repartidor, intentar auto-refrescar
+          if (status === "approved" && user && user.role !== "delivery") {
+            const refreshRes = await refreshSession();
+            if (refreshRes?.success) {
+              toast.success("¡Tu cuenta de repartidor ha sido activada!");
+              navigate("/delivery");
+            }
+          }
+        }
       }
     } catch (err) {
       console.log("No pending application", err.message);
@@ -139,7 +161,7 @@ export default function AffiliateLanding() {
             <div className="text-white space-y-6">
               <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 text-sm border border-white/20">
                 <span className="w-2 h-2 bg-[#c3ff00] rounded-full animate-pulse" />
-                DENTIX Network
+                Forcepx Network
               </div>
 
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
@@ -201,7 +223,7 @@ export default function AffiliateLanding() {
                   </div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-3">Identidad Requerida</h2>
                   <p className="text-gray-500 mb-8 max-w-sm mx-auto">
-                    Para aplicar en DENTIX, necesitas iniciar sesión o crear una cuenta.
+                    Para aplicar en Forcepx, necesitas iniciar sesión o crear una cuenta.
                   </p>
                   <div className="flex flex-col sm:flex-row justify-center gap-3">
                     <button onClick={() => navigate("/login?redirect=/afiliate")} className="bg-[#6b1e96] hover:bg-[#531575] text-white px-6 py-2.5 rounded-xl font-medium transition-colors shadow-sm">
@@ -232,7 +254,7 @@ export default function AffiliateLanding() {
                   </div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-3">¡Felicidades!</h2>
                   <p className="text-gray-500 mb-8 max-w-sm mx-auto">
-                    Ya eres {type === "store" ? "una Tienda Certificada" : "un Repartidor"} en DENTIX.
+                    Ya eres {type === "store" ? "una Tienda Certificada" : "un Repartidor"} en Forcepx.
                   </p>
                   <button onClick={() => navigate(type === "store" ? "/store" : "/delivery")} className="bg-[#6b1e96] hover:bg-[#531575] text-white px-6 py-2.5 rounded-xl font-medium transition-colors shadow-sm">
                     Ir a tu Panel
@@ -258,16 +280,45 @@ export default function AffiliateLanding() {
                     </button>
                   </div>
                 </div>
-              ) : applicationStatus === "pending" || applicationStatus === "approved" ? (
-                <div className="text-center py-6">
+              ) : applicationStatus === "approved" ? (
+                <div className="text-center py-6 animate-in fade-in duration-300">
                   <div className="w-16 h-16 bg-[#c3ff00]/20 rounded-full flex items-center justify-center mx-auto mb-6">
                     <svg className="w-8 h-8 text-[#6b1e96]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Solicitud Aprobada!</h2>
+                  <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+                    Tu solicitud ha sido aprobada con éxito. Haz clic en el botón de abajo para activar tu cuenta e ingresar a tu panel de control.
+                  </p>
+                  <button 
+                    onClick={async () => {
+                      setLoading(true);
+                      const res = await refreshSession();
+                      setLoading(false);
+                      if (res?.success) {
+                        toast.success("¡Cuenta activada con éxito!");
+                        navigate(type === "store" ? "/store" : "/delivery");
+                      } else {
+                        toast.error("Error al activar la sesión. Intenta cerrar sesión e ingresar de nuevo.");
+                      }
+                    }} 
+                    disabled={loading}
+                    className="bg-[#6b1e96] hover:bg-[#531575] text-white px-6 py-2.5 rounded-xl font-medium transition-colors shadow-sm disabled:opacity-50"
+                  >
+                    {loading ? "Activando..." : "Activar mi Panel"}
+                  </button>
+                </div>
+              ) : applicationStatus === "pending" ? (
+                <div className="text-center py-6">
+                  <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-8 h-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                  </div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">Solicitud en Proceso</h2>
-                  <p className="text-gray-500">
-                    Tu solicitud ha sido recibida y está siendo revisada por un administrador. 
+                  <p className="text-gray-500 max-w-sm mx-auto">
+                    Tu solicitud ha sido recibida y está siendo revisada por un administrador. Te notificaremos pronto.
                   </p>
                 </div>
               ) : (
@@ -368,7 +419,7 @@ export default function AffiliateLanding() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Beneficios de formar parte de <span className="text-[#6b1e96]">DENTIX</span>
+              Beneficios de formar parte de <span className="text-[#6b1e96]">Forcepx</span>
             </h2>
           </div>
           {/* ... keeping benefits ... */}

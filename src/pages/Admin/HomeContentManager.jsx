@@ -697,7 +697,14 @@ export default function HomeContentManager() {
       return (
         <div className="p-4 overflow-y-auto flex-1 space-y-6">
           <SectionBox title="General">
-            <Field label="Nombre de la Marca (Brand)" value={d.brand_name} onChange={v => update({...d, brand_name: v})} />
+            <div className="space-y-3">
+              <Field label="Nombre de la Marca (Brand)" value={d.brand_name} onChange={v => update({...d, brand_name: v})} />
+              <ImageField label="Logo de la Marca (Imagen)" value={d.brand_logo} onChange={v => update({...d, brand_logo: v})} />
+              <p className="text-[10px] text-purple-700 mt-1 flex items-center gap-1 font-medium bg-purple-50/60 p-2 rounded-lg border border-purple-100/50">
+                <span className="material-symbols-outlined text-[13px] font-bold">info</span>
+                <span>Recomendado: Formato SVG o WebP con fondo transparente. Dimensión sugerida: 120 x 120 px. La subida convertirá automáticamente imágenes PNG/JPG a WebP.</span>
+              </p>
+            </div>
           </SectionBox>
           <SectionBox title="Top Bar Promo">
             <div className="space-y-3">
