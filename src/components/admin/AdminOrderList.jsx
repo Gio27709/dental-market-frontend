@@ -60,8 +60,9 @@ export default function AdminOrderList({ orders }) {
   const thStyle = { padding: "12px 14px", fontSize: "11px", fontWeight: 600, color: "rgba(195,255,0,0.8)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" };
 
   return (
-    <div
-      className="hidden md:block"
+    <>
+      <div
+        className="hidden md:block"
       style={{
         background: "#fff",
         borderRadius: "16px",
@@ -343,6 +344,7 @@ export default function AdminOrderList({ orders }) {
         );
       })}
     </div>
+    </>
   );
 }
 
