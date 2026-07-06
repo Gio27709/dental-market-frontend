@@ -196,6 +196,98 @@ export default function PaymentInstructions({ paymentMethod }) {
         );
       }
 
+      case "paypal": {
+        const paypalData = BANK_DATA.paypal;
+        return (
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-slate-500">
+              Envíe el pago en dólares (USD) a la siguiente cuenta de PayPal:
+            </p>
+            <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-4.5 text-xs">
+              <div className="grid grid-cols-3 gap-3 items-center">
+                <span className="text-slate-400 font-bold uppercase tracking-wider">Email:</span>
+                <span className="col-span-2 font-mono text-slate-800 font-black flex justify-between items-center bg-white border border-slate-100 px-3.5 py-2 rounded-xl shadow-2xs">
+                  {paypalData.email}
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(paypalData.email, "Email PayPal", "paypal_email")}
+                    className="text-[#6b1e96] hover:text-[#521475] font-extrabold text-[10px] uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    {copiedField === "paypal_email" ? (
+                      <span className="text-emerald-500 font-bold flex items-center gap-0.5">
+                        <span className="material-symbols-outlined text-[13px] text-emerald-500">check_circle</span> Copiado
+                      </span>
+                    ) : (
+                      "Copiar"
+                    )}
+                  </button>
+                </span>
+
+                <span className="text-slate-400 font-bold uppercase tracking-wider">Titular:</span>
+                <span className="col-span-2 font-mono text-slate-800 font-black bg-white border border-slate-100 px-3.5 py-2.5 rounded-xl shadow-2xs">
+                  {paypalData.name}
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      case "binance": {
+        const binanceData = BANK_DATA.binance;
+        return (
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-slate-500">
+              Realice el envío de USDT a la siguiente cuenta de Binance (Binance Pay ID / Correo):
+            </p>
+            <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-4.5 text-xs">
+              <div className="grid grid-cols-3 gap-3 items-center">
+                <span className="text-slate-400 font-bold uppercase tracking-wider">Pay ID:</span>
+                <span className="col-span-2 font-mono text-slate-800 font-black flex justify-between items-center bg-white border border-slate-100 px-3.5 py-2 rounded-xl shadow-2xs">
+                  {binanceData.pay_id}
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(binanceData.pay_id, "Binance Pay ID", "binance_payid")}
+                    className="text-[#6b1e96] hover:text-[#521475] font-extrabold text-[10px] uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    {copiedField === "binance_payid" ? (
+                      <span className="text-emerald-500 font-bold flex items-center gap-0.5">
+                        <span className="material-symbols-outlined text-[13px] text-emerald-500">check_circle</span> Copiado
+                      </span>
+                    ) : (
+                      "Copiar"
+                    )}
+                  </button>
+                </span>
+
+                <span className="text-slate-400 font-bold uppercase tracking-wider">Email:</span>
+                <span className="col-span-2 font-mono text-slate-800 font-black flex justify-between items-center bg-white border border-slate-100 px-3.5 py-2 rounded-xl shadow-2xs">
+                  {binanceData.email}
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(binanceData.email, "Email Binance", "binance_email")}
+                    className="text-[#6b1e96] hover:text-[#521475] font-extrabold text-[10px] uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    {copiedField === "binance_email" ? (
+                      <span className="text-emerald-500 font-bold flex items-center gap-0.5">
+                        <span className="material-symbols-outlined text-[13px] text-emerald-500">check_circle</span> Copiado
+                      </span>
+                    ) : (
+                      "Copiar"
+                    )}
+                  </button>
+                </span>
+
+                <span className="text-slate-400 font-bold uppercase tracking-wider">Titular:</span>
+                <span className="col-span-2 font-mono text-slate-800 font-black bg-white border border-slate-100 px-3.5 py-2.5 rounded-xl shadow-2xs">
+                  {binanceData.name}
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       default:
         return null;
     }

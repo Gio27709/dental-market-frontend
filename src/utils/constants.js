@@ -11,6 +11,8 @@ export const PAYMENT_METHODS = {
   transferencia: { label: "Transferencia Bancaria", icon: "🏦" },
   pago_movil: { label: "Pago Móvil", icon: "📱" },
   zelle: { label: "Zelle", icon: "💵" },
+  paypal: { label: "PayPal", icon: "🅿️" },
+  binance: { label: "Binance", icon: "🪙" },
 };
 
 export const BANK_DATA = {
@@ -27,6 +29,8 @@ export const BANK_DATA = {
     name: "Forcepx C.A.",
   },
   zelle: { email: "pagos@forcepx.com", name: "Forcepx C.A." },
+  paypal: { email: "pagos@forcepx.com", name: "Forcepx C.A." },
+  binance: { pay_id: "987654321", email: "pagos@forcepx.com", name: "Forcepx C.A." },
 };
 
 export const ORDER_STATUS = {
