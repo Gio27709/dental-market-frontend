@@ -73,8 +73,17 @@ export default function AccountLayout() {
     },
   ];
 
+  // Filtrar baseMenuItems para mostrar Métodos de Pago sólo a roles con billetera (tiendas, admin, repartidores)
+  const isWalletRole = ["store", "store/owner", "delivery", "admin", "owner"].includes(user.role);
+  const filteredBaseMenuItems = baseMenuItems.filter(item => {
+    if (item.path === "/account/payment-methods") {
+      return isWalletRole;
+    }
+    return true;
+  });
+
   // Inyectar dinámicamente la pestaña de verificación para Odontólogos
-  const menuItems = [...baseMenuItems];
+  const menuItems = [...filteredBaseMenuItems];
   if (user.role === "professional") {
     menuItems.splice(1, 0, {
       name: "Verificación Profesional",

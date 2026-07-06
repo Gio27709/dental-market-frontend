@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import {
   getMyPaymentMethodsAPI,
   createPaymentMethodAPI,
@@ -33,6 +35,13 @@ const VENEZUELAN_BANKS = [
 ];
 
 export default function PaymentMethods() {
+  const { user } = useAuth();
+
+  // Redirigir a los compradores comunes (no tienen billetera) para que no configuren cuentas de retiro
+  if (user && !["store", "store/owner", "delivery", "admin", "owner"].includes(user.role)) {
+    return <Navigate to="/account" replace />;
+  }
+
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
