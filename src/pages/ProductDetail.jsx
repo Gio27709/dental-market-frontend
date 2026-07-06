@@ -142,7 +142,8 @@ export default function ProductDetail() {
         return product?.stock ?? 99;
       })();
 
-  const effectiveStock = product?.stock_status === "Sin stock" ? 0 : currentStock;
+  const isInactive = product?.is_active === false;
+  const effectiveStock = isInactive ? 0 : (product?.stock_status === "Sin stock" ? 0 : currentStock);
   const isOwnProduct = user?.id === product?.store_id;
 
   // DEDUP FIX: Check cart by product_id to catch items regardless of variation_id format
@@ -349,12 +350,25 @@ export default function ProductDetail() {
               </div>
             )}
 
+            {isInactive && (
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm flex items-start gap-3">
+                <span className="material-symbols-outlined text-amber-500 mt-0.5">warning</span>
+                <div>
+                  <p className="font-bold">No disponible actualmente</p>
+                  <p className="mt-1 text-xs text-amber-700/90 leading-relaxed">
+                    Este producto ha sido desactivado temporalmente por el vendedor. Puedes conservarlo en tus favoritos para realizar el seguimiento cuando vuelva a estar activo.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Quantity and CTA */}
             <div className="flex flex-col sm:flex-row items-stretch gap-4 mt-2">
               <div className="flex items-center border-[1.5px] border-gray-300 rounded-md overflow-hidden h-12 w-full sm:w-[130px] flex-shrink-0 bg-white">
                 <button 
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-12 h-full flex items-center justify-center text-gray-400 hover:text-[#2563eb] bg-[#f8f9fa] transition-colors"
+                  disabled={isInactive}
+                  className="w-12 h-full flex items-center justify-center text-gray-400 hover:text-[#2563eb] bg-[#f8f9fa] transition-colors disabled:opacity-50"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
                 </button>
@@ -362,18 +376,22 @@ export default function ProductDetail() {
                   type="text" 
                   value={quantity} 
                   readOnly 
-                  className="flex-1 w-full text-center font-medium text-gray-700 focus:outline-none pointer-events-none text-base bg-transparent px-2"
+                  className="flex-1 w-full text-center font-medium text-gray-700 focus:outline-none pointer-events-none text-base bg-transparent px-2 disabled:text-gray-400"
                 />
                 <button 
                   onClick={() => setQuantity(Math.min(remainingStock || 1, quantity + 1))}
-                  disabled={quantity >= remainingStock || remainingStock === 0}
+                  disabled={isInactive || quantity >= remainingStock || remainingStock === 0}
                   className="w-12 h-full flex items-center justify-center text-gray-400 hover:text-[#2563eb] bg-[#f8f9fa] transition-colors disabled:opacity-50 disabled:hover:text-gray-400"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                 </button>
               </div>
 
-              {isOwnProduct ? (
+              {isInactive ? (
+                <button disabled className="flex-1 w-full bg-gray-100 text-gray-400 font-semibold h-12 rounded-md cursor-not-allowed text-[15px] border-[1.5px] border-gray-200">
+                  No disponible
+                </button>
+              ) : isOwnProduct ? (
                 <button disabled className="flex-1 w-full bg-gray-100 text-gray-400 font-semibold h-12 rounded-md cursor-not-allowed text-[15px] border-[1.5px] border-gray-200">
                   Producto Propio
                 </button>
@@ -423,8 +441,8 @@ export default function ProductDetail() {
               )}
             </div>
             <p className="text-sm text-gray-500 mt-3 font-medium flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${effectiveStock > 0 ? "bg-[#c3ff00]" : "bg-red-500"}`}></span>
-              {effectiveStock > 0 ? `Quedan ${effectiveStock} unidades en stock` : "Sin disponibilidad temporal"}
+              <span className={`w-2 h-2 rounded-full ${effectiveStock > 0 && !isInactive ? "bg-[#c3ff00]" : "bg-red-500"}`}></span>
+              {isInactive ? "Sin disponibilidad temporal" : (effectiveStock > 0 ? `Quedan ${effectiveStock} unidades en stock` : "Sin disponibilidad temporal")}
             </p>
             {/* Amazon-style: Show warning when cart has max stock */}
             {isCartAtMax && (
