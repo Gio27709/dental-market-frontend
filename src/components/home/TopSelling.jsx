@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import ProductCard from "../ProductCard";
 import useHomeSections from "../../hooks/useHomeSections";
 import useDragScroll from "../../hooks/useDragScroll";
+import api from "../../services/api";
 
 const DEFAULT_TABS = [
   { id: "all", label: "Todos" },
@@ -27,19 +28,62 @@ export default function TopSelling({ products }) {
   const [activeTab, setActiveTab] = useState("all");
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const [categories, setCategories] = useState([]);
 
-  // Filter logic (simulated for now by shuffling/slicing since we only have mock DB)
+  // Fetch categories on mount
+  useEffect(() => {
+    api.get("/categories")
+      .then((res) => {
+        if (res.data?.success) {
+          setCategories(res.data.data || []);
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading categories for TopSelling:", err);
+      });
+  }, []);
+
+  // Helper to slugify category names for robust matching
+  const generateSlug = (name) => {
+    if (!name) return "";
+    return name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  };
+
+  // Filter logic: real database queries based on product category_id and subcategories
   const getFilteredProducts = () => {
     if (!available.length) return [];
     if (activeTab === "all") return available;
-    
-    // Simulate filtering by picking a subset based on lengths to make it look realistic
-    const subsetLen = Math.max(5, Math.floor(available.length * 0.7));
-    // Simple deterministic shuffle based on tab string length so tabs look different
-    const shift = activeTab.length;
-    return [...available].sort((a, b) => 
-      ((a.name?.length || 0) + shift) % 2 - ((b.name?.length || 0) + shift) % 2
-    ).slice(0, subsetLen);
+
+    // Map tab id to category slug
+    const tabToSlugMap = {
+      instruments: "instrumental",
+      biomaterials: "biomateriales",
+      orthodontics: "ortodoncia",
+      equipment: "equipos",
+    };
+    const targetSlug = tabToSlugMap[activeTab];
+    if (!targetSlug) return [];
+
+    // Find the category matching the slug or name (case-insensitive)
+    const categoryObj = categories.find(
+      (c) =>
+        c.slug === targetSlug ||
+        c.name.toLowerCase().includes(targetSlug) ||
+        generateSlug(c.name) === targetSlug
+    );
+    if (!categoryObj) return [];
+
+    // Generate list of target category IDs (parent category + children subcategories)
+    const childIds = (categoryObj.children || []).map((child) => child.id);
+    const targetIds = [categoryObj.id, ...childIds];
+
+    // Filter available products
+    return available.filter((p) => targetIds.includes(p.category_id));
   };
 
   const filteredProducts = getFilteredProducts();
@@ -111,50 +155,61 @@ export default function TopSelling({ products }) {
         </div>
       </div>
 
-      <div className="relative group/slider">
-        {/* Flecha Izquierda Flotante */}
-        <button
-          onClick={() => scroll("left")}
-          disabled={!canScrollLeft}
-          className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-20 w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] border border-gray-100 transition-all duration-300 ${
-            canScrollLeft
-              ? "text-gray-600 hover:text-purple-600 hover:scale-110 active:scale-95"
-              : "opacity-0 pointer-events-none"
-          }`}
-        >
-          <span className="material-symbols-outlined text-xl">chevron_left</span>
-        </button>
-
-        {/* Contenedor del Carrusel (5 items por vista) */}
-        <div
-          ref={scrollRef}
-          {...dragHandlers}
-          className="flex overflow-x-auto gap-4 scrollbar-hide snap-x snap-mandatory pt-2 pb-6 px-1 md:px-0 drag-scroll-container"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        >
-          {displayProducts.map((product, index) => (
-            <div
-              key={`top-selling-${product?._id || index}-${index}`}
-              className="snap-start flex-none w-[200px] sm:w-[240px] md:w-[calc(25%-12px)] lg:w-[calc(20%-13px)] flex flex-col"
-            >
-              <ProductCard product={product} />
-            </div>
-          ))}
+      {displayProducts.length === 0 ? (
+        <div className="py-12 text-center w-full bg-slate-50 rounded-2xl border border-slate-100">
+          <span className="material-symbols-outlined text-slate-300 text-4xl mb-2">inventory_2</span>
+          <p className="text-slate-400 text-sm font-semibold">No hay productos en esta categoría</p>
         </div>
+      ) : (
+        <div className="relative group/slider">
+          {/* Flecha Izquierda Flotante */}
+          {displayProducts.length >= 5 && (
+            <button
+              onClick={() => scroll("left")}
+              disabled={!canScrollLeft}
+              className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-20 w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] border border-gray-100 transition-all duration-300 ${
+                canScrollLeft
+                  ? "text-gray-600 hover:text-purple-600 hover:scale-110 active:scale-95"
+                  : "opacity-0 pointer-events-none"
+              }`}
+            >
+              <span className="material-symbols-outlined text-xl">chevron_left</span>
+            </button>
+          )}
 
-        {/* Flecha Derecha Flotante */}
-        <button
-          onClick={() => scroll("right")}
-          disabled={!canScrollRight}
-          className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-20 w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] border border-gray-100 transition-all duration-300 ${
-            canScrollRight
-              ? "text-gray-600 hover:text-purple-600 hover:scale-110 active:scale-95 opacity-100"
-              : "opacity-0 pointer-events-none"
-          }`}
-        >
-          <span className="material-symbols-outlined text-xl">chevron_right</span>
-        </button>
-      </div>
+          {/* Contenedor del Carrusel (5 items por vista) */}
+          <div
+            ref={scrollRef}
+            {...dragHandlers}
+            className="flex overflow-x-auto gap-4 scrollbar-hide snap-x snap-mandatory pt-2 pb-6 px-1 md:px-0 drag-scroll-container"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {displayProducts.map((product, index) => (
+              <div
+                key={`top-selling-${product?._id || index}-${index}`}
+                className="snap-start flex-none w-[200px] sm:w-[240px] md:w-[calc(25%-12px)] lg:w-[calc(20%-13px)] flex flex-col"
+              >
+                <ProductCard product={product} />
+              </div>
+            ))}
+          </div>
+
+          {/* Flecha Derecha Flotante */}
+          {displayProducts.length >= 5 && (
+            <button
+              onClick={() => scroll("right")}
+              disabled={!canScrollRight}
+              className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-20 w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] border border-gray-100 transition-all duration-300 ${
+                canScrollRight
+                  ? "text-gray-600 hover:text-purple-600 hover:scale-110 active:scale-95 opacity-100"
+                  : "opacity-0 pointer-events-none"
+              }`}
+            >
+              <span className="material-symbols-outlined text-xl">chevron_right</span>
+            </button>
+          )}
+        </div>
+      )}
     </section>
   );
 }

@@ -84,7 +84,7 @@ export default function AccountLayout() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "#f9f9ff" }}>
+    <div className="min-h-screen" style={{ background: "#f1ecf6" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
         {/* ── Sidebar Premium ── */}
         <aside className="w-full md:w-64 flex-shrink-0">
