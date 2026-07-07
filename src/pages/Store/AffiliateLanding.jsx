@@ -35,6 +35,18 @@ export default function AffiliateLanding() {
   const [applicationStatus, setApplicationStatus] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
 
+  const [riderCedulaPrefix, setRiderCedulaPrefix] = useState("V");
+  const [riderCedulaNumber, setRiderCedulaNumber] = useState("");
+
+  // Sync decoupled cedula inputs into riderForm state
+  useEffect(() => {
+    setRiderForm((prev) => ({
+      ...prev,
+      cedula: riderCedulaNumber ? `${riderCedulaPrefix}-${riderCedulaNumber}` : ""
+    }));
+    if (errors.cedula) setErrors((prev) => ({ ...prev, cedula: null }));
+  }, [riderCedulaPrefix, riderCedulaNumber]);
+
   useEffect(() => {
     if (user) {
       checkApplicationStatus();
@@ -98,8 +110,8 @@ export default function AffiliateLanding() {
     } else {
       if (!riderForm.full_name || riderForm.full_name.length < 3)
         e.full_name = "Nombre completo requerido (mín. 3 caracteres)";
-      if (!riderForm.cedula || riderForm.cedula.length < 6)
-        e.cedula = "Cédula inválida";
+      if (!riderForm.cedula || !/^[VEJGPvejgp]-\d{6,10}$/.test(riderForm.cedula))
+        e.cedula = "Cédula inválida (debe contener el prefijo y 6-10 dígitos)";
       if (!riderForm.phone || !/^(0[0-9]{3})-?\d{7}$/.test(riderForm.phone))
         e.phone = "Teléfono inválido. Formato: 0412-1234567";
       if (!riderForm.city || riderForm.city.length < 3)
@@ -369,7 +381,26 @@ export default function AffiliateLanding() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1.5">Cédula</label>
-                            <input type="text" name="cedula" value={riderForm.cedula} onChange={handleChange} placeholder="V-12345678" className={`w-full px-4 py-3 rounded-xl border ${errors.cedula ? "border-red-400 bg-red-50" : "border-gray-200 bg-gray-50"} focus:outline-none focus:ring-2 focus:ring-[#6b1e96]/30 focus:border-[#6b1e96] text-gray-800`} />
+                            <div className={`flex border rounded-xl overflow-hidden ${errors.cedula ? "border-red-400 bg-red-50" : "border-gray-200 bg-gray-50"} focus-within:ring-2 focus-within:ring-[#6b1e96]/30 focus-within:border-[#6b1e96]`}>
+                              <select
+                                value={riderCedulaPrefix}
+                                onChange={(e) => setRiderCedulaPrefix(e.target.value)}
+                                className="px-3 py-3 border-r border-gray-200 bg-gray-100 font-bold text-gray-700 text-sm focus:outline-none cursor-pointer"
+                              >
+                                <option value="V">V</option>
+                                <option value="E">E</option>
+                                <option value="J">J</option>
+                                <option value="G">G</option>
+                                <option value="P">P</option>
+                              </select>
+                              <input
+                                type="text"
+                                value={riderCedulaNumber}
+                                onChange={(e) => setRiderCedulaNumber(e.target.value.replace(/\D/g, ""))}
+                                placeholder="12345678"
+                                className="w-full px-4 py-3 bg-transparent text-gray-800 focus:outline-none text-sm"
+                              />
+                            </div>
                             {errors.cedula && <p className="text-red-500 text-xs mt-1">{errors.cedula}</p>}
                           </div>
                           <div>
