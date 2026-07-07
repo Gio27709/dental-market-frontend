@@ -156,7 +156,7 @@ export default function StoreOrders() {
       acc[orderId] = {
         order_id: orderId,
         order_created_at: o.created_at || item.created_at,
-        buyer_name: o.users?.full_name || "Comprador",
+        buyer_name: o.receiver_name || o.users?.full_name || "Comprador",
         buyer_address: o.shipping_address || null,
         payment_status: o.payment_status || "pending",
         delivery_type: o.delivery_type || "shipping",
@@ -167,6 +167,9 @@ export default function StoreOrders() {
         delivery_lat: o.delivery_lat || null,
         delivery_lng: o.delivery_lng || null,
         notes: o.notes || null,
+        contact_phone: o.contact_phone || null,
+        receiver_cedula: o.receiver_cedula || null,
+        receiver_email: o.receiver_email || null,
         items: []
       };
     }
@@ -363,7 +366,12 @@ export default function StoreOrders() {
             {(order.destination_state || order.buyer_address) && (
               <div className="ml-8 text-[11px] text-gray-600 leading-snug">
                 {order.destination_state && <span className="block font-bold text-gray-700 mb-0.5">{order.destination_city ? `${order.destination_city}, ` : ""}{order.destination_state}</span>}
-                {order.buyer_address && <span className="line-clamp-2">{order.buyer_address}</span>}
+                {order.buyer_address && <span className="line-clamp-2 mb-1">{order.buyer_address}</span>}
+                <div className="flex flex-col gap-0.5 mt-1 border-t border-gray-100 pt-1 text-[10px] text-gray-500 font-medium">
+                  {order.receiver_cedula && <span>💳 Cédula: {order.receiver_cedula}</span>}
+                  {order.receiver_email && <span className="break-all">📧 Correo: {order.receiver_email}</span>}
+                  {order.contact_phone && <span>📞 Teléfono: {order.contact_phone}</span>}
+                </div>
               </div>
             )}
           </div>
@@ -982,8 +990,11 @@ export default function StoreOrders() {
               <div style={{ padding: "16px 28px", borderBottom: "1px solid #f0f0f0" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "12px" }}>
                   <div>
-                    <div style={{ color: "#9ca3af", fontWeight: 700, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Comprador</div>
+                    <div style={{ color: "#9ca3af", fontWeight: 700, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Destinatario</div>
                     <div style={{ fontWeight: 700, color: "#1a0a2e" }}>{invoiceOrder.buyer_name}</div>
+                    {invoiceOrder.receiver_cedula && <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "2px" }}>C.I. / RIF: {invoiceOrder.receiver_cedula}</div>}
+                    {invoiceOrder.receiver_email && <div style={{ fontSize: "11px", color: "#6b7280" }}>Correo: {invoiceOrder.receiver_email}</div>}
+                    {invoiceOrder.contact_phone && <div style={{ fontSize: "11px", color: "#6b7280" }}>Telf: {invoiceOrder.contact_phone}</div>}
                   </div>
                   {invoiceOrder.destination_state && (
                     <div>
@@ -1168,9 +1179,12 @@ export default function StoreOrders() {
               {/* Hidden printable area */}
               <div id="invoice-print-area" style={{ display: "none" }}>
                 <h1>Orden {formatOrderNumber(invoiceOrder.order_id)}</h1>
-                <p>{formatOrderDate(invoiceOrder.order_created_at)} · {invoiceOrder.buyer_name}</p>
-                <p>{invoiceOrder.destination_city ? `${invoiceOrder.destination_city}, ` : ""}{invoiceOrder.destination_state || ""}</p>
-                <p>{invoiceOrder.delivery_type === "local_delivery" ? invoiceOrder.delivery_address : invoiceOrder.buyer_address}</p>
+                <p>{formatOrderDate(invoiceOrder.order_created_at)}</p>
+                <p><strong>Destinatario:</strong> {invoiceOrder.buyer_name}</p>
+                {invoiceOrder.receiver_cedula && <p><strong>C.I. / RIF:</strong> {invoiceOrder.receiver_cedula}</p>}
+                {invoiceOrder.receiver_email && <p><strong>Correo:</strong> {invoiceOrder.receiver_email}</p>}
+                {invoiceOrder.contact_phone && <p><strong>Teléfono:</strong> {invoiceOrder.contact_phone}</p>}
+                <p><strong>Dirección:</strong> {invoiceOrder.delivery_type === "local_delivery" ? invoiceOrder.delivery_address : invoiceOrder.buyer_address} ({invoiceOrder.destination_city ? `${invoiceOrder.destination_city}, ` : ""}{invoiceOrder.destination_state || ""})</p>
                 {invoiceOrder.notes && <p><strong>Nota:</strong> {invoiceOrder.notes}</p>}
                 <br/>
                 <table>
@@ -1247,9 +1261,27 @@ export default function StoreOrders() {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                   <div style={{ gridColumn: "1 / -1" }}>
-                    <span style={{ color: "#6b7280", fontWeight: 600 }}>Comprador:</span>
+                    <span style={{ color: "#6b7280", fontWeight: 600 }}>Comprador / Destinatario:</span>
                     <div style={{ fontWeight: 700, color: "#1a0a2e" }}>{shipModal.order.buyer_name}</div>
                   </div>
+                  {shipModal.order.receiver_cedula && (
+                    <div>
+                      <span style={{ color: "#6b7280", fontWeight: 600 }}>Cédula / RIF:</span>
+                      <div style={{ fontWeight: 700, color: "#1a0a2e" }}>{shipModal.order.receiver_cedula}</div>
+                    </div>
+                  )}
+                  {shipModal.order.contact_phone && (
+                    <div>
+                      <span style={{ color: "#6b7280", fontWeight: 600 }}>Teléfono:</span>
+                      <div style={{ fontWeight: 700, color: "#1a0a2e" }}>{shipModal.order.contact_phone}</div>
+                    </div>
+                  )}
+                  {shipModal.order.receiver_email && (
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <span style={{ color: "#6b7280", fontWeight: 600 }}>Correo:</span>
+                      <div style={{ fontWeight: 700, color: "#1a0a2e", wordBreak: "break-all" }}>{shipModal.order.receiver_email}</div>
+                    </div>
+                  )}
                   {shipModal.order.destination_state && (
                     <div>
                       <span style={{ color: "#6b7280", fontWeight: 600 }}>Estado:</span>

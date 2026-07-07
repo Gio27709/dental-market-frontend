@@ -160,18 +160,32 @@ export default function AdminOrderDetail() {
             </h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", fontSize: "13px" }}>
               <div>
-                <div style={{ color: "#9ca3af", marginBottom: "4px" }}>Nombre</div>
+                <div style={{ color: "#9ca3af", marginBottom: "4px" }}>Nombre Comprador</div>
                 <div style={{ fontWeight: 600, color: "#1f2937" }}>{order.users?.full_name || "N/A"}</div>
               </div>
               <div>
-                <div style={{ color: "#9ca3af", marginBottom: "4px" }}>Email</div>
+                <div style={{ color: "#9ca3af", marginBottom: "4px" }}>Email Comprador</div>
                 <div style={{ fontWeight: 600, color: "#1f2937" }}>{order.users?.email || "N/A"}</div>
+              </div>
+              <div>
+                <div style={{ color: "#9ca3af", marginBottom: "4px" }}>Nombre Destinatario</div>
+                <div style={{ fontWeight: 600, color: "#1f2937" }}>{order.receiver_name || order.users?.full_name || "N/A"}</div>
+              </div>
+              {order.receiver_cedula && (
+                <div>
+                  <div style={{ color: "#9ca3af", marginBottom: "4px" }}>Cédula / RIF Destinatario</div>
+                  <div style={{ fontWeight: 600, color: "#1f2937" }}>{order.receiver_cedula}</div>
+                </div>
+              )}
+              <div>
+                <div style={{ color: "#9ca3af", marginBottom: "4px" }}>Email Destinatario</div>
+                <div style={{ fontWeight: 600, color: "#1f2937" }}>{order.receiver_email || order.users?.email || "N/A"}</div>
               </div>
               <div>
                 <div style={{ color: "#9ca3af", marginBottom: "4px" }}>Teléfono de Contacto</div>
                 <div style={{ fontWeight: 600, color: "#1f2937" }}>{order.contact_phone || "N/A"}</div>
               </div>
-              <div>
+              <div style={{ gridColumn: "1 / -1" }}>
                 <div style={{ color: "#9ca3af", marginBottom: "4px" }}>Dirección de Envío</div>
                 <div style={{ fontWeight: 600, color: "#1f2937" }}>{order.shipping_address || "N/A"}</div>
               </div>

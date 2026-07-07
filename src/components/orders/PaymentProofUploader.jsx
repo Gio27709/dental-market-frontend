@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { useOrder } from "../../context/OrderContext";
 import { validateFile } from "../../utils/validators";
 import toast from "react-hot-toast";
+import PaymentInstructions from "./PaymentInstructions";
 
 /**
  * Payment Proof Uploader — captures complete payer details + file
@@ -31,7 +32,7 @@ export default function PaymentProofUploader({
   const [paymentDate, setPaymentDate] = useState("");
   const [formErrors, setFormErrors] = useState({});
 
-  const pm = paymentMethod || "";
+  const [pm, setPm] = useState(paymentMethod || "transferencia");
   const isZelle = pm === "zelle";
   const isBank = pm === "transferencia" || pm === "pago_movil";
 
@@ -128,6 +129,7 @@ export default function PaymentProofUploader({
     const paymentDetails = {
       payer_name: payerName.trim(),
       reference_number: referenceNumber.trim(),
+      payment_method: pm,
     };
 
     if (isBank) {
@@ -160,10 +162,12 @@ export default function PaymentProofUploader({
   const methodLabel =
     pm === "transferencia" ? "Transferencia Bancaria" :
     pm === "pago_movil" ? "Pago Móvil" :
-    pm === "zelle" ? "Zelle" : "Pago";
+    pm === "zelle" ? "Zelle" :
+    pm === "binance" ? "Binance Pay" :
+    pm === "paypal" ? "PayPal" : "Pago";
 
   return (
-    <div className="bg-white border border-slate-100 shadow-[0_8px_30px_rgb(107,30,150,0.04)] rounded-3xl p-6 sm:p-8 max-w-xl mx-auto w-full transition-all duration-300">
+    <div className="bg-white border border-slate-100 shadow-[0_8px_30px_rgb(107,30,150,0.04)] rounded-2xl p-5 sm:p-6 max-w-lg mx-auto w-full transition-all duration-300">
       <div className="flex items-start gap-3.5 mb-5 pb-4 border-b border-slate-100">
         <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-[#6b1e96]">
           <span className="material-symbols-outlined text-[22px]">receipt_long</span>
@@ -176,9 +180,41 @@ export default function PaymentProofUploader({
         </div>
       </div>
 
-      <div className="space-y-4.5">
+      {/* Selector de Método de Pago si desea cambiarlo */}
+      <div className="mb-6 bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+        <label className="block text-[10px] font-extrabold text-[#6b1e96] uppercase tracking-wider mb-2">
+          Método de Pago Seleccionado
+        </label>
+        <select
+          value={pm}
+          onChange={(e) => {
+            setPm(e.target.value);
+            setPayerName("");
+            setPayerPhone("");
+            setCedulaNumber("");
+            setReferenceNumber("");
+            setPayerEmail("");
+            setPaymentDate("");
+            setFormErrors({});
+          }}
+          disabled={loading}
+          className="w-full p-3 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-[#6b1e96]/15 focus:border-[#6b1e96] bg-white transition-all cursor-pointer"
+        >
+          <option value="pago_movil">📱 Pago Móvil</option>
+          <option value="transferencia">🏦 Transferencia Bancaria</option>
+          <option value="zelle">🟩 Zelle</option>
+          <option value="binance">🟨 Binance (USDT)</option>
+          <option value="paypal">🟦 PayPal</option>
+        </select>
+        
+        <div className="mt-4 border-t border-slate-200/60 pt-4">
+          <PaymentInstructions paymentMethod={pm} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
         {/* ── Nombre del Titular ── */}
-        <div>
+        <div className="col-span-2">
           <label htmlFor="payer_name" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
             Nombre del Titular de la Cuenta <span className="text-red-500">*</span>
           </label>
@@ -203,9 +239,51 @@ export default function PaymentProofUploader({
           )}
         </div>
 
+        {/* ── Cédula / RIF (transferencia, pago_movil) ── */}
+        {isBank && (
+          <div className="col-span-2 sm:col-span-1">
+            <label htmlFor="cedula_number" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+              Cédula / RIF <span className="text-red-500">*</span>
+            </label>
+            <div className="flex space-x-2">
+              <select
+                value={cedulaType}
+                onChange={(e) => setCedulaType(e.target.value)}
+                disabled={loading}
+                className="w-1/3 p-3 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#6b1e96]/15 focus:border-[#6b1e96] bg-white transition-all cursor-pointer"
+              >
+                <option value="V">V</option>
+                <option value="J">J</option>
+                <option value="E">E</option>
+                <option value="P">P</option>
+                <option value="G">G</option>
+              </select>
+              <input
+                type="text"
+                id="cedula_number"
+                value={cedulaNumber}
+                onChange={(e) => { setCedulaNumber(e.target.value); clearFieldError("payerCedula"); }}
+                placeholder="12345678"
+                disabled={loading}
+                className={`w-2/3 p-3 border rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 transition-all ${
+                  formErrors.payerCedula
+                    ? "border-red-300 bg-red-50/30 focus:ring-red-100 focus:border-red-400"
+                    : "border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-[#6b1e96]/15 focus:border-[#6b1e96]"
+                }`}
+              />
+            </div>
+            {formErrors.payerCedula && (
+              <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm">error</span>
+                {formErrors.payerCedula}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* ── Teléfono (transferencia, pago_movil) ── */}
         {isBank && (
-          <div>
+          <div className="col-span-2 sm:col-span-1">
             <label htmlFor="payer_phone" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
               Teléfono del Pagador <span className="text-red-500">*</span>
             </label>
@@ -223,7 +301,7 @@ export default function PaymentProofUploader({
               }`}
             />
             {formErrors.payerPhone && (
-              <p className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1">
+              <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
                 <span className="material-symbols-outlined text-sm">error</span>
                 {formErrors.payerPhone}
               </p>
@@ -231,54 +309,11 @@ export default function PaymentProofUploader({
           </div>
         )}
 
-        {/* ── Cédula / RIF (transferencia, pago_movil) ── */}
-        {isBank && (
-          <div>
-            <label htmlFor="cedula_number" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
-              Cédula / RIF <span className="text-red-500">*</span>
-            </label>
-            <div className="flex space-x-2.5">
-              <select
-                value={cedulaType}
-                onChange={(e) => setCedulaType(e.target.value)}
-                disabled={loading}
-                className="w-1/4 p-3 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#6b1e96]/15 focus:border-[#6b1e96] bg-white transition-all cursor-pointer"
-              >
-                <option value="V">V</option>
-                <option value="J">J</option>
-                <option value="E">E</option>
-                <option value="P">P</option>
-                <option value="G">G</option>
-              </select>
-              <input
-                type="text"
-                id="cedula_number"
-                value={cedulaNumber}
-                onChange={(e) => { setCedulaNumber(e.target.value); clearFieldError("payerCedula"); }}
-                placeholder="12345678"
-                disabled={loading}
-                className={`w-3/4 p-3 border rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 transition-all ${
-                  formErrors.payerCedula
-                    ? "border-red-300 bg-red-50/30 focus:ring-red-100 focus:border-red-400"
-                    : "border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-[#6b1e96]/15 focus:border-[#6b1e96]"
-                }`}
-              />
-            </div>
-            {formErrors.payerCedula && (
-              <p className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">error</span>
-                {formErrors.payerCedula}
-              </p>
-            )}
-            <p className="text-[10px] font-semibold text-slate-400 mt-1 leading-normal">Ingresa solo los números (ej. 12345678)</p>
-          </div>
-        )}
-
         {/* ── Email del titular (Zelle) ── */}
         {isZelle && (
-          <div>
+          <div className="col-span-2 sm:col-span-1">
             <label htmlFor="payer_email" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
-              Correo Electrónico del Titular <span className="text-red-500">*</span>
+              Correo Electrónico <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -294,7 +329,7 @@ export default function PaymentProofUploader({
               }`}
             />
             {formErrors.payerEmail && (
-              <p className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1">
+              <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
                 <span className="material-symbols-outlined text-sm">error</span>
                 {formErrors.payerEmail}
               </p>
@@ -304,9 +339,9 @@ export default function PaymentProofUploader({
 
         {/* ── Fecha de la transacción (Zelle) ── */}
         {isZelle && (
-          <div>
+          <div className="col-span-2 sm:col-span-1">
             <label htmlFor="payment_date" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
-              Fecha de la Transacción <span className="text-red-500">*</span>
+              Fecha Transacción <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
@@ -322,7 +357,7 @@ export default function PaymentProofUploader({
               }`}
             />
             {formErrors.paymentDate && (
-              <p className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1">
+              <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
                 <span className="material-symbols-outlined text-sm">error</span>
                 {formErrors.paymentDate}
               </p>
@@ -331,7 +366,7 @@ export default function PaymentProofUploader({
         )}
 
         {/* ── Número de Referencia ── */}
-        <div>
+        <div className="col-span-2">
           <label htmlFor="reference_number" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
             Número de Referencia <span className="text-red-500">*</span>
           </label>
@@ -349,7 +384,7 @@ export default function PaymentProofUploader({
             }`}
           />
           {formErrors.referenceNumber && (
-            <p className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1">
+            <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
               <span className="material-symbols-outlined text-sm">error</span>
               {formErrors.referenceNumber}
             </p>
@@ -357,7 +392,7 @@ export default function PaymentProofUploader({
         </div>
 
         {/* ── Separador visual ── */}
-        <div className="border-t border-slate-100 pt-4 mt-3">
+        <div className="col-span-2 border-t border-slate-100 pt-3 mt-1">
           <p className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-2">
             Captura del Comprobante <span className="text-red-500">*</span>
           </p>
@@ -365,17 +400,17 @@ export default function PaymentProofUploader({
 
         {/* ── File Upload ── */}
         <label
-          className={`flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 ${
+          className={`col-span-2 flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 ${
             formErrors.file
               ? "border-red-300 bg-red-50/30 hover:bg-red-50/60"
               : "border-slate-200 bg-slate-50/50 hover:bg-[#6b1e96]/5 hover:border-[#6b1e96]"
           }`}
         >
-          <div className="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center">
-            <span className="material-symbols-outlined text-[32px] text-slate-400 mb-2 transition-transform duration-300 group-hover:scale-105">
+          <div className="flex flex-col items-center justify-center py-2 px-4 text-center">
+            <span className="material-symbols-outlined text-[24px] text-slate-400 mb-1 transition-transform duration-300 group-hover:scale-105">
               cloud_upload
             </span>
-            <p className="mb-1 text-xs sm:text-sm text-slate-700 font-bold">
+            <p className="mb-0.5 text-xs text-slate-700 font-bold">
               {file ? "Cambiar comprobante" : "Haz clic para seleccionar archivo"}
             </p>
             <p className="text-[10px] text-slate-400 font-bold">
@@ -392,36 +427,39 @@ export default function PaymentProofUploader({
           />
         </label>
         {formErrors.file && (
-          <p className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1">
-            <span className="material-symbols-outlined text-sm">error</span>
-            {formErrors.file}
-          </p>
+          <div className="col-span-2">
+            <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+              <span className="material-symbols-outlined text-sm">error</span>
+              {formErrors.file}
+            </p>
+          </div>
         )}
 
         {/* Thumbnail Preview Area */}
         {preview && (
-          <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl flex justify-center relative overflow-hidden">
+          <div className="col-span-2 mt-2 p-2 bg-slate-50 border border-slate-100 rounded-xl flex justify-center relative overflow-hidden">
             <img
               src={preview}
               alt="Vista previa del comprobante"
               loading="lazy"
-              className="max-h-48 object-contain rounded-xl shadow-2xs border border-white"
+              className="max-h-36 object-contain rounded-lg shadow-2xs border border-white"
             />
           </div>
         )}
         {file && !preview && (
-          <div className="mt-3 p-4 bg-slate-50 border border-slate-100 rounded-2xl text-[#6b1e96] font-bold text-xs flex items-center justify-center gap-2 shadow-2xs">
+          <div className="col-span-2 mt-2 p-3 bg-slate-50 border border-slate-100 rounded-xl text-[#6b1e96] font-bold text-xs flex items-center justify-center gap-2 shadow-2xs">
             <span className="material-symbols-outlined text-base">picture_as_pdf</span>
             <span>Documento PDF seleccionado</span>
           </div>
         )}
 
         {/* Action Button */}
-        <button
-          onClick={handleUploadClick}
-          disabled={loading}
-          className="w-full mt-5 flex items-center justify-center py-3.5 px-6 text-sm font-black rounded-xl text-white bg-gradient-to-r from-[#6b1e96] to-[#8b2fc9] hover:from-[#7b24ab] hover:to-[#9c3ce0] hover:shadow-lg hover:shadow-purple-500/20 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-purple-600/10 cursor-pointer"
-        >
+        <div className="col-span-2 mt-3">
+          <button
+            onClick={handleUploadClick}
+            disabled={loading}
+            className="w-full flex items-center justify-center py-3 px-6 text-sm font-black rounded-xl text-white bg-gradient-to-r from-[#6b1e96] to-[#8b2fc9] hover:from-[#7b24ab] hover:to-[#9c3ce0] hover:shadow-lg hover:shadow-purple-500/20 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-purple-600/10 cursor-pointer"
+          >
           {loading ? (
             <>
               <svg
@@ -450,6 +488,7 @@ export default function PaymentProofUploader({
             "Enviar Comprobante"
           )}
         </button>
+        </div>
       </div>
     </div>
   );

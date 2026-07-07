@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import PropTypes from "prop-types";
 import { validatePhone, validateAddress } from "../../utils/validators";
 import PaymentMethodSelector from "./PaymentMethodSelector";
 import PaymentInstructions from "./PaymentInstructions";
 import toast from "react-hot-toast";
 import { VENEZUELA_STATES } from "../../utils/venezuelaStates";
+import { useAuth } from "../../context/AuthContext";
 
 export default function CheckoutForm({
   cartItems,
@@ -12,11 +13,19 @@ export default function CheckoutForm({
   loading,
   onDeliveryTypeChange
 }) {
+  const { user } = useAuth();
+
   const [formData, setFormData] = useState(() => {
     const saved = sessionStorage.getItem("checkout_form_data");
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return {
+          receiver_name: "",
+          receiver_cedula: "",
+          receiver_email: "",
+          ...parsed
+        };
       } catch (e) {
         console.error("Error parsing checkout form data:", e);
       }
@@ -32,6 +41,9 @@ export default function CheckoutForm({
       delivery_lng: null,
       destination_state: "",
       destination_city: "",
+      receiver_name: "",
+      receiver_cedula: "",
+      receiver_email: "",
     };
   });
 
@@ -112,6 +124,74 @@ export default function CheckoutForm({
     sessionStorage.setItem("checkout_form_data", JSON.stringify(formData));
   }, [formData]);
 
+  const [cedulaPrefix, setCedulaPrefix] = useState("V");
+  const [cedulaNumber, setCedulaNumber] = useState("");
+
+  const hasPrefilledRef = useRef(false);
+
+  // Al montar, separar la cédula inicial si existe
+  useEffect(() => {
+    if (formData.receiver_cedula) {
+      const match = formData.receiver_cedula.match(/^([VEJGP])-(.+)$/i);
+      if (match) {
+        setCedulaPrefix(match[1].toUpperCase());
+        setCedulaNumber(match[2]);
+      } else if (/^\d+$/.test(formData.receiver_cedula)) {
+        setCedulaNumber(formData.receiver_cedula);
+        setFormData(prev => ({ ...prev, receiver_cedula: `V-${formData.receiver_cedula}` }));
+      }
+    }
+  }, []);
+
+  const handlePrefixChange = (e) => {
+    const prefix = e.target.value;
+    setCedulaPrefix(prefix);
+    const fullCedula = prefix && cedulaNumber ? `${prefix}-${cedulaNumber.trim()}` : "";
+    setFormData(prev => ({ ...prev, receiver_cedula: fullCedula }));
+    if (formErrors.receiver_cedula) {
+      setFormErrors(prev => ({ ...prev, receiver_cedula: null }));
+    }
+  };
+
+  const handleCedulaNumberChange = (e) => {
+    const num = e.target.value.replace(/[^0-9-]/g, "");
+    setCedulaNumber(num);
+    const fullCedula = cedulaPrefix && num ? `${cedulaPrefix}-${num.trim()}` : "";
+    setFormData(prev => ({ ...prev, receiver_cedula: fullCedula }));
+    if (formErrors.receiver_cedula) {
+      setFormErrors(prev => ({ ...prev, receiver_cedula: null }));
+    }
+  };
+
+  // Precargar datos del usuario logueado
+  useEffect(() => {
+    if (user && !hasPrefilledRef.current) {
+      setFormData(prev => {
+        const defaultCedula = prev.receiver_cedula || user.user_metadata?.cedula || "";
+        if (defaultCedula) {
+          const match = defaultCedula.match(/^([VEJGP])-(.+)$/i);
+          if (match) {
+            setCedulaPrefix(match[1].toUpperCase());
+            setCedulaNumber(match[2]);
+          } else if (/^\d+$/.test(defaultCedula)) {
+            setCedulaNumber(defaultCedula);
+          }
+        }
+        const updated = {
+          ...prev,
+          receiver_name: prev.receiver_name || user.user_metadata?.full_name || "",
+          receiver_email: prev.receiver_email || user.email || "",
+          phone: prev.phone || user.phone || user.user_metadata?.phone || "",
+          receiver_cedula: defaultCedula ? (defaultCedula.includes("-") ? defaultCedula : `V-${defaultCedula}`) : prev.receiver_cedula,
+        };
+        if (user.email || user.user_metadata?.full_name) {
+          hasPrefilledRef.current = true;
+        }
+        return updated;
+      });
+    }
+  }, [user]);
+
   // Provide delivery_type backward sync and initial render emit
   useEffect(() => {
     if (onDeliveryTypeChange) {
@@ -185,6 +265,15 @@ export default function CheckoutForm({
     }
     if (!formData.payment_method) {
       errors.payment_method = "Debe seleccionar un método de pago.";
+    }
+    if (!formData.receiver_name || formData.receiver_name.trim().length < 3) {
+      errors.receiver_name = "El nombre del destinatario es obligatorio (mínimo 3 caracteres).";
+    }
+    if (!formData.receiver_email || !/\S+@\S+\.\S+/.test(formData.receiver_email)) {
+      errors.receiver_email = "Por favor introduce un correo electrónico válido.";
+    }
+    if (!formData.receiver_cedula || !/^[VEJGP]-\d{6,10}(-\d)?$/i.test(formData.receiver_cedula.trim())) {
+      errors.receiver_cedula = "La cédula o RIF es requerida (Ej. V-12345678).";
     }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -415,6 +504,124 @@ export default function CheckoutForm({
         </div>
 
         <div className="grid grid-cols-6 gap-5">
+          <div className="col-span-6 sm:col-span-3">
+            <label htmlFor="receiver_name" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+              Nombre Completo del Destinatario *
+            </label>
+            <input
+              type="text"
+              name="receiver_name"
+              id="receiver_name"
+              disabled={loading}
+              value={formData.receiver_name}
+              onChange={handleChange}
+              placeholder="Ej. Juan Pérez"
+              className={`block w-full shadow-xs sm:text-sm rounded-xl p-3 border focus:outline-none focus:ring-2 transition-all ${
+                formErrors.receiver_name
+                  ? "border-red-300 bg-red-50/30 focus:ring-red-100 focus:border-red-400"
+                  : "border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-[#6b1e96]/15 focus:border-[#6b1e96]"
+              }`}
+            />
+            {formErrors.receiver_name && (
+              <p className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm">error</span>
+                {formErrors.receiver_name}
+              </p>
+            )}
+          </div>
+
+          <div className="col-span-6 sm:col-span-3">
+            <label htmlFor="cedula_number" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+              Cédula / RIF del Destinatario *
+            </label>
+            <div className={`flex rounded-xl shadow-xs border transition-all focus-within:ring-2 focus-within:ring-[#6b1e96]/15 ${
+              formErrors.receiver_cedula
+                ? "border-red-300 bg-red-50/30 focus-within:border-red-400"
+                : "border-slate-200 bg-slate-50/50 focus-within:bg-white focus-within:border-[#6b1e96]"
+            }`}>
+              <select
+                value={cedulaPrefix}
+                onChange={handlePrefixChange}
+                disabled={loading}
+                className="bg-transparent pl-3 pr-2 py-3 text-sm font-bold text-slate-700 outline-none border-r border-slate-200 cursor-pointer focus:outline-none"
+              >
+                <option value="V">V</option>
+                <option value="E">E</option>
+                <option value="J">J</option>
+                <option value="G">G</option>
+                <option value="P">P</option>
+              </select>
+              <input
+                type="text"
+                name="cedula_number"
+                id="cedula_number"
+                disabled={loading}
+                value={cedulaNumber}
+                onChange={handleCedulaNumberChange}
+                placeholder="Ej. 27709480"
+                className="block w-full bg-transparent p-3 text-sm outline-none border-0 text-slate-800 placeholder:text-slate-400 focus:ring-0 focus:outline-none focus:border-0"
+              />
+            </div>
+            {formErrors.receiver_cedula && (
+              <p className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm">error</span>
+                {formErrors.receiver_cedula}
+              </p>
+            )}
+          </div>
+
+          <div className="col-span-6 sm:col-span-3">
+            <label htmlFor="receiver_email" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+              Correo Electrónico *
+            </label>
+            <input
+              type="email"
+              name="receiver_email"
+              id="receiver_email"
+              disabled={loading}
+              value={formData.receiver_email}
+              onChange={handleChange}
+              placeholder="Ej. juan@correo.com"
+              className={`block w-full shadow-xs sm:text-sm rounded-xl p-3 border focus:outline-none focus:ring-2 transition-all ${
+                formErrors.receiver_email
+                  ? "border-red-300 bg-red-50/30 focus:ring-red-100 focus:border-red-400"
+                  : "border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-[#6b1e96]/15 focus:border-[#6b1e96]"
+              }`}
+            />
+            {formErrors.receiver_email && (
+              <p className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm">error</span>
+                {formErrors.receiver_email}
+              </p>
+            )}
+          </div>
+
+          <div className="col-span-6 sm:col-span-3">
+            <label htmlFor="phone" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+              Teléfono Contacto *
+            </label>
+            <input
+              type="text"
+              name="phone"
+              id="phone"
+              disabled={loading}
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="0412-0000000"
+              className={`block w-full shadow-xs sm:text-sm rounded-xl p-3 border focus:outline-none focus:ring-2 transition-all ${
+                formErrors.phone
+                  ? "border-red-300 bg-red-50/30 focus:ring-red-100 focus:border-red-400"
+                  : "border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-[#6b1e96]/15 focus:border-[#6b1e96]"
+              }`}
+            />
+            {formErrors.phone && (
+              <p className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm">error</span>
+                {formErrors.phone}
+              </p>
+            )}
+          </div>
+
           <div className="col-span-6">
             <label htmlFor="address" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
               Dirección Exacta de Entrega *
@@ -541,31 +748,7 @@ export default function CheckoutForm({
             </>
           )}
 
-          <div className="col-span-6 sm:col-span-3">
-            <label htmlFor="phone" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
-              Teléfono Contacto *
-            </label>
-            <input
-              type="text"
-              name="phone"
-              id="phone"
-              disabled={loading}
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="0412-0000000"
-              className={`block w-full shadow-xs sm:text-sm rounded-xl p-3 border focus:outline-none focus:ring-2 transition-all ${
-                formErrors.phone
-                  ? "border-red-300 bg-red-50/30 focus:ring-red-100 focus:border-red-400"
-                  : "border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-[#6b1e96]/15 focus:border-[#6b1e96]"
-              }`}
-            />
-            {formErrors.phone && (
-              <p className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">error</span>
-                {formErrors.phone}
-              </p>
-            )}
-          </div>
+
 
           <div className="col-span-6">
             <label htmlFor="notes" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">

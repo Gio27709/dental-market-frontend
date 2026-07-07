@@ -922,6 +922,20 @@ export default function OrderDetail() {
                 <span className="font-medium text-right font-mono" style={{ color: "#191c23" }}>{order.id.split('-')[0]}</span>
               </li>
               <li className="flex justify-between items-start gap-4">
+                <span style={{ color: "#727785" }}>Destinatario</span>
+                <span className="font-medium text-right" style={{ color: "#191c23" }}>{order.receiver_name || order.users?.full_name || "—"}</span>
+              </li>
+              {order.receiver_cedula && (
+                <li className="flex justify-between items-start gap-4">
+                  <span style={{ color: "#727785" }}>Cédula / RIF</span>
+                  <span className="font-medium text-right" style={{ color: "#191c23" }}>{order.receiver_cedula}</span>
+                </li>
+              )}
+              <li className="flex justify-between items-start gap-4">
+                <span style={{ color: "#727785" }}>Correo</span>
+                <span className="font-medium text-right break-all text-xs" style={{ color: "#191c23" }}>{order.receiver_email || order.users?.email || "—"}</span>
+              </li>
+              <li className="flex justify-between items-start gap-4">
                 <span style={{ color: "#727785" }}>Teléfono</span>
                 <span className="font-medium text-right" style={{ color: "#191c23" }}>{order.contact_phone || "—"}</span>
               </li>

@@ -100,6 +100,9 @@ export default function Checkout() {
       payment_method: formData.payment_method,
       notes: formData.notes,
       delivery_type: formData.delivery_type,
+      receiver_name: formData.receiver_name,
+      receiver_cedula: formData.receiver_cedula,
+      receiver_email: formData.receiver_email,
       // Multi-store: per-store delivery types map
       ...(formData.delivery_types && { delivery_types: formData.delivery_types }),
       destination_state: formData.destination_state || null,
@@ -173,9 +176,9 @@ export default function Checkout() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Premium Stepper */}
-      <div className="mb-10 bg-white rounded-2xl border border-slate-100/80 shadow-xs p-5 md:p-6">
+      <div className="mb-6 bg-white rounded-2xl border border-slate-100/80 shadow-xs p-4 md:p-5">
         <nav aria-label="Progress">
           <ol className="flex items-center justify-between w-full max-w-3xl mx-auto">
             {/* Step 1 */}
@@ -307,13 +310,13 @@ export default function Checkout() {
 
       {step === 2 && createdOrderId && (
         <div className="animate-fade-in-up">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+          <div className="text-center mb-4.5">
+            <h2 className="text-2xl font-black text-gray-900">
               ¡Casi listo! 🎉
             </h2>
             {createdOrders.length > 1 ? (
-              <div className="mt-4">
-                <p className="text-lg text-gray-500 mb-2">
+              <div className="mt-2.5">
+                <p className="text-base text-gray-500 mb-1.5">
                   Tu pedido incluye productos de <span className="font-bold text-[#6b1e96]">{createdOrders.length} tiendas</span> distintas.
                 </p>
                 <p className="text-sm text-gray-400">
@@ -321,9 +324,9 @@ export default function Checkout() {
                 </p>
               </div>
             ) : (
-              <p className="mt-4 text-lg text-gray-500">
+              <p className="mt-2.5 text-base text-gray-500">
                 Tu orden ha sido reservada bajo el código{" "}
-                <span className="font-mono bg-gray-100 px-2 py-1 rounded text-primary-600">
+                <span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-[#6b1e96] font-bold">
                   {createdOrderId.split("-")[0]}
                 </span>
                 .
@@ -337,7 +340,7 @@ export default function Checkout() {
             onUploadComplete={handleProofUploaded}
           />
 
-          <div className="text-center mt-6">
+          <div className="text-center mt-4">
             <button
               onClick={handleSkipProof}
               className="text-sm text-gray-500 hover:text-gray-700 underline"

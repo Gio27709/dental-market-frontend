@@ -49,10 +49,28 @@ const OrderReceiptTemplate = forwardRef(({ order }, ref) => {
         {/* ORDER INFO & CUSTOMER INFO */}
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "40px" }}>
           <div>
-            <p style={{ margin: "0 0 4px 0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", color: "#727785", fontWeight: 700 }}>Facturar a</p>
+            <p style={{ margin: "0 0 4px 0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", color: "#727785", fontWeight: 700 }}>Comprador</p>
             <p style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "#191c23", textTransform: "capitalize" }}>
               {order.users?.full_name || "Cliente"}
             </p>
+            <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "#727785" }}>
+              {order.users?.email || ""}
+            </p>
+            
+            <p style={{ margin: "14px 0 4px 0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", color: "#727785", fontWeight: 700 }}>Enviar a (Destinatario)</p>
+            <p style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "#191c23", textTransform: "capitalize" }}>
+              {order.receiver_name || order.users?.full_name || "Cliente"}
+            </p>
+            {order.receiver_cedula && (
+              <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "#191c23", fontWeight: 600 }}>
+                C.I. / RIF: {order.receiver_cedula}
+              </p>
+            )}
+            {order.receiver_email && order.receiver_email !== order.users?.email && (
+              <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "#727785" }}>
+                {order.receiver_email}
+              </p>
+            )}
             <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#4d4353", maxWidth: "250px", lineHeight: "1.4" }}>
               {order.shipping_address || "Dirección no especificada"}
             </p>

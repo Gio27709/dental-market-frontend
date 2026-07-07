@@ -136,10 +136,15 @@ export default function AdminOrderList({ orders }) {
                   {/* CLIENTE */}
                   <td style={{ padding: "10px 14px", verticalAlign: "middle" }}>
                     <div style={{ fontSize: "12px", fontWeight: 600, color: "#1f2937", lineHeight: 1.3 }}>
-                      {order.users?.full_name || "Eliminado"}
+                      {order.receiver_name || order.users?.full_name || "Eliminado"}
                     </div>
+                    {order.receiver_cedula && (
+                      <div style={{ fontSize: "10px", fontWeight: 500, color: "#6b1e96", marginTop: "1px" }}>
+                        C.I: {order.receiver_cedula}
+                      </div>
+                    )}
                     <div style={{ fontSize: "10px", color: "#9ca3af", marginTop: "1px" }}>
-                      {order.users?.email || ""}
+                      {order.receiver_email || order.users?.email || ""}
                     </div>
                   </td>
 
