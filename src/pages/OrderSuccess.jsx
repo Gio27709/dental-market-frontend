@@ -1,16 +1,40 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useOrder } from "../context/OrderContext";
 import PaymentProofUploader from "../components/orders/PaymentProofUploader";
 import { formatCurrencyVES, formatCurrencyUSD } from "../utils/formatters";
+import { cancelAbandonedOrderAPI } from "../services/api";
+import toast from "react-hot-toast";
 
 export default function OrderSuccess() {
   const { id } = useParams(); // This can be an order_group_id OR a single order_id
   const { fetchOrdersByGroup, fetchOrderById } = useOrder();
+  const navigate = useNavigate();
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelOrder = async () => {
+    if (!window.confirm("¿Estás seguro de que deseas cancelar esta orden? Esta acción liberará los productos reservados.")) {
+      return;
+    }
+    
+    setCancelling(true);
+    try {
+      for (const order of orders) {
+        await cancelAbandonedOrderAPI(order.id);
+      }
+      toast.success("Orden cancelada exitosamente.");
+      navigate("/");
+    } catch (err) {
+      console.error("Error al cancelar la orden:", err);
+      toast.error(err.response?.data?.error || "Ocurrió un error al intentar cancelar la orden.");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -211,6 +235,18 @@ export default function OrderSuccess() {
               Seguir comprando
             </Link>
           </div>
+
+          {isPendingProof && (
+            <div className="text-center pt-2 border-t border-slate-100 mt-2">
+              <button
+                onClick={handleCancelOrder}
+                disabled={cancelling}
+                className="text-[10px] text-rose-500 hover:text-rose-700 font-extrabold uppercase tracking-widest hover:underline bg-transparent border-0 cursor-pointer disabled:opacity-50 transition-colors"
+              >
+                {cancelling ? "Cancelando..." : "Cancelar esta orden"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
