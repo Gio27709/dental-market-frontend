@@ -29,8 +29,8 @@ const OrderReceiptTemplate = forwardRef(({ order }, ref) => {
         {/* HEADER */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: "28px", color: "#6A0DAD", fontWeight: 800, letterSpacing: "-0.5px" }}>
-              Digital Atrium
+            <h1 style={{ margin: 0, fontSize: "28px", color: "#6b1e96", fontWeight: 850, letterSpacing: "-0.5px" }}>
+              FORCEPX
             </h1>
             <p style={{ margin: "4px 0 0 0", fontSize: "14px", color: "#727785" }}>
               Marketplace de Suministros Odontológicos
@@ -89,17 +89,36 @@ const OrderReceiptTemplate = forwardRef(({ order }, ref) => {
             </div>
             <div>
               <p style={{ margin: "0 0 4px 0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", color: "#727785", fontWeight: 700 }}>Estado</p>
-              <div style={{ 
-                display: "inline-block", 
-                backgroundColor: order.payment_status === "approved" ? "#dcfce7" : "#fef9c3", 
-                color: order.payment_status === "approved" ? "#16a34a" : "#ca8a04", 
-                padding: "4px 12px", 
-                borderRadius: "100px", 
-                fontSize: "12px", 
-                fontWeight: 800 
-              }}>
-                {order.payment_status === "approved" ? "PAGADO" : "PENDIENTE"}
-              </div>
+              {(() => {
+                const getStatusDetails = (status) => {
+                  switch (status) {
+                    case "approved":
+                      return { text: "PAGADO", bg: "#dcfce7", color: "#16a34a" };
+                    case "failed":
+                      return { text: "CANCELADO", bg: "#fee2e2", color: "#dc2626" };
+                    case "rejected":
+                      return { text: "RECHAZADO", bg: "#fee2e2", color: "#dc2626" };
+                    case "under_review":
+                      return { text: "EN REVISIÓN", bg: "#dbeafe", color: "#2563eb" };
+                    default:
+                      return { text: "PENDIENTE", bg: "#fef9c3", color: "#ca8a04" };
+                  }
+                };
+                const badge = getStatusDetails(order.payment_status);
+                return (
+                  <div style={{ 
+                    display: "inline-block", 
+                    backgroundColor: badge.bg, 
+                    color: badge.color, 
+                    padding: "4px 12px", 
+                    borderRadius: "100px", 
+                    fontSize: "12px", 
+                    fontWeight: 800 
+                  }}>
+                    {badge.text}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -166,7 +185,7 @@ const OrderReceiptTemplate = forwardRef(({ order }, ref) => {
         {/* FOOTER MESSAGE */}
         <div style={{ marginTop: "60px", textAlign: "center" }}>
           <p style={{ fontSize: "12px", color: "#7e7384", margin: "0 0 4px 0" }}>
-            Gracias por su compra en Digital Atrium.
+            Gracias por su compra en FORCEPX.
           </p>
           <p style={{ fontSize: "11px", color: "#cfc2d5", margin: 0 }}>
             Este es un recibo generado electrónicamente.

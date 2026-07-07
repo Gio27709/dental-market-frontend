@@ -510,8 +510,9 @@ export default function OrderDetail() {
     setGeneratingPdf(true);
     try {
       const canvas = await html2canvas(input, {
-        scale: 2, // Higher quality
+        scale: 3, // Premium quality (extremely sharp)
         useCORS: true, 
+        logging: false,
       });
       const imgData = canvas.toDataURL("image/jpeg", 1.0);
       
