@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -59,6 +59,8 @@ export default function Header() {
   const { user } = useAuth();
   const { buyerState, shouldShowPrompt, locationMethod } = useLocationContext();
   const navigate = useNavigate();
+  const location = useLocation();
+  const pathname = location.pathname;
 
   // Estados visuales mapeados (Fase 2)
   const { currency, setCurrency } = useCurrency();
@@ -550,15 +552,29 @@ export default function Header() {
             <span className="text-[12px] uppercase">Todas las Categorías</span>
           </div>
 
-          <nav className="flex-1 ml-10">
-            <ul className="flex items-center space-x-6 text-[12px] font-bold tracking-wide text-white uppercase">
-              {navLinks.map((link, idx) => (
-                <li key={idx}>
-                  <Link to={link.url} className="hover:text-[#c3ff00] transition-colors">
-                    {link.text}
-                  </Link>
-                </li>
-              ))}
+          <nav className="flex-1 ml-10 h-full">
+            <ul className="flex items-center space-x-6 text-[12px] font-bold tracking-wide text-white uppercase h-full">
+              {navLinks.map((link, idx) => {
+                const isActive = link.url === "/" ? pathname === "/" : pathname.startsWith(link.url);
+                return (
+                  <li key={idx} className="relative h-full flex items-center group py-2">
+                    <Link
+                      to={link.url}
+                      className={`transition-colors duration-200 ${
+                        isActive ? "text-[#c3ff00]" : "text-white hover:text-[#c3ff00]"
+                      }`}
+                    >
+                      {link.text}
+                    </Link>
+                    {/* Barra de acento inferior animada */}
+                    <span
+                      className={`absolute bottom-0 left-0 h-[3px] bg-[#c3ff00] rounded-t-full transition-all duration-300 origin-left ${
+                        isActive ? "w-full" : "w-0 group-hover:w-full"
+                      }`}
+                    />
+                  </li>
+                );
+              })}
             </ul>
           </nav>
         </div>
@@ -652,14 +668,31 @@ export default function Header() {
             {/* Navigation Links */}
             <nav className="flex-1 overflow-y-auto py-2">
               <div className="px-3 space-y-0.5">
-                {navLinks.map((link, idx) => (
-                  <Link key={idx} to={link.url} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-gray-50 font-medium text-sm transition-colors">
-                    <span className="material-symbols-outlined text-gray-400" style={{fontSize: '20px'}}>
-                      {idx === 0 ? "home" : idx === navLinks.length - 1 ? "storefront" : "label"}
-                    </span>
-                    {link.text}
-                  </Link>
-                ))}
+                {navLinks.map((link, idx) => {
+                  const isActive = link.url === "/" ? pathname === "/" : pathname.startsWith(link.url);
+                  return (
+                    <Link
+                      key={idx}
+                      to={link.url}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                        isActive
+                          ? "bg-[#6b1e96]/10 text-[#6b1e96] border-l-4 border-[#6b1e96] pl-3"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span
+                        className={`material-symbols-outlined transition-colors ${
+                          isActive ? "text-[#6b1e96]" : "text-gray-400"
+                        }`}
+                        style={{ fontSize: "20px" }}
+                      >
+                        {idx === 0 ? "home" : idx === navLinks.length - 1 ? "storefront" : "label"}
+                      </span>
+                      {link.text}
+                    </Link>
+                  );
+                })}
               </div>
 
               {/* Divider + Categories */}
