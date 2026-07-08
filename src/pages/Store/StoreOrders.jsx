@@ -1482,7 +1482,7 @@ export default function StoreOrders() {
                     <option value="">Sin asignar / Entrega propia</option>
                     {riders.map((r) => (
                       <option key={r.rider_id || r.id} value={r.rider_id || r.id}>
-                        {r.users?.full_name || r.rider_name || r.email || "Rider"}
+                        {r.full_name || r.users?.full_name || r.rider_name || r.email || "Rider"}
                       </option>
                     ))}
                   </select>
