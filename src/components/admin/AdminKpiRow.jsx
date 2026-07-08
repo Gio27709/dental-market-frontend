@@ -64,7 +64,7 @@ export default function AdminKpiRow({ kpis = {}, trends = {}, loading = false })
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${isPositive ? "bg-white/20 text-white" : "bg-red-500/30 text-red-200"}`}>
                   {trend > 0 ? "↑" : "↓"} {Math.abs(trend)}%
                 </span>
-                <span className="text-[9px] text-white/40">vs periodo ant.</span>
+                <span className="text-[9px] text-white/40">vs periodo anterior</span>
               </div>
             )}
             {/* Fee breakdown for platformRevenue */}

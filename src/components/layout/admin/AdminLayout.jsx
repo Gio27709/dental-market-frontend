@@ -167,7 +167,7 @@ function AdminLayoutContent() {
                         key={link.path}
                         to={link.path}
                         onClick={() => setMobileOpen(false)}
-                        className="flex items-center justify-between gap-3 mx-1 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200"
+                        className="flex items-center justify-between gap-2 mx-1 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200"
                         style={{
                           background: active
                             ? 'linear-gradient(135deg, rgba(195,255,0,0.12) 0%, rgba(107,30,150,0.2) 100%)'
@@ -176,7 +176,7 @@ function AdminLayoutContent() {
                           borderLeft: active ? '3px solid #c3ff00' : '3px solid transparent',
                         }}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
                           <div
                             className="flex-shrink-0"
                             style={{

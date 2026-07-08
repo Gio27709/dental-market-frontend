@@ -47,7 +47,7 @@ export default function AdminSidebar() {
 
   return (
     <aside
-      className="w-[270px] flex-shrink-0 sticky top-0 h-screen flex-col hidden md:flex relative overflow-hidden"
+      className="w-[285px] flex-shrink-0 sticky top-0 h-screen flex-col hidden md:flex relative overflow-hidden"
       style={{
         background: 'linear-gradient(180deg, #1a0a2e 0%, #2d1452 50%, #1a0a2e 100%)',
       }}
@@ -133,7 +133,7 @@ export default function AdminSidebar() {
                   <li key={link.path}>
                     <Link
                       to={link.path}
-                      className="flex items-center justify-between gap-3 px-4 py-2.5 text-[13px] font-medium rounded-xl transition-all duration-200 group relative"
+                      className="flex items-center justify-between gap-2 px-3 py-2.5 text-[13px] font-medium rounded-xl transition-all duration-200 group relative"
                       style={{
                         background: active
                           ? 'linear-gradient(135deg, rgba(195,255,0,0.12) 0%, rgba(107,30,150,0.2) 100%)'
@@ -154,7 +154,7 @@ export default function AdminSidebar() {
                         }
                       }}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
                         <div
                           className="transition-colors duration-200 flex-shrink-0"
                           style={{ color: active ? '#c3ff00' : 'rgba(255,255,255,0.35)' }}
