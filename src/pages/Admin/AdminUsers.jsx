@@ -82,8 +82,17 @@ export default function AdminUsers() {
   const handleOpenPermissionsModal = (user) => {
     setSelectedUser(user);
     const initialPerms = {};
+    const hasConfiguredPerms = user.permissions && Object.keys(user.permissions).length > 0;
+
     PERMISSIONS_LIST.forEach(p => {
-      initialPerms[p.key] = user.permissions?.[p.key] === true;
+      if (user.role === "owner") {
+        initialPerms[p.key] = true;
+      } else if (user.role === "admin" && !hasConfiguredPerms) {
+        // Retrocompatibility: existing admins default to true
+        initialPerms[p.key] = true;
+      } else {
+        initialPerms[p.key] = user.permissions?.[p.key] === true;
+      }
     });
     setPermissionsForm(initialPerms);
     setPermissionsModalOpen(true);
@@ -114,9 +123,16 @@ export default function AdminUsers() {
   const handleCreateUser = async (e) => {
     e.preventDefault();
     if (!createForm.email || !createForm.password || !createForm.fullName || !createForm.role) {
-      toast.toast.error("Por favor completa todos los campos.");
+      toast.error("Por favor completa todos los campos.");
       return;
     }
+
+    // Explicitly define all permissions as true or false to prevent legacy fallback on backend
+    const finalPermissions = {};
+    PERMISSIONS_LIST.forEach(p => {
+      finalPermissions[p.key] = createForm.permissions[p.key] === true;
+    });
+
     try {
       setSubmitting(true);
       const res = await api.post("/admin/users", {
@@ -124,7 +140,7 @@ export default function AdminUsers() {
         password: createForm.password,
         full_name: createForm.fullName,
         role: createForm.role,
-        permissions: createForm.permissions,
+        permissions: finalPermissions,
       });
       if (res.data?.success) {
         toast.success("Usuario creado exitosamente.");
