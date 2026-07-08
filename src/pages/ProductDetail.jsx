@@ -133,6 +133,98 @@ export default function ProductDetail() {
   // The variation to actually use for cart operations
   const effectiveVariation = selectedVariation || defaultVariation;
 
+  const priceDetails = useMemo(() => {
+    if (!product) return null;
+
+    const discount = product.active_discount;
+
+    // Helper to calculate final price for a given original price
+    const getFinalPrice = (origPrice) => {
+      if (!discount) return origPrice;
+      let discountAmount = 0;
+      if (discount.discount_type === "percentage") {
+        discountAmount = (origPrice * discount.discount_value) / 100;
+      } else {
+        discountAmount = Math.min(discount.discount_value, origPrice);
+      }
+      return Math.max(0, Math.round((origPrice - discountAmount) * 100) / 100);
+    };
+
+    if (hasVariations) {
+      if (selectedVariation) {
+        // A specific variation is selected
+        const originalPrice = Number(product.price) + Number(selectedVariation.price_modifier || 0);
+        const finalPrice = getFinalPrice(originalPrice);
+        
+        let compareAtPrice = null;
+        if (product.compare_at_price && Number(product.compare_at_price) > 0) {
+          compareAtPrice = Number(product.compare_at_price) + Number(selectedVariation.price_modifier || 0);
+        }
+
+        return {
+          isRange: false,
+          originalPrice,
+          finalPrice,
+          compareAtPrice,
+          discount
+        };
+      } else {
+        // No variation selected yet: calculate ranges
+        const prices = validVariations.map((v) => {
+          const orig = Number(product.price) + Number(v.price_modifier || 0);
+          const final = getFinalPrice(orig);
+          let comp = null;
+          if (product.compare_at_price && Number(product.compare_at_price) > 0) {
+            comp = Number(product.compare_at_price) + Number(v.price_modifier || 0);
+          }
+          return { orig, final, comp };
+        });
+
+        const finalPrices = prices.map((p) => p.final);
+        const origPrices = prices.map((p) => p.orig);
+        const compPrices = prices.map((p) => p.comp).filter((c) => c !== null);
+
+        const minFinal = Math.min(...finalPrices);
+        const maxFinal = Math.max(...finalPrices);
+        const minOrig = Math.min(...origPrices);
+        const maxOrig = Math.max(...origPrices);
+        
+        let minComp = compPrices.length > 0 ? Math.min(...compPrices) : null;
+        let maxComp = compPrices.length > 0 ? Math.max(...compPrices) : null;
+
+        const isRange = minFinal !== maxFinal;
+
+        return {
+          isRange,
+          minFinal,
+          maxFinal,
+          minOrig,
+          maxOrig,
+          minComp,
+          maxComp,
+          originalPrice: minOrig,
+          finalPrice: minFinal,
+          compareAtPrice: minComp,
+          discount
+        };
+      }
+    } else {
+      // No variations
+      const originalPrice = Number(product.price);
+      const finalPrice = discount ? Number(discount.final_price) : originalPrice;
+      const compareAtPrice = product.compare_at_price ? Number(product.compare_at_price) : null;
+
+      return {
+        isRange: false,
+        originalPrice,
+        finalPrice,
+        compareAtPrice,
+        discount
+      };
+    }
+  }, [product, hasVariations, selectedVariation, validVariations]);
+
+
   const currentStock = hasVariations
     ? selectedVariation
       ? selectedVariation.stock
@@ -146,10 +238,32 @@ export default function ProductDetail() {
   const effectiveStock = isInactive ? 0 : (product?.stock_status === "Sin stock" ? 0 : currentStock);
   const isOwnProduct = user?.id === product?.store_id;
 
-  // DEDUP FIX: Check cart by product_id to catch items regardless of variation_id format
-  const totalCartQtyForProduct = cartItems
-    .filter(ci => ci.product_id === product?.id)
-    .reduce((sum, ci) => sum + Number(ci.quantity), 0);
+  const hasRealVariations = useMemo(() => {
+    const variations = product?.product_variations || product?.variations || [];
+    return variations.filter((v) => {
+      const isLegacyDefault =
+        v.attribute_name === "default" ||
+        v.attribute_value === '{"_default":"default"}' ||
+        v.attribute_value === "default";
+      return !isLegacyDefault;
+    }).length > 0;
+  }, [product]);
+
+  // Check cart quantity: count only the selected variation if product has real variations
+  const totalCartQtyForProduct = useMemo(() => {
+    if (!product) return 0;
+    if (hasRealVariations) {
+      if (!selectedVariation) return 0;
+      return cartItems
+        .filter(ci => ci.product_id === product.id && ci.variation_id === selectedVariation.id)
+        .reduce((sum, ci) => sum + Number(ci.quantity), 0);
+    } else {
+      return cartItems
+        .filter(ci => ci.product_id === product.id)
+        .reduce((sum, ci) => sum + Number(ci.quantity), 0);
+    }
+  }, [cartItems, product, hasRealVariations, selectedVariation]);
+
   const isCartAtMax = effectiveStock > 0 && totalCartQtyForProduct >= effectiveStock;
   const remainingStock = Math.max(0, effectiveStock - totalCartQtyForProduct);
 
@@ -289,33 +403,53 @@ export default function ProductDetail() {
             )}
             
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-4">
-              {product.active_discount ? (
+              {priceDetails?.isRange ? (
                 <>
-                  <PriceDisplay amountUSD={product.active_discount.final_price} priceClassName="text-[28px] font-bold text-[#2563eb]" hideSwitcher={true} />
-                  <span className="text-lg text-gray-300 line-through decoration-gray-300 font-medium ml-1">
-                    ${Number(product.active_discount.original_price).toFixed(2)}
-                  </span>
-                  <span className="px-2.5 py-1 text-[11px] font-black uppercase tracking-wide bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-lg flex items-center gap-1">
-                    <span className="material-symbols-outlined" style={{ fontSize: "13px" }}>local_offer</span>
-                    {product.active_discount.discount_type === "percentage"
-                      ? `-${product.active_discount.discount_value}%`
-                      : `-$${product.active_discount.discount_value}`}
-                  </span>
-                  {product.active_discount.ends_at && (
-                    <span className="text-[10px] font-bold text-red-500 uppercase tracking-wide flex items-center gap-0.5 ml-1">
-                      <span className="material-symbols-outlined" style={{ fontSize: "12px" }}>timer</span>
-                      Oferta limitada
+                  <PriceDisplay amountUSD={priceDetails.minFinal} priceClassName="text-[28px] font-bold text-[#2563eb]" hideSwitcher={true} />
+                  <span className="text-[28px] font-bold text-[#2563eb]">-</span>
+                  <PriceDisplay amountUSD={priceDetails.maxFinal} priceClassName="text-[28px] font-bold text-[#2563eb]" hideSwitcher={true} />
+
+                  {priceDetails.discount && (
+                    <>
+                      <span className="text-lg text-gray-300 line-through decoration-gray-300 font-medium ml-1">
+                        ${priceDetails.minOrig.toFixed(2)} - ${priceDetails.maxOrig.toFixed(2)}
+                      </span>
+                      <span className="px-2.5 py-1 text-[11px] font-black uppercase tracking-wide bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-lg flex items-center gap-1">
+                        <span className="material-symbols-outlined" style={{ fontSize: "13px" }}>local_offer</span>
+                        {priceDetails.discount.discount_type === "percentage"
+                          ? `-${priceDetails.discount.discount_value}%`
+                          : `-$${priceDetails.discount.discount_value}`}
+                      </span>
+                    </>
+                  )}
+                  {!priceDetails.discount && priceDetails.minComp && priceDetails.minComp > priceDetails.minFinal && (
+                    <span className="text-lg text-gray-300 line-through decoration-gray-300 font-medium ml-1">
+                      ${priceDetails.minComp.toFixed(2)} - ${priceDetails.maxComp.toFixed(2)}
                     </span>
                   )}
                 </>
               ) : (
                 <>
-                  <PriceDisplay amountUSD={product.price} priceClassName="text-[28px] font-bold text-[#2563eb]" hideSwitcher={true} />
-              
-                  {Number(product.compare_at_price) > Number(product.price) && (
-                    <span className="text-lg text-gray-300 line-through decoration-gray-300 font-medium ml-1">
-                      ${Number(product.compare_at_price).toFixed(2)}
-                    </span>
+                  <PriceDisplay amountUSD={priceDetails?.finalPrice} priceClassName="text-[28px] font-bold text-[#2563eb]" hideSwitcher={true} />
+
+                  {priceDetails?.discount ? (
+                    <>
+                      <span className="text-lg text-gray-300 line-through decoration-gray-300 font-medium ml-1">
+                        ${priceDetails.originalPrice.toFixed(2)}
+                      </span>
+                      <span className="px-2.5 py-1 text-[11px] font-black uppercase tracking-wide bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-lg flex items-center gap-1">
+                        <span className="material-symbols-outlined" style={{ fontSize: "13px" }}>local_offer</span>
+                        {priceDetails.discount.discount_type === "percentage"
+                          ? `-${priceDetails.discount.discount_value}%`
+                          : `-$${priceDetails.discount.discount_value}`}
+                      </span>
+                    </>
+                  ) : (
+                    priceDetails?.compareAtPrice && priceDetails.compareAtPrice > priceDetails.finalPrice && (
+                      <span className="text-lg text-gray-300 line-through decoration-gray-300 font-medium ml-1">
+                        ${priceDetails.compareAtPrice.toFixed(2)}
+                      </span>
+                    )
                   )}
                 </>
               )}

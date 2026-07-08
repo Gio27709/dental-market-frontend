@@ -8,7 +8,7 @@
 
 html, body {
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -84,4 +84,20 @@ body {
   scroll-snap-type: none !important;
   scroll-behavior: auto !important;
 }
+
+/* Custom Scrollbars for Light Modals/Panels */
+.admin-scrollbar-light::-webkit-scrollbar {
+  width: 6px;
+}
+.admin-scrollbar-light::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-scrollbar-light::-webkit-scrollbar-thumb {
+  background-color: rgba(107, 30, 150, 0.2);
+  border-radius: 10px;
+}
+.admin-scrollbar-light::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(107, 30, 150, 0.4);
+}
+
 

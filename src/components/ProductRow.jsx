@@ -25,25 +25,117 @@ export default function ProductRow({ product }) {
   const isTrending = useMemo(() => trendingProductIds?.has(product.id) || false, [trendingProductIds, product.id]);
 
   const discount = product.active_discount;
-  const finalPrice = discount ? discount.final_price : (product.price || 0);
-  const originalPrice = discount ? discount.original_price : null;
 
-  const vesEquiv = useMemo(() => finalPrice * Number(bcvRate || 1), [finalPrice, bcvRate]);
-  const originalVesEquiv = useMemo(() => originalPrice ? originalPrice * Number(bcvRate || 1) : 0, [originalPrice, bcvRate]);
+  const cardPriceDetails = useMemo(() => {
+    const variations = product?.product_variations || product?.variations || [];
+    const validVars = variations.filter((v) => {
+      const isLegacyDefault =
+        v.attribute_name === "default" ||
+        v.attribute_value === '{"_default":"default"}' ||
+        v.attribute_value === "default";
+      return !isLegacyDefault;
+    });
+
+    const getFinalPrice = (origPrice) => {
+      if (!discount) return origPrice;
+      let discountAmount = 0;
+      if (discount.discount_type === "percentage") {
+        discountAmount = (origPrice * discount.discount_value) / 100;
+      } else {
+        discountAmount = Math.min(discount.discount_value, origPrice);
+      }
+      return Math.max(0, Math.round((origPrice - discountAmount) * 100) / 100);
+    };
+
+    if (validVars.length > 0) {
+      const prices = validVars.map((v) => {
+        const orig = Number(product.price) + Number(v.price_modifier || 0);
+        const final = getFinalPrice(orig);
+        return { orig, final };
+      });
+
+      const finalPrices = prices.map((p) => p.final);
+      const origPrices = prices.map((p) => p.orig);
+
+      const minFinal = Math.min(...finalPrices);
+      const maxFinal = Math.max(...finalPrices);
+      const minOrig = Math.min(...origPrices);
+      const maxOrig = Math.max(...origPrices);
+
+      const isRange = minFinal !== maxFinal;
+
+      return {
+        isRange,
+        minFinal,
+        maxFinal,
+        minOrig,
+        maxOrig,
+        discount
+      };
+    } else {
+      const originalPrice = Number(product.price);
+      const finalPrice = discount ? Number(discount.final_price) : originalPrice;
+
+      return {
+        isRange: false,
+        originalPrice,
+        finalPrice,
+        discount
+      };
+    }
+  }, [product, discount]);
+
+  const isRange = cardPriceDetails.isRange;
 
   // Format prices
   const formattedPrice = useMemo(() => {
-    return isVES ? formatCurrencyVES(vesEquiv) : formatCurrencyUSD(finalPrice);
-  }, [isVES, vesEquiv, finalPrice]);
+    if (isRange) {
+      const minUSD = cardPriceDetails.minFinal;
+      const maxUSD = cardPriceDetails.maxFinal;
+      const minVES = minUSD * Number(bcvRate || 1);
+      const maxVES = maxUSD * Number(bcvRate || 1);
+      return isVES
+        ? `${formatCurrencyVES(minVES)} - ${formatCurrencyVES(maxVES)}`
+        : `${formatCurrencyUSD(minUSD)} - ${formatCurrencyUSD(maxUSD)}`;
+    } else {
+      const finalPrice = discount ? Number(discount.final_price) : (Number(product.price) || 0);
+      const vesEquiv = finalPrice * Number(bcvRate || 1);
+      return isVES ? formatCurrencyVES(vesEquiv) : formatCurrencyUSD(finalPrice);
+    }
+  }, [isVES, isRange, cardPriceDetails, bcvRate, discount, product.price]);
 
   const formattedEquivPrice = useMemo(() => {
-    return isVES ? `≈ ${formatCurrencyUSD(finalPrice)}` : `≈ ${formatCurrencyVES(vesEquiv)}`;
-  }, [isVES, vesEquiv, finalPrice]);
+    if (isRange) {
+      const minUSD = cardPriceDetails.minFinal;
+      const maxUSD = cardPriceDetails.maxFinal;
+      const minVES = minUSD * Number(bcvRate || 1);
+      const maxVES = maxUSD * Number(bcvRate || 1);
+      return isVES
+        ? `≈ ${formatCurrencyUSD(minUSD)} - ${formatCurrencyUSD(maxUSD)}`
+        : `≈ ${formatCurrencyVES(minVES)} - ${formatCurrencyVES(maxVES)}`;
+    } else {
+      const finalPrice = discount ? Number(discount.final_price) : (Number(product.price) || 0);
+      const vesEquiv = finalPrice * Number(bcvRate || 1);
+      return isVES ? `≈ ${formatCurrencyUSD(finalPrice)}` : `≈ ${formatCurrencyVES(vesEquiv)}`;
+    }
+  }, [isVES, isRange, cardPriceDetails, bcvRate, discount, product.price]);
 
   const formattedOriginalPrice = useMemo(() => {
-    if (!originalPrice) return "";
-    return isVES ? formatCurrencyVES(originalVesEquiv) : formatCurrencyUSD(originalPrice);
-  }, [isVES, originalVesEquiv, originalPrice]);
+    if (isRange) {
+      const minUSD = cardPriceDetails.minOrig;
+      const maxUSD = cardPriceDetails.maxOrig;
+      const minVES = minUSD * Number(bcvRate || 1);
+      const maxVES = maxUSD * Number(bcvRate || 1);
+      return isVES
+        ? `${formatCurrencyVES(minVES)} - ${formatCurrencyVES(maxVES)}`
+        : `${formatCurrencyUSD(minUSD)} - ${formatCurrencyUSD(maxUSD)}`;
+    } else {
+      const originalPrice = discount ? Number(discount.original_price) : null;
+      if (!originalPrice) return "";
+      const originalVesEquiv = originalPrice * Number(bcvRate || 1);
+      return isVES ? formatCurrencyVES(originalVesEquiv) : formatCurrencyUSD(originalPrice);
+    }
+  }, [isVES, isRange, cardPriceDetails, bcvRate, discount]);
 
 
 
@@ -75,14 +167,34 @@ export default function ProductRow({ product }) {
     return 99;
   }, [allProducts, product]);
 
+  const hasRealVariations = useMemo(() => {
+    const variations = product?.product_variations || product?.variations || [];
+    return variations.filter((v) => {
+      const isLegacyDefault =
+        v.attribute_name === "default" ||
+        v.attribute_value === '{"_default":"default"}' ||
+        v.attribute_value === "default";
+      return !isLegacyDefault;
+    }).length > 0;
+  }, [product]);
+
+  const targetVariation = product?.variations?.[0] || null;
+
   // Determine cart max
   const isCartAtMax = useMemo(() => {
     if (maxStock <= 0) return true;
-    const totalCartQtyForProduct = cartItems
-      .filter((ci) => ci.product_id === product.id)
-      .reduce((sum, ci) => sum + Number(ci.quantity), 0);
-    return totalCartQtyForProduct >= maxStock;
-  }, [cartItems, product.id, maxStock]);
+    let totalQty = 0;
+    if (hasRealVariations && targetVariation) {
+      totalQty = cartItems
+        .filter((ci) => ci.product_id === product.id && ci.variation_id === targetVariation.id)
+        .reduce((sum, ci) => sum + Number(ci.quantity), 0);
+    } else {
+      totalQty = cartItems
+        .filter((ci) => ci.product_id === product.id)
+        .reduce((sum, ci) => sum + Number(ci.quantity), 0);
+    }
+    return totalQty >= maxStock;
+  }, [cartItems, product.id, maxStock, hasRealVariations, targetVariation]);
 
   // Clean description
   const cleanDescription = useMemo(() => {

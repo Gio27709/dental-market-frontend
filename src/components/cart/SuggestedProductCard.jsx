@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
@@ -21,8 +21,68 @@ export default function SuggestedProductCard({ product, variant = "standard" }) 
   const isOwnProduct = user?.id === product.store_id;
   
   const discount = product.active_discount;
-  const price = discount ? Number(discount.final_price) : (Number(product.price) || 0);
-  const originalPrice = discount ? Number(discount.original_price) : null;
+
+  const cardPriceDetails = useMemo(() => {
+    const variations = product?.product_variations || product?.variations || [];
+    const validVars = variations.filter((v) => {
+      const isLegacyDefault =
+        v.attribute_name === "default" ||
+        v.attribute_value === '{"_default":"default"}' ||
+        v.attribute_value === "default";
+      return !isLegacyDefault;
+    });
+
+    const getFinalPrice = (origPrice) => {
+      if (!discount) return origPrice;
+      let discountAmount = 0;
+      if (discount.discount_type === "percentage") {
+        discountAmount = (origPrice * discount.discount_value) / 100;
+      } else {
+        discountAmount = Math.min(discount.discount_value, origPrice);
+      }
+      return Math.max(0, Math.round((origPrice - discountAmount) * 100) / 100);
+    };
+
+    if (validVars.length > 0) {
+      const prices = validVars.map((v) => {
+        const orig = Number(product.price) + Number(v.price_modifier || 0);
+        const final = getFinalPrice(orig);
+        return { orig, final };
+      });
+
+      const finalPrices = prices.map((p) => p.final);
+      const origPrices = prices.map((p) => p.orig);
+
+      const minFinal = Math.min(...finalPrices);
+      const maxFinal = Math.max(...finalPrices);
+      const minOrig = Math.min(...origPrices);
+      const maxOrig = Math.max(...origPrices);
+
+      const isRange = minFinal !== maxFinal;
+
+      return {
+        isRange,
+        minFinal,
+        maxFinal,
+        minOrig,
+        maxOrig
+      };
+    } else {
+      const originalPrice = Number(product.price);
+      const finalPrice = discount ? Number(discount.final_price) : originalPrice;
+
+      return {
+        isRange: false,
+        originalPrice,
+        finalPrice
+      };
+    }
+  }, [product, discount]);
+
+  const isRange = cardPriceDetails.isRange;
+  const price = isRange ? cardPriceDetails.minFinal : (discount ? Number(discount.final_price) : (Number(product.price) || 0));
+  const originalPrice = isRange ? cardPriceDetails.minOrig : (discount ? Number(discount.original_price) : null);
+
   const discountBadgeText = discount 
     ? (discount.discount_type === "percentage" ? `-${discount.discount_value}%` : `-$${discount.discount_value}`)
     : null;
@@ -50,11 +110,34 @@ export default function SuggestedProductCard({ product, variant = "standard" }) 
   };
 
   const maxStock = resolveProductMaxStock();
-  // DEDUP FIX: Search cart by product_id to catch items regardless of variation_id format
-  const totalCartQtyForProduct = cartItems
-    .filter(ci => ci.product_id === product.id)
-    .reduce((sum, ci) => sum + Number(ci.quantity), 0);
-  const isCartAtMax = maxStock > 0 && totalCartQtyForProduct >= maxStock;
+
+  const hasRealVariations = useMemo(() => {
+    const variations = product?.product_variations || product?.variations || [];
+    return variations.filter((v) => {
+      const isLegacyDefault =
+        v.attribute_name === "default" ||
+        v.attribute_value === '{"_default":"default"}' ||
+        v.attribute_value === "default";
+      return !isLegacyDefault;
+    }).length > 0;
+  }, [product]);
+
+  const targetVariation = product?.variations?.[0] || null;
+
+  const totalCartQtyForTarget = useMemo(() => {
+    if (!product) return 0;
+    if (hasRealVariations && targetVariation) {
+      return cartItems
+        .filter(ci => ci.product_id === product.id && ci.variation_id === targetVariation.id)
+        .reduce((sum, ci) => sum + Number(ci.quantity), 0);
+    } else {
+      return cartItems
+        .filter(ci => ci.product_id === product.id)
+        .reduce((sum, ci) => sum + Number(ci.quantity), 0);
+    }
+  }, [cartItems, product, hasRealVariations, targetVariation]);
+
+  const isCartAtMax = maxStock > 0 && totalCartQtyForTarget >= maxStock;
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -103,17 +186,27 @@ export default function SuggestedProductCard({ product, variant = "standard" }) 
           </Link>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="text-sm font-bold text-[#6b1e96]">
-              {formatCurrencyUSD(price)}
+              {isRange 
+                ? `${formatCurrencyUSD(cardPriceDetails.minFinal)} - ${formatCurrencyUSD(cardPriceDetails.maxFinal)}` 
+                : formatCurrencyUSD(price)}
             </span>
-            {originalPrice > 0 && (
-              <>
+            {isRange ? (
+              cardPriceDetails.minOrig !== cardPriceDetails.minFinal && (
                 <span className="text-[10px] text-gray-400 line-through">
-                  {formatCurrencyUSD(originalPrice)}
+                  {formatCurrencyUSD(cardPriceDetails.minOrig)} - {formatCurrencyUSD(cardPriceDetails.maxOrig)}
                 </span>
-                <span className="text-[9px] font-bold text-red-500">
-                  ({discountBadgeText})
-                </span>
-              </>
+              )
+            ) : (
+              originalPrice > 0 && (
+                <>
+                  <span className="text-[10px] text-gray-400 line-through">
+                    {formatCurrencyUSD(originalPrice)}
+                  </span>
+                  <span className="text-[9px] font-bold text-red-500">
+                    ({discountBadgeText})
+                  </span>
+                </>
+              )
             )}
           </div>
         </div>
@@ -195,12 +288,22 @@ export default function SuggestedProductCard({ product, variant = "standard" }) 
         {/* Price */}
         <div className="flex items-baseline gap-2 mb-3">
           <span className="text-lg font-bold text-[#6b1e96]">
-            {formatCurrencyUSD(price)}
+            {isRange 
+              ? `${formatCurrencyUSD(cardPriceDetails.minFinal)} - ${formatCurrencyUSD(cardPriceDetails.maxFinal)}` 
+              : formatCurrencyUSD(price)}
           </span>
-          {originalPrice > 0 && (
-            <span className="text-xs text-gray-400 line-through font-medium">
-              {formatCurrencyUSD(originalPrice)}
-            </span>
+          {isRange ? (
+            cardPriceDetails.minOrig !== cardPriceDetails.minFinal && (
+              <span className="text-xs text-gray-400 line-through font-medium">
+                {formatCurrencyUSD(cardPriceDetails.minOrig)} - {formatCurrencyUSD(cardPriceDetails.maxOrig)}
+              </span>
+            )
+          ) : (
+            originalPrice > 0 && (
+              <span className="text-xs text-gray-400 line-through font-medium">
+                {formatCurrencyUSD(originalPrice)}
+              </span>
+            )
           )}
         </div>
 

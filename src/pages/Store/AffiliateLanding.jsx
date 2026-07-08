@@ -167,7 +167,7 @@ export default function AffiliateLanding() {
           <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#6b1e96] rounded-full blur-[100px]" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left: Text */}
             <div className="text-white space-y-6">
@@ -200,10 +200,10 @@ export default function AffiliateLanding() {
             </div>
 
             {/* Right: Registration Form */}
-            <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-8 md:p-10 border border-gray-100 relative">
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-6 md:p-8 border border-gray-100 relative">
               
               {/* Type Toggle */}
-              <div className="flex bg-gray-100 p-1 rounded-xl mb-8">
+              <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
                 <button
                   onClick={() => setType("store")}
                   className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
@@ -272,6 +272,24 @@ export default function AffiliateLanding() {
                     Ir a tu Panel
                   </button>
                 </div>
+              ) : (user?.role === "store" && type === "rider") || (user?.role === "delivery" && type === "store") ? (
+                <div className="text-center py-6 animate-in fade-in duration-300">
+                  <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span className="material-symbols-outlined text-[32px] text-amber-600">warning</span>
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-3">Rol Incompatible</h2>
+                  <p className="text-gray-500 mb-6 max-w-sm mx-auto text-sm leading-relaxed">
+                    {user?.role === "store" 
+                      ? "Ya estás registrado como Tienda. Tu cuenta actual no permite postularte como repartidor."
+                      : "Ya estás registrado como Repartidor. Tu cuenta actual no permite registrar una tienda."}
+                  </p>
+                  <p className="text-gray-400 text-xs mb-6 max-w-xs mx-auto">
+                    Si deseas postularte con el otro rol, debes cerrar sesión y registrar una cuenta nueva con un correo electrónico diferente.
+                  </p>
+                  <button onClick={() => navigate(user?.role === "store" ? "/store" : "/delivery")} className="bg-[#6b1e96] hover:bg-[#531575] text-white px-6 py-2.5 rounded-xl font-medium transition-colors shadow-sm text-sm">
+                    Ir a mi Panel de {user?.role === "store" ? "Tienda" : "Repartidor"}
+                  </button>
+                </div>
               ) : applicationStatus === "rejected" ? (
                 <div className="text-center py-6">
                   <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -338,13 +356,13 @@ export default function AffiliateLanding() {
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
                     {type === "store" ? "Registro de Tienda" : "Registro de Repartidor"}
                   </h2>
-                  <p className="text-gray-500 text-sm mb-8">
+                  <p className="text-gray-500 text-sm mb-5">
                     {type === "store" 
                       ? "Complete los datos de su institución para acceder a beneficios preferenciales."
                       : "Completa tus datos para formar parte de la red de logística más confiable."}
                   </p>
 
-                  <form onSubmit={handleSubmit} className="space-y-5 animate-in fade-in duration-300">
+                  <form onSubmit={handleSubmit} className="space-y-4 animate-in fade-in duration-300">
                     
                     {type === "store" ? (
                       <>

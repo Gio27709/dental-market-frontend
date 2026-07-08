@@ -248,11 +248,20 @@ export const CartProvider = ({ children }) => {
         return false;
       }
 
-      // Pre-check: does adding this exceed stock?
+       // Pre-check: does adding this exceed stock?
       // DEDUP FIX: Search by product_id to catch items with different variation_id formats
       // (e.g., StoreCatalog sends null → "default", ProductDetail sends real UUID)
+      const variations = product?.product_variations || product?.variations || [];
+      const hasRealVariations = variations.filter((v) => {
+        const isLegacyDefault =
+          v.attribute_name === "default" ||
+          v.attribute_value === '{"_default":"default"}' ||
+          v.attribute_value === "default";
+        return !isLegacyDefault;
+      }).length > 0;
+
       const existingByFrontendId = items.find((item) => item.id === frontendId);
-      const existingByProductId = !existingByFrontendId
+      const existingByProductId = (!existingByFrontendId && !hasRealVariations)
         ? items.find((item) => item.product_id === product.id)
         : null;
       const existingItem = existingByFrontendId || existingByProductId;

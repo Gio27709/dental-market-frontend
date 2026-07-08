@@ -45,7 +45,7 @@ export const ORDER_STATUS = {
   delivered: { label: "Entregado", color: "emerald" },
   cancelled: { label: "Cancelado", color: "red" },
   rejected: { label: "Rechazado", color: "red" },
-  failed: { label: "Cancelado", color: "red" },
+  failed: { label: "Entrega Fallida", color: "red" },
   expired: { label: "Plazo Vencido", color: "red" },
   returned: { label: "Devuelto", color: "yellow" },
 };

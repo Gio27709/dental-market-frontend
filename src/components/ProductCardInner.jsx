@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
-import { useState, memo } from "react";
+import { useState, memo, useMemo } from "react";
 import ComparePricesModal from "./products/ComparePricesModal";
 import PriceDisplay from "./products/PriceDisplay";
 import { useCurrency } from "../context/CurrencyContext";
@@ -24,6 +24,65 @@ const ProductCardInner = memo(function ProductCardInner({
   const { bcvRate } = useProducts();
 
   const discount = product.active_discount;
+
+  const cardPriceDetails = useMemo(() => {
+    const variations = product?.product_variations || product?.variations || [];
+    const validVars = variations.filter((v) => {
+      const isLegacyDefault =
+        v.attribute_name === "default" ||
+        v.attribute_value === '{"_default":"default"}' ||
+        v.attribute_value === "default";
+      return !isLegacyDefault;
+    });
+
+    const getFinalPrice = (origPrice) => {
+      if (!discount) return origPrice;
+      let discountAmount = 0;
+      if (discount.discount_type === "percentage") {
+        discountAmount = (origPrice * discount.discount_value) / 100;
+      } else {
+        discountAmount = Math.min(discount.discount_value, origPrice);
+      }
+      return Math.max(0, Math.round((origPrice - discountAmount) * 100) / 100);
+    };
+
+    if (validVars.length > 0) {
+      const prices = validVars.map((v) => {
+        const orig = Number(product.price) + Number(v.price_modifier || 0);
+        const final = getFinalPrice(orig);
+        return { orig, final };
+      });
+
+      const finalPrices = prices.map((p) => p.final);
+      const origPrices = prices.map((p) => p.orig);
+
+      const minFinal = Math.min(...finalPrices);
+      const maxFinal = Math.max(...finalPrices);
+      const minOrig = Math.min(...origPrices);
+      const maxOrig = Math.max(...origPrices);
+
+      const isRange = minFinal !== maxFinal;
+
+      return {
+        isRange,
+        minFinal,
+        maxFinal,
+        minOrig,
+        maxOrig,
+        discount
+      };
+    } else {
+      const originalPrice = Number(product.price);
+      const finalPrice = discount ? Number(discount.final_price) : originalPrice;
+
+      return {
+        isRange: false,
+        originalPrice,
+        finalPrice,
+        discount
+      };
+    }
+  }, [product, discount]);
 
   const storeName =
     product.store?.business_name ||
@@ -202,16 +261,28 @@ const ProductCardInner = memo(function ProductCardInner({
           <div className="min-h-[48px] mb-3 flex flex-col justify-center">
             {discount ? (
               <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-lg font-black text-[#6b1e96]">
-                    {isVES
-                      ? formatCurrencyVES(discount.final_price * (Number(bcvRate) || 1))
-                      : formatCurrencyUSD(discount.final_price)}
+                    {cardPriceDetails.isRange ? (
+                      isVES
+                        ? `${formatCurrencyVES(cardPriceDetails.minFinal * (Number(bcvRate) || 1))} - ${formatCurrencyVES(cardPriceDetails.maxFinal * (Number(bcvRate) || 1))}`
+                        : `${formatCurrencyUSD(cardPriceDetails.minFinal)} - ${formatCurrencyUSD(cardPriceDetails.maxFinal)}`
+                    ) : (
+                      isVES
+                        ? formatCurrencyVES(Number(discount.final_price) * (Number(bcvRate) || 1))
+                        : formatCurrencyUSD(Number(discount.final_price))
+                    )}
                   </span>
                   <span className="text-xs text-slate-400 line-through font-medium">
-                    {isVES
-                      ? formatCurrencyVES(discount.original_price * (Number(bcvRate) || 1))
-                      : formatCurrencyUSD(discount.original_price)}
+                    {cardPriceDetails.isRange ? (
+                      isVES
+                        ? `${formatCurrencyVES(cardPriceDetails.minOrig * (Number(bcvRate) || 1))} - ${formatCurrencyVES(cardPriceDetails.maxOrig * (Number(bcvRate) || 1))}`
+                        : `${formatCurrencyUSD(cardPriceDetails.minOrig)} - ${formatCurrencyUSD(cardPriceDetails.maxOrig)}`
+                    ) : (
+                      isVES
+                        ? formatCurrencyVES(Number(discount.original_price) * (Number(bcvRate) || 1))
+                        : formatCurrencyUSD(Number(discount.original_price))
+                    )}
                   </span>
                 </div>
                 {discount.ends_at && (
@@ -220,6 +291,14 @@ const ProductCardInner = memo(function ProductCardInner({
                     Oferta limitada
                   </span>
                 )}
+              </div>
+            ) : cardPriceDetails.isRange ? (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-lg font-bold text-[#6b1e96]">
+                  {isVES
+                    ? `${formatCurrencyVES(cardPriceDetails.minFinal * (Number(bcvRate) || 1))} - ${formatCurrencyVES(cardPriceDetails.maxFinal * (Number(bcvRate) || 1))}`
+                    : `${formatCurrencyUSD(cardPriceDetails.minFinal)} - ${formatCurrencyUSD(cardPriceDetails.maxFinal)}`}
+                </span>
               </div>
             ) : (
               <PriceDisplay amountUSD={product.price} priceClassName="text-lg font-bold text-[#6b1e96]" />
