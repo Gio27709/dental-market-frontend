@@ -3,6 +3,16 @@ import api from "../../services/api";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 
+const PERMISSIONS_LIST = [
+  { key: "manage_users", label: "Gestión de Usuarios", desc: "Crear cuentas, asignar roles y modificar permisos de usuarios." },
+  { key: "manage_products", label: "Moderar Productos", desc: "Aprobar, rechazar y moderar productos de tiendas." },
+  { key: "manage_orders", label: "Gestión de Pedidos", desc: "Monitorear, reembolsar y actualizar envíos globales." },
+  { key: "manage_payouts", label: "Gestión de Retiros", desc: "Aprobar y transferir retiros solicitados por tiendas." },
+  { key: "manage_support", label: "Tickets de Soporte", desc: "Responder y resolver solicitudes de ayuda y reclamos." },
+  { key: "manage_settings", label: "Ajustes del Sistema", desc: "Modificar variables y configuraciones de la plataforma." },
+  { key: "manage_content", label: "Gestión de Contenido", desc: "Administrar cursos, blog, categorías y marcas de productos." },
+];
+
 const PAGE_OPTIONS = [10, 25, 50];
 
 const ROLE_OPTIONS = [
@@ -58,6 +68,89 @@ export default function AdminUsers() {
   const [roleFilter, setRoleFilter] = useState("");
   const [perPage, setPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Modals state
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  // Forms state
+  const [createForm, setCreateForm] = useState({ email: "", password: "", fullName: "", role: "user", permissions: {} });
+  const [permissionsForm, setPermissionsForm] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleOpenPermissionsModal = (user) => {
+    setSelectedUser(user);
+    const initialPerms = {};
+    PERMISSIONS_LIST.forEach(p => {
+      initialPerms[p.key] = user.permissions?.[p.key] === true;
+    });
+    setPermissionsForm(initialPerms);
+    setPermissionsModalOpen(true);
+  };
+
+  const handlePermissionToggle = (key) => {
+    setPermissionsForm(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleUpdatePermissions = async () => {
+    if (!selectedUser) return;
+    try {
+      setSubmitting(true);
+      const res = await api.put(`/admin/users/${selectedUser.id}/permissions`, { permissions: permissionsForm });
+      if (res.data?.success) {
+        toast.success("Permisos actualizados exitosamente.");
+        setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, permissions: permissionsForm } : u));
+        setPermissionsModalOpen(false);
+      }
+    } catch (error) {
+      console.error("Error updating permissions:", error);
+      toast.error(error.response?.data?.error || "Error al actualizar los permisos.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    if (!createForm.email || !createForm.password || !createForm.fullName || !createForm.role) {
+      toast.toast.error("Por favor completa todos los campos.");
+      return;
+    }
+    try {
+      setSubmitting(true);
+      const res = await api.post("/admin/users", {
+        email: createForm.email,
+        password: createForm.password,
+        full_name: createForm.fullName,
+        role: createForm.role,
+        permissions: createForm.permissions,
+      });
+      if (res.data?.success) {
+        toast.success("Usuario creado exitosamente.");
+        // Reload users list
+        fetchUsers({ page: currentPage, limit: perPage, search: searchTerm, role: roleFilter });
+        // Reset form and close modal
+        setCreateForm({ email: "", password: "", fullName: "", role: "user", permissions: {} });
+        setCreateModalOpen(false);
+      }
+    } catch (error) {
+      console.error("Error creating user:", error);
+      toast.error(error.response?.data?.error || "Error al crear la cuenta.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCreatePermissionToggle = (key) => {
+    setCreateForm(prev => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions,
+        [key]: !prev.permissions[key]
+      }
+    }));
+  };
 
   const fetchUsers = useCallback(async (params = {}) => {
     try {
@@ -158,6 +251,31 @@ export default function AdminUsers() {
         </div>
 
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+          {/* CREATE ACCOUNT BUTTON */}
+          <button
+            onClick={() => setCreateModalOpen(true)}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "8px",
+              background: "linear-gradient(135deg, #531575 0%, #6b1e96 100%)",
+              border: "none",
+              color: "#c3ff00",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              boxShadow: "0 4px 6px rgba(107,30,150,0.2)",
+              transition: "all 0.2s"
+            }}
+          >
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0zM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+            </svg>
+            Crear Cuenta
+          </button>
+
           <button
             onClick={() => fetchUsers({ page: currentPage, limit: perPage, search: searchTerm, role: roleFilter })}
             disabled={loading}
@@ -257,6 +375,7 @@ export default function AdminUsers() {
                     <th style={thStyle}>Último Acceso</th>
                     <th style={thStyle}>Rol Actual</th>
                     <th style={{ ...thStyle, textAlign: "center" }}>Cambiar Rol</th>
+                    <th style={{ ...thStyle, textAlign: "center" }}>Permisos</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -345,10 +464,34 @@ export default function AdminUsers() {
                               }}
                             >
                               {ROLE_SELECT_OPTIONS.map((r) => (
-                                <option key={r.value} value={r.value}>{r.label}</option>
+                                  <option key={r.value} value={r.value}>{r.label}</option>
                               ))}
                             </select>
                           </div>
+                        </td>
+
+                        {/* PERMISSIONS BUTTON */}
+                        <td style={{ padding: "10px 14px", verticalAlign: "middle", textAlign: "center" }}>
+                          <button
+                            disabled={(isTargetOwner && !isOwner) || (user.id === currentUser?.id)}
+                            onClick={() => handleOpenPermissionsModal(user)}
+                            style={{
+                              padding: "6px 12px", borderRadius: "8px",
+                              border: "1.5px solid rgba(107,30,150,0.15)",
+                              background: "rgba(107,30,150,0.04)",
+                              color: "#6b1e96",
+                              fontSize: "11px", fontWeight: 600,
+                              cursor: ((isTargetOwner && !isOwner) || (user.id === currentUser?.id)) ? "not-allowed" : "pointer",
+                              opacity: ((isTargetOwner && !isOwner) || (user.id === currentUser?.id)) ? 0.4 : 1,
+                              display: "inline-flex", alignItems: "center", gap: "4px",
+                              transition: "all 0.2s"
+                            }}
+                          >
+                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z" />
+                            </svg>
+                            Permisos
+                          </button>
                         </td>
                       </tr>
                     );
@@ -425,6 +568,129 @@ export default function AdminUsers() {
             )}
           </div>
         </>
+      )}
+
+      {/* ── Modal: Crear Cuenta ── */}
+      {createModalOpen && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px", background: "rgba(26,10,46,0.6)", backdropFilter: "blur(4px)" }}>
+          <div style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "520px", maxHeight: "90vh", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)", overflowY: "auto", border: "1px solid rgba(107,30,150,0.1)", display: "flex", flexDirection: "column" }}>
+            <div style={{ background: "linear-gradient(135deg, #1a0a2e, #2d1248)", padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "#fff" }}>Crear Nueva Cuenta</h3>
+              <button onClick={() => setCreateModalOpen(false)} style={{ background: "transparent", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: "22px", fontWeight: 300, lineHeight: 1 }}>&times;</button>
+            </div>
+            <form onSubmit={handleCreateUser} style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#374151", textTransform: "uppercase", marginBottom: "6px" }}>Nombre Completo</label>
+                <input
+                  type="text"
+                  required
+                  value={createForm.fullName}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, fullName: e.target.value }))}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1.5px solid #e5e7eb", fontSize: "13px", outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#374151", textTransform: "uppercase", marginBottom: "6px" }}>Correo Electrónico</label>
+                <input
+                  type="email"
+                  required
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, email: e.target.value }))}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1.5px solid #e5e7eb", fontSize: "13px", outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#374151", textTransform: "uppercase", marginBottom: "6px" }}>Contraseña</label>
+                <input
+                  type="password"
+                  required
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, password: e.target.value }))}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1.5px solid #e5e7eb", fontSize: "13px", outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#374151", textTransform: "uppercase", marginBottom: "6px" }}>Rol / Rango</label>
+                <select
+                  value={createForm.role}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, role: e.target.value }))}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1.5px solid #e5e7eb", fontSize: "13px", outline: "none", background: "#fff", cursor: "pointer" }}
+                >
+                  {ROLE_SELECT_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#374151", textTransform: "uppercase", marginBottom: "8px" }}>Permisos Específicos</label>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "180px", overflowY: "auto", border: "1.5px solid #e5e7eb", borderRadius: "8px", padding: "12px", background: "#f9fafb" }}>
+                  {PERMISSIONS_LIST.map(p => (
+                    <label key={p.key} style={{ display: "flex", alignItems: "start", gap: "8px", cursor: "pointer", fontSize: "12px", color: "#374151" }}>
+                      <input
+                        type="checkbox"
+                        checked={createForm.permissions[p.key] === true}
+                        onChange={() => handleCreatePermissionToggle(p.key)}
+                        style={{ marginTop: "2px" }}
+                      />
+                      <div>
+                        <span style={{ fontWeight: 600 }}>{p.label}</span>
+                        <div style={{ fontSize: "10px", color: "#6b7280" }}>{p.desc}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "end", gap: "10px", marginTop: "8px" }}>
+                <button type="button" onClick={() => setCreateModalOpen(false)} style={{ padding: "10px 16px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", color: "#374151", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>Cancelar</button>
+                <button type="submit" disabled={submitting} style={{ padding: "10px 20px", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, #531575 0%, #6b1e96 100%)", color: "#c3ff00", fontSize: "12px", fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.7 : 1 }}>
+                  {submitting ? "Creando..." : "Crear Usuario"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Gestionar Permisos ── */}
+      {permissionsModalOpen && selectedUser && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px", background: "rgba(26,10,46,0.6)", backdropFilter: "blur(4px)" }}>
+          <div style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "520px", maxHeight: "90vh", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)", overflowY: "auto", border: "1px solid rgba(107,30,150,0.1)", display: "flex", flexDirection: "column" }}>
+            <div style={{ background: "linear-gradient(135deg, #1a0a2e, #2d1248)", padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "#fff" }}>Gestionar Permisos Granulares</h3>
+                <p style={{ margin: "4px 0 0 0", fontSize: "11px", color: "rgba(255,255,255,0.6)" }}>{selectedUser.full_name || selectedUser.email} ({selectedUser.role?.toUpperCase()})</p>
+              </div>
+              <button onClick={() => setPermissionsModalOpen(false)} style={{ background: "transparent", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: "22px", fontWeight: 300, lineHeight: 1 }}>&times;</button>
+            </div>
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", border: "1.5px solid #e5e7eb", borderRadius: "8px", padding: "16px", background: "#f9fafb" }}>
+                {PERMISSIONS_LIST.map(p => (
+                  <label key={p.key} style={{ display: "flex", alignItems: "start", gap: "8px", cursor: "pointer", fontSize: "12px", color: "#374151" }}>
+                    <input
+                      type="checkbox"
+                      checked={permissionsForm[p.key] === true}
+                      onChange={() => handlePermissionToggle(p.key)}
+                      style={{ marginTop: "2px" }}
+                    />
+                    <div>
+                      <span style={{ fontWeight: 600 }}>{p.label}</span>
+                      <div style={{ fontSize: "10px", color: "#6b7280" }}>{p.desc}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "end", gap: "10px" }}>
+                <button type="button" onClick={() => setPermissionsModalOpen(false)} style={{ padding: "10px 16px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", color: "#374151", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>Cancelar</button>
+                <button onClick={handleUpdatePermissions} disabled={submitting} style={{ padding: "10px 20px", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, #531575 0%, #6b1e96 100%)", color: "#c3ff00", fontSize: "12px", fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.7 : 1 }}>
+                  {submitting ? "Guardando..." : "Guardar Cambios"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
