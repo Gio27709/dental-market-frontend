@@ -103,6 +103,7 @@ export default function Checkout() {
       receiver_name: formData.receiver_name,
       receiver_cedula: formData.receiver_cedula,
       receiver_email: formData.receiver_email,
+      preferred_shipping_carrier: formData.preferred_shipping_carrier || null,
       // Multi-store: per-store delivery types map
       ...(formData.delivery_types && { delivery_types: formData.delivery_types }),
       destination_state: formData.destination_state || null,

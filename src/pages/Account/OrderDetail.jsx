@@ -815,6 +815,28 @@ export default function OrderDetail() {
                     </div>
                   )}
 
+                  {/* FAILED DELIVERY ITEM ALERT */}
+                  {item.delivery_status === "failed" && (
+                    <div className="ml-[68px] sm:ml-20 mt-2 rounded-xl p-4" style={{ background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)", border: "1px solid #f59e0b" }}>
+                      <div className="flex items-start gap-2.5">
+                        <span className="text-base flex-shrink-0">⚠️</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-amber-800">
+                            Intento de entrega no completado
+                          </p>
+                          {item.last_failure_reason && (
+                            <p className="text-xs mt-1 text-amber-700">
+                              <span className="font-semibold">Causa reportada:</span> {item.last_failure_reason}
+                            </p>
+                          )}
+                          <p className="text-xs mt-2 text-amber-900/80 font-medium">
+                            La tienda se pondrá en contacto contigo para coordinar un nuevo intento de entrega o proceder con la devolución/cancelación si corresponde.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* EVIDENCE GALLERY (If present) */}
                   <div className="pl-[68px] sm:pl-20">
                     <ShippingEvidenceGallery item={item} />
@@ -940,6 +962,12 @@ export default function OrderDetail() {
                 <span style={{ color: "#727785" }}>Teléfono</span>
                 <span className="font-medium text-right" style={{ color: "#191c23" }}>{order.contact_phone || "—"}</span>
               </li>
+              {order.preferred_shipping_carrier && (
+                <li className="flex justify-between items-start gap-4">
+                  <span style={{ color: "#727785" }}>Agencia de Preferencia</span>
+                  <span className="font-bold uppercase text-right" style={{ color: "#6b1e96" }}>{order.preferred_shipping_carrier}</span>
+                </li>
+              )}
             </ul>
             <div className="mt-4 pt-4" style={{ borderTop: "1px solid rgba(207,194,213,0.3)" }}>
               <span className="block text-[10px] uppercase font-bold mb-1" style={{ color: "#727785" }}>Dirección de Envío</span>

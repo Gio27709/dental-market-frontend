@@ -125,6 +125,21 @@ export default function StoreOrders() {
       .catch(() => {});
   }, []);
 
+  // Sync trackingForm carrier with client's preferred shipping carrier
+  useEffect(() => {
+    if (shipModal?.order?.preferred_shipping_carrier) {
+      setTrackingForm(prev => ({
+        ...prev,
+        shipping_carrier: shipModal.order.preferred_shipping_carrier.toLowerCase()
+      }));
+    } else {
+      setTrackingForm(prev => ({
+        ...prev,
+        shipping_carrier: "zoom"
+      }));
+    }
+  }, [shipModal]);
+
   // Handle cancel item/order
   const handleCancelConfirm = async () => {
     if (!cancelReason.trim() || cancelReason.trim().length < 5) {
@@ -170,6 +185,7 @@ export default function StoreOrders() {
         contact_phone: o.contact_phone || null,
         receiver_cedula: o.receiver_cedula || null,
         receiver_email: o.receiver_email || null,
+        preferred_shipping_carrier: o.preferred_shipping_carrier || null,
         items: []
       };
     }
@@ -290,6 +306,8 @@ export default function StoreOrders() {
     const shippableItems = order.items.filter(
       (item) =>
         item.delivery_status !== "shipped" &&
+        item.delivery_status !== "picked_up" &&
+        item.delivery_status !== "arrived" &&
         item.delivery_status !== "delivered" &&
         item.delivery_status !== "cancelled" &&
         item.delivery_status !== "returned" &&
@@ -383,10 +401,12 @@ export default function StoreOrders() {
             const product = item.products || {};
             const variation = item.product_variations;
             const statusInfo = ORDER_STATUS[item.delivery_status] || ORDER_STATUS.pending;
-            const isShipped = item.delivery_status === "shipped";
+            const isShipped = ["shipped", "picked_up", "arrived"].includes(item.delivery_status);
             const isDelivered = item.delivery_status === "delivered";
             const canShipThisItem =
               item.delivery_status !== "shipped" &&
+              item.delivery_status !== "picked_up" &&
+              item.delivery_status !== "arrived" &&
               item.delivery_status !== "delivered" &&
               item.delivery_status !== "cancelled" &&
               item.delivery_status !== "returned" &&
@@ -439,22 +459,74 @@ export default function StoreOrders() {
                   </div>
                 </div>
 
+                {/* Causa de fallo (si la entrega falló) */}
+                {item.delivery_status === "failed" && item.last_failure_reason && (
+                  <div style={{
+                    background: "rgba(244,63,94,0.05)",
+                    border: "1px solid rgba(244,63,94,0.15)",
+                    padding: "10px 14px",
+                    borderRadius: "12px",
+                    fontSize: "12px",
+                    color: "#be123c",
+                    marginTop: "4px",
+                    display: "flex",
+                    alignItems: "start",
+                    gap: "8px",
+                    width: "100%",
+                    boxSizing: "border-box"
+                  }}>
+                    <span className="material-symbols-outlined text-[16px] mt-0.5">warning</span>
+                    <div>
+                      <span className="font-extrabold">Causa de fallo:</span> {item.last_failure_reason}
+                      {item.delivery_attempts > 0 && (
+                        <span style={{
+                          marginLeft: "6px",
+                          fontWeight: 700,
+                          fontSize: "10px",
+                          background: "rgba(244,63,94,0.1)",
+                          padding: "2px 6px",
+                          borderRadius: "6px",
+                          display: "inline-block"
+                        }}>
+                          Intento #{item.delivery_attempts}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Status + Actions Row */}
                 <div className="flex items-center justify-between gap-2 mt-1">
                   <span
                     className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${
                       item.delivery_status === "cancelled"
                         ? "bg-red-50 text-red-600 border-red-100"
-                        : isDelivered
-                          ? "bg-emerald-50 text-emerald-600 border-emerald-100"
-                          : isShipped
-                            ? "bg-blue-50 text-blue-600 border-blue-100"
-                            : canShipThisItem
-                              ? "bg-transparent text-gray-400 border-gray-200"
-                              : "bg-amber-50 text-amber-600 border-amber-100"
+                        : item.delivery_status === "failed"
+                          ? "bg-rose-50 text-rose-600 border-rose-100"
+                          : isDelivered
+                            ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                            : isShipped
+                              ? "bg-blue-50 text-blue-600 border-blue-100"
+                              : canShipThisItem
+                                ? "bg-transparent text-gray-400 border-gray-200"
+                                : "bg-amber-50 text-amber-600 border-amber-100"
                     }`}
                   >
-                    {item.delivery_status === "cancelled" ? "Cancelado" : isDelivered ? "Entregado" : isShipped ? "Enviado" : canShipThisItem ? "Pendiente" : statusInfo.label}
+                    {item.delivery_status === "cancelled"
+                      ? "Cancelado"
+                      : item.delivery_status === "failed"
+                        ? "Entrega Fallida"
+                        : item.delivery_status === "delivered"
+                          ? "Entregado"
+                          : item.delivery_status === "shipped"
+                            ? "Enviado"
+                            : item.delivery_status === "picked_up"
+                              ? "Recogido por rider"
+                              : item.delivery_status === "arrived"
+                                ? "Rider en destino"
+                                : canShipThisItem
+                                  ? "Pendiente"
+                                  : statusInfo.label}
                   </span>
 
                   <div className="flex gap-2">
@@ -572,7 +644,7 @@ export default function StoreOrders() {
             <tbody>
               {paginated.map((order, idx) => {
                 const shippableItems = order.items.filter(
-                  (item) => item.delivery_status !== "shipped" && item.delivery_status !== "delivered" && item.delivery_status !== "cancelled" && item.delivery_status !== "returned" && (order.payment_status === "approved" || order.payment_status === "processing")
+                  (item) => item.delivery_status !== "shipped" && item.delivery_status !== "picked_up" && item.delivery_status !== "arrived" && item.delivery_status !== "delivered" && item.delivery_status !== "cancelled" && item.delivery_status !== "returned" && (order.payment_status === "approved" || order.payment_status === "processing")
                 );
                 const canShipAny = shippableItems.length > 0;
                 const status = getOrderStatusLabel(order);
@@ -1314,6 +1386,15 @@ export default function StoreOrders() {
                         Ref: {shipModal.order.delivery_reference}
                       </div>
                     )}
+                  </div>
+                )}
+                {shipModal.order.preferred_shipping_carrier && (
+                  <div style={{ marginTop: "10px", padding: "8px 10px", background: "rgba(107, 30, 150, 0.05)", borderRadius: "8px", border: "1px solid rgba(107, 30, 150, 0.15)" }}>
+                    <span style={{ color: "#6b1e96", fontWeight: 700, fontSize: "11px" }}>Agencia de Preferencia del Cliente:</span>
+                    <div style={{ fontWeight: 850, color: "#6b1e96", marginTop: "2px", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span>{CARRIER_ICONS[shipModal.order.preferred_shipping_carrier?.toLowerCase()]?.icon || "📦"}</span>
+                      <span>{CARRIER_ICONS[shipModal.order.preferred_shipping_carrier?.toLowerCase()]?.label || shipModal.order.preferred_shipping_carrier}</span>
+                    </div>
                   </div>
                 )}
                 {shipModal.order.notes && (

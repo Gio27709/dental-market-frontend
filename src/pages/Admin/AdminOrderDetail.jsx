@@ -185,6 +185,12 @@ export default function AdminOrderDetail() {
                 <div style={{ color: "#9ca3af", marginBottom: "4px" }}>Teléfono de Contacto</div>
                 <div style={{ fontWeight: 600, color: "#1f2937" }}>{order.contact_phone || "N/A"}</div>
               </div>
+              {order.preferred_shipping_carrier && (
+                <div>
+                  <div style={{ color: "#9ca3af", marginBottom: "4px" }}>Agencia Preferida</div>
+                  <div style={{ fontWeight: 600, color: "#6b1e96", textTransform: "uppercase" }}>{order.preferred_shipping_carrier}</div>
+                </div>
+              )}
               <div style={{ gridColumn: "1 / -1" }}>
                 <div style={{ color: "#9ca3af", marginBottom: "4px" }}>Dirección de Envío</div>
                 <div style={{ fontWeight: 600, color: "#1f2937" }}>{order.shipping_address || "N/A"}</div>

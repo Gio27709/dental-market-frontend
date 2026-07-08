@@ -24,6 +24,7 @@ export default function CheckoutForm({
           receiver_name: "",
           receiver_cedula: "",
           receiver_email: "",
+          preferred_shipping_carrier: "",
           ...parsed
         };
       } catch (e) {
@@ -44,6 +45,7 @@ export default function CheckoutForm({
       receiver_name: "",
       receiver_cedula: "",
       receiver_email: "",
+      preferred_shipping_carrier: "",
     };
   });
 
@@ -246,16 +248,16 @@ export default function CheckoutForm({
         errors.address =
           "La dirección debe ser clara y tener más de 10 caracteres.";
       }
-      if (!formData.destination_state) {
-        errors.destination_state = "Selecciona el estado de destino para la encomienda.";
-      }
     }
 
-    // If multi-store with mixed: need address for both shipping and local parts
-    if (isMultiStore && hasAnyLocalDelivery) {
-      const hasShipping = Object.values(perStoreDelivery).some(t => t === "shipping");
-      if (hasShipping && !formData.destination_state) {
-        errors.destination_state = "Selecciona el estado de destino para las tiendas con encomienda nacional.";
+    if (needsShippingFields) {
+      if (!formData.destination_state) {
+        errors.destination_state = isMultiStore
+          ? "Selecciona el estado de destino para las tiendas con encomienda nacional."
+          : "Selecciona el estado de destino para la encomienda.";
+      }
+      if (!formData.preferred_shipping_carrier) {
+        errors.preferred_shipping_carrier = "Selecciona la agencia de envío de tu preferencia.";
       }
     }
 
@@ -744,6 +746,34 @@ export default function CheckoutForm({
                   placeholder="Ej. Maracaibo, Lechería, etc."
                   className="block w-full shadow-xs sm:text-sm rounded-xl border-slate-200 bg-slate-50/50 p-3 border focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#6b1e96]/15 focus:border-[#6b1e96] transition-all"
                 />
+              </div>
+              <div className="col-span-6">
+                <label htmlFor="preferred_shipping_carrier" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+                  Agencia de Envío de Preferencia *
+                </label>
+                <select
+                  id="preferred_shipping_carrier"
+                  name="preferred_shipping_carrier"
+                  disabled={loading}
+                  value={formData.preferred_shipping_carrier}
+                  onChange={handleChange}
+                  className={`block w-full shadow-xs sm:text-sm rounded-xl p-3 border focus:outline-none focus:ring-2 transition-all bg-white ${
+                    formErrors.preferred_shipping_carrier
+                      ? "border-red-300 bg-red-50/30 focus:ring-red-100 focus:border-red-400"
+                      : "border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-[#6b1e96]/15 focus:border-[#6b1e96]"
+                  }`}
+                >
+                  <option value="">Selecciona una agencia de envío</option>
+                  <option value="zoom">Zoom (Cobro a destino)</option>
+                  <option value="mrw">MRW (Cobro a destino)</option>
+                  <option value="tealca">Tealca (Cobro a destino)</option>
+                </select>
+                {formErrors.preferred_shipping_carrier && (
+                  <p className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm">error</span>
+                    {formErrors.preferred_shipping_carrier}
+                  </p>
+                )}
               </div>
             </>
           )}
