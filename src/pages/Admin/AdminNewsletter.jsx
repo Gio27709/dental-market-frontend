@@ -555,7 +555,7 @@ export default function AdminNewsletter() {
             </div>
 
             {/* Contenido / Simulación de Email */}
-            <div className="flex-1 overflow-y-auto p-6 bg-gray-100/50 admin-scrollbar-light">
+            <div className="flex-1 overflow-y-auto max-h-[60vh] p-6 bg-gray-100/50 admin-scrollbar-light">
               {loadingPreview ? (
                 <div className="flex flex-col items-center justify-center py-20">
                   <div className="w-10 h-10 border-4 border-[#c3ff00] border-t-[#6b1e96] rounded-full animate-spin mb-3"></div>
