@@ -555,14 +555,14 @@ export default function AdminNewsletter() {
             </div>
 
             {/* Contenido / Simulación de Email */}
-            <div className="flex-1 overflow-y-auto p-6 bg-gray-100/50 flex justify-center">
+            <div className="flex-1 overflow-y-auto p-6 bg-gray-100/50 admin-scrollbar-light">
               {loadingPreview ? (
                 <div className="flex flex-col items-center justify-center py-20">
                   <div className="w-10 h-10 border-4 border-[#c3ff00] border-t-[#6b1e96] rounded-full animate-spin mb-3"></div>
                   <p className="text-sm text-gray-500 font-medium">Analizando promociones y cargando productos...</p>
                 </div>
               ) : previewData ? (
-                <div className="w-full max-w-[600px] bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden text-left font-sans text-gray-700">
+                <div className="mx-auto w-full max-w-[600px] bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden text-left font-sans text-gray-700">
                   {/* Email Header */}
                   <div className="bg-gradient-to-br from-[#531575] to-[#6b1e96] p-6 text-center text-white">
                     <div className="inline-block w-8 h-8 rounded-lg bg-[#c3ff00] text-[#531575] text-center font-bold text-lg leading-8 align-middle">
