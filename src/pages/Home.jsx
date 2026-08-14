@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useProducts } from "../context/ProductContext";
 import useDebounce from "../hooks/useDebounce";
+import useSearchTracking from "../hooks/useSearchTracking";
 import HeroBanner from "../components/home/HeroBanner";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import FeaturesBar from "../components/home/FeaturesBar";
@@ -26,6 +27,8 @@ export default function Home() {
   useEffect(() => {
     applyFilters({ search: debouncedSearchTerm, maxPrice });
   }, [debouncedSearchTerm, maxPrice, applyFilters]);
+
+  useSearchTracking(debouncedSearchTerm, products.length, loading);
 
   if (loading) {
     return (

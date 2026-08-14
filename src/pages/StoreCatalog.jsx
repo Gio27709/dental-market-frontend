@@ -4,6 +4,7 @@ import FiltersSidebar from "../components/catalog/FiltersSidebar";
 import ProductCard from "../components/ProductCard";
 import ProductRow from "../components/ProductRow";
 import { useLocationContext } from "../hooks/useLocationContext";
+import useSearchTracking from "../hooks/useSearchTracking";
 import { VENEZUELA_STATES } from "../utils/venezuelaStates";
 import { getCategoriesAPI, getBrandsAPI, getProducts, getProductsFacetsAPI } from "../services/api";
 
@@ -180,6 +181,8 @@ export default function StoreCatalog() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, sortBy, priceRange, category, brandFilter, store, location, buyerState]);
+
+  useSearchTracking(searchTerm, totalItems, productsLoading);
 
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
 

@@ -46,7 +46,6 @@ api.interceptors.response.use(
         await supabase.auth.signOut();
       } catch { /* ignore sign out errors */ }
       toast.error("Tu sesión ha expirado. Por favor inicia sesión de nuevo.");
-      // Use setTimeout to allow the toast to show before redirect
       setTimeout(() => {
         window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
       }, 500);
@@ -60,7 +59,6 @@ api.interceptors.response.use(
     } else if (error.request) {
       console.error("Network error. No response received.");
     }
-    // Pass the actual backend error message through to the caller if available
     if (error.response?.data?.error) {
       error.message = error.response.data.error;
     }
@@ -76,7 +74,6 @@ export const getProducts = (params = {}) => {
   return api.get("/products", { params });
 };
 export const getProductsFacetsAPI = () => api.get("/products/facets");
-// Native login/register runs directly hitting Supabase. We only use api for business logic:
 export const createOrder = (orderData) => api.post("/orders", orderData);
 export const getMyOrders = (config = {}) => api.get("/orders", config);
 export const getOrderByIdAPI = (id) => api.get(`/orders/${id}`);
@@ -104,7 +101,6 @@ export const getRefundRequestsAPI = (params) =>
   api.get("/admin/orders/refunds", { params });
 export const processRefundAPI = (id, action, admin_notes) =>
   api.put(`/admin/orders/refunds/${id}/process`, { action, admin_notes });
-
 
 // Admin Payouts Management API
 export const getAdminPayoutsAPI = (params) => api.get("/admin/payouts", { params });
@@ -147,6 +143,26 @@ export const updateCartItemVariationAPI = (id, data) =>
 export const removeCartItemAPI = (id) => api.delete(`/cart/items/${id}`);
 export const clearCartAPI = () => api.delete("/cart");
 export const mergeCartAPI = (items) => api.post("/cart/merge", { items });
+export const preloadRestockCartAPI = (items) => api.post("/cart/preload-restock", { items });
+
+// Portal Clínico (B2B) — Inventario, suscripciones y analíticas del odontólogo.
+// Estas rutas se llamaban antes con axios crudo y un token inexistente
+// (`localStorage.getItem("token")`), por eso el portal recibía 401/404.
+export const getInventoryAlertsAPI = () => api.get("/inventory/alerts");
+export const upsertInventoryAlertAPI = (data) => api.post("/inventory/alerts", data);
+export const updateInventoryAlertAPI = (id, data) => api.put(`/inventory/alerts/${id}`, data);
+export const deleteInventoryAlertAPI = (id) => api.delete(`/inventory/alerts/${id}`);
+export const getInventorySuggestionsAPI = () => api.get("/inventory/suggestions");
+export const getClinicSubscriptionsAPI = () => api.get("/inventory/subscriptions");
+export const createClinicSubscriptionAPI = (data) => api.post("/inventory/subscriptions", data);
+export const updateClinicSubscriptionStatusAPI = (id, status) =>
+  api.patch(`/inventory/subscriptions/${id}`, { status });
+export const deleteClinicSubscriptionAPI = (id) => api.delete(`/inventory/subscriptions/${id}`);
+export const getDentistFinancialSummaryAPI = () => api.get("/analytics/dentist/financial-summary");
+export const getDentistProjectionsAPI = () => api.get("/analytics/dentist/projections");
+export const getDentistSmartOffersAPI = () => api.get("/analytics/dentist/smart-offers");
+export const exportDentistExcelAPI = () =>
+  api.get("/analytics/dentist/export-excel", { responseType: "blob" });
 
 // Store Profile API
 export const getStoreProfile = () => api.get("/store/profile");
@@ -154,15 +170,11 @@ export const getStoreStatsAPI = () => api.get("/store/stats");
 export const upsertStoreProfile = (data) => api.put("/store/profile", data);
 export const checkStoreNameAPI = (name) => api.get(`/store/check-name?name=${encodeURIComponent(name)}`);
 
-// ==========================================
 // STORE APPLICATIONS
-// ==========================================
 export const applyForStoreAPI = (data) => api.post("/store-applications", data);
 export const getMyStoreApplicationAPI = () => api.get("/store-applications/me");
 
-// ==========================================
 // RIDER APPLICATIONS
-// ==========================================
 export const applyForRiderAPI = (data) => api.post("/rider-applications", data);
 export const getMyRiderApplicationAPI = () => api.get("/rider-applications/me");
 
@@ -221,8 +233,30 @@ export const getStorePayoutsAPI = () => api.get("/store/wallet/payouts");
 export const requestPayoutAPI = (data) => api.post("/store/wallet/payout", data);
 
 // Admin Analytics API
-export const getAdminAnalyticsAPI = (params) =>
-  api.get("/admin/analytics", { params });
+export const getAdminAnalyticsAPI = (params) => api.get("/admin/analytics", { params });
+export const getExecutiveAnalyticsAPI = (params) => api.get("/admin/analytics/overview", { params });
+export const getFinancialsAnalyticsAPI = (params) => api.get("/admin/analytics/financials", { params });
+export const getSalesAnalyticsAPI = (params) => api.get("/admin/analytics/sales", { params });
+export const getLogisticsAnalyticsAPI = (params) => api.get("/admin/analytics/logistics", { params });
+export const getGrowthAnalyticsAPI = (params) => api.get("/admin/analytics/growth", { params });
+export const getSupportAnalyticsAPI = (params) => api.get("/admin/analytics/support", { params });
+export const getAudienceAnalyticsAPI = (params) => api.get("/admin/analytics/audience", { params });
+export const getFunnelAnalyticsAPI = (params) => api.get("/admin/analytics/funnel", { params });
+export const getContentAnalyticsAPI = (params) => api.get("/admin/analytics/content", { params });
+export const getNotificationsAnalyticsAPI = (params) => api.get("/admin/analytics/notifications", { params });
+export const getReputationAnalyticsAPI = (params) => api.get("/admin/analytics/reputation", { params });
+export const getDemandAnalyticsAPI = (params) => api.get("/admin/analytics/demand", { params });
+export const getCatalogAnalyticsAPI = (params) => api.get("/admin/analytics/catalog", { params });
+export const getTreasuryAnalyticsAPI = (params) => api.get("/admin/analytics/treasury", { params });
+export const getOnboardingAnalyticsAPI = (params) => api.get("/admin/analytics/onboarding", { params });
+export const getPromotionsAnalyticsAPI = (params) => api.get("/admin/analytics/promotions", { params });
+export const getLogisticsDeepAnalyticsAPI = (params) => api.get("/admin/analytics/logistics-deep", { params });
+export const getSupportDeepAnalyticsAPI = (params) => api.get("/admin/analytics/support-deep", { params });
+export const getB2bModulesAnalyticsAPI = (params) => api.get("/admin/analytics/b2b", { params });
+
+// Drill-down universal: abre cualquier métrica agregada hasta sus filas de origen
+export const getDrilldownAPI = (dataset, params) => api.get(`/admin/analytics/drilldown/${dataset}`, { params });
+export const getDrilldownCatalogAPI = () => api.get("/admin/analytics/drilldown");
 
 // Store Riders API
 export const getStoreRidersAPI = () => api.get("/store/riders");
@@ -287,7 +321,7 @@ export const updateNotificationPreferencesAPI = (data) => api.put("/notification
 // Admin Notifications API
 export const getAdminNotifTemplatesAPI = () => api.get("/admin/notifications/templates");
 export const updateAdminNotifTemplateAPI = (id, data) => api.put(`/admin/notifications/templates/${id}`, data);
-export const getAdminNotifStatsAPI = () => api.get("/admin/notifications/stats");
+export const getAdminNotifStatsAPI = (params) => api.get("/admin/notifications/stats", { params });
 export const sendAdminNotifAPI = (data) => api.post("/admin/notifications/send", data);
 
 // Admin Penalties API
@@ -317,7 +351,7 @@ export const deleteNewsletterSubscriberAPI = (id) => api.delete(`/newsletter/sub
 export const updateNewsletterDiscountAPI = (percentage) => api.put("/admin/settings/newsletter-discount", { percentage });
 export const updateNewsletterLimitAPI = (enabled) => api.put("/admin/settings/newsletter-limit", { enabled });
 export const updateNewsletterEnabledAPI = (enabled) => api.put("/admin/settings/newsletter-status", { enabled });
-export const getWeeklyPromotionsPreviewAPI = () => api.get("/newsletter/weekly-promotions-preview");
+export const getWeeklyPromotionsPreviewAPI = (params) => api.get("/newsletter/weekly-promotions-preview", { params });
 export const sendWeeklyPromotionsNewsletterAPI = () => api.post("/newsletter/send-weekly-promotions");
 
 // Courses API
@@ -346,8 +380,7 @@ export const deletePostCommentAPI = (commentId) => api.delete(`/posts/comments/$
 export const getUserLikedPostsAPI = () => api.get("/posts/me/liked");
 export const togglePostSaveAPI = (id) => api.post(`/posts/${id}/save`);
 export const getPostSavesAPI = (id) => api.get(`/posts/${id}/saves`);
-export const getUserSavedPostsAPI = () => api.get("/posts/me/saved");
-
+export const getUserSavedPostsAPI = (params) => api.get("/posts/me/saved", { params });
 
 // Returns / Devoluciones API
 export const createReturnRequestAPI = (data) => api.post("/returns", data);
@@ -359,7 +392,7 @@ export const submitRefundDetailsAPI = (refundId, refundDetails) =>
   api.put(`/orders/refunds/${refundId}/details`, { refund_details: refundDetails });
 
 // Addresses API
-export const getMyAddressesAPI = () => api.get("/addresses");
+export const getMyAddressesAPI = (params) => api.get("/addresses", { params });
 export const createAddressAPI = (data) => api.post("/addresses", data);
 export const updateAddressAPI = (id, data) => api.put(`/addresses/${id}`, data);
 export const deleteAddressAPI = (id) => api.delete(`/addresses/${id}`);
@@ -402,9 +435,7 @@ export const deletePromotionAPI = (id) => api.delete(`/admin/promotions/${id}`);
 export const getAdminDiscountsAPI = (params) => api.get("/admin/discounts", { params });
 export const moderateDiscountAPI = (id, action) => api.put(`/admin/discounts/${id}/moderate`, { action });
 
-// ==========================================
 // PROFESSIONAL/DENTIST VERIFICATION API
-// ==========================================
 export const uploadProfessionalLicenseAPI = (formData) =>
   api.post("/professional/license-upload", formData, {
     headers: {
@@ -415,5 +446,15 @@ export const getProfessionalStatusAPI = () => api.get("/professional/status");
 export const getAdminProfessionalLicensesAPI = () => api.get("/professional/admin/professional-licenses");
 export const verifyProfessionalLicenseAPI = (id, data) => api.put(`/professional/admin/professionals/${id}/verify`, data);
 
-// Exporting standard API for frontend endpoints
+// Admin Analytics Alert Rules, Store Orders, Product Sales & Category Products API
+export const getAlertRulesAPI = () => api.get("/admin/analytics/alerts/rules");
+export const updateAlertRuleAPI = (data) => api.put("/admin/analytics/alerts/rules", data);
+export const getStoreOrdersDetailAPI = (params) => api.get("/admin/analytics/sales/store-orders", { params });
+export const getProductSalesDetailAPI = (params) => api.get("/admin/analytics/sales/product-sales", { params });
+export const getCategoryProductsDetailAPI = (params) => api.get("/admin/analytics/sales/category-products", { params });
+
 export default api;
+
+
+
+

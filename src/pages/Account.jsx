@@ -256,7 +256,7 @@ export default function Account() {
                 </label>
                 <div className="px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2" style={{ background: "#f9f9ff", color: "#6b1e96", border: "1px solid rgba(0,0,0,0.06)" }}>
                   <span className="w-2 h-2 rounded-full" style={{ background: "#6b1e96" }}></span>
-                  {user.role === 'buyer' ? 'Usuario' : user.role === 'admin' ? 'Administrador' : user.role === 'owner' ? 'Owner 👑' : (user.role === 'store' || user.role === 'store/owner') ? 'Tienda' : user.role}
+                  {user.role === 'user' ? 'Usuario' : user.role === 'professional' ? 'Profesional' : user.role === 'admin' ? 'Administrador' : user.role === 'owner' ? 'Owner 👑' : (user.role === 'store' || user.role === 'store/owner') ? 'Tienda' : user.role}
                 </div>
               </div>
             </div>
@@ -542,7 +542,7 @@ export default function Account() {
               {fullName}
             </h3>
             <span className="inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: "#f3e8ff", color: "#6b1e96" }}>
-              {user.role === 'buyer' ? 'Usuario' : user.role === 'admin' ? 'Administrador' : user.role === 'owner' ? 'Owner 👑' : (user.role === 'store' || user.role === 'store/owner') ? 'Tienda' : user.role}
+              {user.role === 'user' ? 'Usuario' : user.role === 'professional' ? 'Profesional' : user.role === 'admin' ? 'Administrador' : user.role === 'owner' ? 'Owner 👑' : (user.role === 'store' || user.role === 'store/owner') ? 'Tienda' : user.role}
             </span>
           </div>
 

@@ -487,6 +487,20 @@ export default function Header() {
               </button>
             )}
 
+            {/* Action Item: Gestión Clínica B2B (solo odontólogos/clínicas) */}
+            {(user?.role === "user" || user?.role === "professional") && (
+              <button
+                onClick={() => navigate("/clinic")}
+                className="relative flex items-center gap-1 lg:gap-2 justify-center outline-none bg-transparent border-none p-0 cursor-pointer hover:text-gray-200 transition-colors group"
+                title="Gestión Clínica B2B"
+              >
+                <span className="material-symbols-outlined text-[22px] md:text-[20px] text-[#c3ff00] group-hover:text-white transition-colors">local_hospital</span>
+                <span className="font-medium text-xs hidden lg:block tracking-wide text-[#c3ff00] group-hover:text-white transition-colors">
+                  Gestión Clínica
+                </span>
+              </button>
+            )}
+
             {/* Action Item: Notification Bell */}
             <NotificationBell />
 
@@ -798,6 +812,12 @@ export default function Header() {
                     <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#fee2e2] text-[#b91c1c] text-sm font-bold hover:bg-[#fecaca] transition-colors">
                       <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
                       Panel Admin
+                    </Link>
+                  )}
+                  {(user?.role === "user" || user?.role === "professional") && (
+                    <Link to="/clinic" onClick={() => setMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#f3e8ff] text-[#6b1e96] text-sm font-bold hover:bg-[#e9d5ff] transition-colors">
+                      <span className="material-symbols-outlined text-[20px]">local_hospital</span>
+                      Gestión Clínica B2B
                     </Link>
                   )}
                   <Link to="/account" onClick={() => setMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-700 text-sm font-medium hover:bg-gray-100 transition-colors">

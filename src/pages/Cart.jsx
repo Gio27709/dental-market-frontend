@@ -1,5 +1,7 @@
-import { useMemo, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useMemo, useRef, useEffect } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import toast from "react-hot-toast";
+import { preloadRestockCartAPI } from "../services/api";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useProducts } from "../context/ProductContext";
@@ -19,13 +21,42 @@ function shuffleArray(arr) {
 }
 
 export default function Cart() {
-  const { items, total_usd, total_ves, updateQuantity, removeFromCart } =
+  const { items, fetchCart, total_usd, total_ves, updateQuantity, removeFromCart } =
     useCart();
   const { user } = useAuth();
   const { allProducts } = useProducts();
   const { getViewedProducts } = useRecentlyViewed();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const carouselRef = useRef(null);
+
+  // Auto-process preload_restock from deep links or notifications
+  useEffect(() => {
+    const isPreload = searchParams.get("preload_restock");
+    const rawItems = searchParams.get("items");
+
+    if (isPreload && rawItems && user) {
+      const parsedItems = rawItems.split(",").map((str) => {
+        const [productId, qty] = str.split(":");
+        return { productId, quantity: parseInt(qty || "2", 10) };
+      });
+
+      preloadRestockCartAPI(parsedItems)
+        .then((res) => {
+          if (res.data.success) {
+            toast.success("🛒 Insumos de recompra cargados en tu carrito.");
+            fetchCart();
+          }
+        })
+        .catch((err) => console.error("Error pre-cargando carrito:", err))
+        .finally(() => {
+          searchParams.delete("preload_restock");
+          searchParams.delete("items");
+          setSearchParams(searchParams, { replace: true });
+        });
+    }
+  }, [searchParams, user]);
+
 
   // Build set of product IDs already in the cart for fast lookup
   const cartProductIds = useMemo(

@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { getPostByIdAPI, togglePostSaveAPI } from "../../services/api";
+import { track } from "../../services/tracking";
 import { 
   ArrowLeft, 
   Calendar, 
@@ -20,6 +21,8 @@ export default function PostDetail() {
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
+  // El efecto se re-ejecuta al resolverse `user`; esto evita contar la vista dos veces.
+  const viewTrackedFor = useRef(null);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -29,6 +32,10 @@ export default function PostDetail() {
           const postData = res.data.data;
           setPost(postData);
           setIsSaved(postData.saves?.some(s => s.user_id === user?.id) || false);
+          if (viewTrackedFor.current !== postData.id) {
+            viewTrackedFor.current = postData.id;
+            track("post_view", { post_id: postData.id });
+          }
         }
       } catch (err) {
         console.error("Error fetching post", err);
@@ -49,6 +56,7 @@ export default function PostDetail() {
     try {
       await togglePostSaveAPI(post.id);
       if (nextSavedState) {
+        track("post_save", { post_id: post.id });
         toast.success("Publicación guardada");
       } else {
         toast.success("Publicación eliminada de guardados");

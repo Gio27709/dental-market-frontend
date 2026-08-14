@@ -19,6 +19,7 @@ import AccountLayout from "./components/layout/account/AccountLayout";
 import AdminLayout from "./components/layout/admin/AdminLayout";
 import StoreLayout from "./components/layout/store/StoreLayout";
 import LoadingSkeleton from "./components/LoadingSkeleton";
+import { usePageTracking } from "./hooks/usePageTracking";
 
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
@@ -47,6 +48,7 @@ const HomeContentManager = lazy(() => import("./pages/Admin/HomeContentManager")
 const PaymentHistory = lazy(() => import("./pages/Admin/PaymentHistory"));
 const AdminUsers = lazy(() => import("./pages/Admin/AdminUsers"));
 const AdminAnalytics = lazy(() => import("./pages/Admin/AdminAnalytics"));
+const AdminSalesAnalyticsDetail = lazy(() => import("./pages/Admin/AdminSalesAnalyticsDetail"));
 const AdminRefunds = lazy(() => import("./pages/Admin/AdminRefunds"));
 const AdminPenalties = lazy(() => import("./pages/Admin/AdminPenalties"));
 const AdminPayouts = lazy(() => import("./pages/Admin/AdminPayouts"));
@@ -95,6 +97,19 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 const TermsConditions = lazy(() => import("./pages/TermsConditions"));
 
+const ClinicLayout = lazy(() => import("./pages/Clinic/ClinicLayout"));
+const ClinicDashboard = lazy(() => import("./pages/Clinic/ClinicDashboard"));
+const ClinicInventory = lazy(() => import("./pages/Clinic/ClinicInventory"));
+const ClinicSubscriptions = lazy(() => import("./pages/Clinic/ClinicSubscriptions"));
+const ClinicProfitability = lazy(() => import("./pages/Clinic/ClinicProfitability"));
+
+
+/** Emite page_view en cada navegación. Sin render propio; vive dentro del Router. */
+function PageTracker() {
+  usePageTracking();
+  return null;
+}
+
 function EcommerceLayout() {
   return (
     <div className="min-h-screen flex flex-col font-sans">
@@ -111,6 +126,7 @@ export default function App() {
   return (
     <Router>
       <ScrollToTop />
+      <PageTracker />
       <LocationProvider>
         <AuthProvider>
           <ProductProvider>
@@ -138,6 +154,7 @@ export default function App() {
                       >
                         <Route index element={<AdminDashboard />} />
                         <Route path="analytics" element={<AdminAnalytics />} />
+                        <Route path="analytics/sales-detail" element={<AdminSalesAnalyticsDetail />} />
                         <Route path="users" element={<AdminUsers />} />
                         <Route path="payment-approvals" element={<PaymentApprovals />} />
                         <Route path="orders" element={<AllOrders />} />
@@ -207,6 +224,22 @@ export default function App() {
                         <Route path="penalties" element={<StorePenalties />} />
                         <Route path="discounts" element={<StoreDiscounts />} />
                       </Route>
+
+                      {/* Clinic Portal Routes */}
+                      <Route
+                        path="/clinic"
+                        element={
+                          <ProtectedRoute redirectTo="/login" requiredRole={["user", "professional"]}>
+                            <ClinicLayout />
+                          </ProtectedRoute>
+                        }
+                      >
+                        <Route index element={<ClinicDashboard />} />
+                        <Route path="inventory" element={<ClinicInventory />} />
+                        <Route path="subscriptions" element={<ClinicSubscriptions />} />
+                        <Route path="profitability" element={<ClinicProfitability />} />
+                      </Route>
+
 
                       {/* --- RUTAS PÚBLICAS / CLIENTE (Con Header y Footer de E-commerce) --- */}
                       <Route element={<EcommerceLayout />}>

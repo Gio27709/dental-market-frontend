@@ -8,6 +8,7 @@ import {
   signUpWithEmail,
   signOut as authSignOut,
 } from "../lib/supabaseClient";
+import { track } from "../services/tracking";
 
 const AuthContext = createContext();
 
@@ -61,6 +62,10 @@ export const AuthProvider = ({ children }) => {
       if (session) {
         setToken(session.access_token);
       }
+
+      // Solo SIGNED_IN es una autenticación real. INITIAL_SESSION (sesión restaurada al
+      // abrir la pestaña) y TOKEN_REFRESHED se excluyen para no inflar los inicios de sesión.
+      if (event === "SIGNED_IN") track("login");
 
       if (
         event === "INITIAL_SESSION" ||

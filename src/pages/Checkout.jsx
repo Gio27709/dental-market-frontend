@@ -7,6 +7,7 @@ import CheckoutSummary from "../components/orders/CheckoutSummary";
 import PaymentProofUploader from "../components/orders/PaymentProofUploader";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import { track } from "../services/tracking";
 
 export default function Checkout() {
   const {
@@ -50,6 +51,18 @@ export default function Checkout() {
       navigate("/");
     }
   }, [items, cartLoading, navigate, step]);
+
+  // Paso 4 del embudo. Se emite al llegar al checkout con carrito, no al pulsar "pagar":
+  // así se puede medir cuánta gente entra y luego abandona sin completar la orden.
+  const checkoutTracked = useRef(false);
+  useEffect(() => {
+    if (checkoutTracked.current || cartLoading || !items?.length) return;
+    checkoutTracked.current = true;
+    track("checkout_start", {
+      quantity: items.reduce((acc, i) => acc + Number(i.quantity || 0), 0),
+      value_usd: total_usd,
+    });
+  }, [items, cartLoading, total_usd]);
 
   const handleCreateOrder = async (formData) => {
     // Bug 5: Prevent duplicate submissions from rapid clicks
@@ -132,6 +145,16 @@ export default function Checkout() {
 
       // Multi-store: store all created order info
       const allOrders = result.orders || [result.order];
+
+      // Una compra multi-tienda genera una orden por tienda; se emite un evento por cada
+      // una para que el embudo por tienda cuadre con la tabla de órdenes.
+      allOrders.forEach((order) => {
+        track("purchase", {
+          order_id: order.id,
+          store_id: order.store_id,
+          value_usd: order.total_usd,
+        });
+      });
       setCreatedOrders(allOrders);
       setCreatedOrderId(result.order.id);
       setOrderGroupId(result.order_group_id || result.order.id);

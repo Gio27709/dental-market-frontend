@@ -82,17 +82,13 @@ export default function AdminUsers() {
   const handleOpenPermissionsModal = (user) => {
     setSelectedUser(user);
     const initialPerms = {};
-    const hasConfiguredPerms = user.permissions && Object.keys(user.permissions).length > 0;
+    // El comodín "*" es acceso total declarado explícitamente. Un admin sin permisos
+    // ya NO tiene acceso a nada (el backend denega por defecto), así que la casilla
+    // vacía refleja la realidad en lugar de marcarlo todo por retrocompatibilidad.
+    const hasWildcard = user.permissions?.["*"] === true;
 
     PERMISSIONS_LIST.forEach(p => {
-      if (user.role === "owner") {
-        initialPerms[p.key] = true;
-      } else if (user.role === "admin" && !hasConfiguredPerms) {
-        // Retrocompatibility: existing admins default to true
-        initialPerms[p.key] = true;
-      } else {
-        initialPerms[p.key] = user.permissions?.[p.key] === true;
-      }
+      initialPerms[p.key] = user.role === "owner" || hasWildcard || user.permissions?.[p.key] === true;
     });
     setPermissionsForm(initialPerms);
     setPermissionsModalOpen(true);

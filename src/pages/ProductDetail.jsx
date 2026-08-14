@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useProducts } from "../context/ProductContext";
 import { useCart } from "../context/CartContext";
@@ -14,6 +14,7 @@ import ComparePricesModal from "../components/products/ComparePricesModal";
 import ProductReviews from "../components/products/ProductReviews";
 import ProductQA from "../components/products/ProductQA";
 import toast from "react-hot-toast";
+import { track } from "../services/tracking";
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -97,6 +98,20 @@ export default function ProductDetail() {
     // Track this product as recently viewed
     if (id) addViewed(id);
   }, [id, addViewed]);
+
+  // Se espera a que el producto cargue para poder atribuir la vista a su tienda y categoría.
+  // El ref evita emitir el evento de nuevo en cada re-render de la misma ficha.
+  const viewTrackedFor = useRef(null);
+  useEffect(() => {
+    if (!product?.id || viewTrackedFor.current === product.id) return;
+    viewTrackedFor.current = product.id;
+    track("product_view", {
+      product_id: product.id,
+      store_id: product.store_id,
+      category_id: product.category_id,
+      value_usd: product.price,
+    });
+  }, [product]);
 
   const validVariations = useMemo(() => {
     if (!product?.variations) return [];

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCourseByIdAPI } from "../../services/api";
+import { track } from "../../services/tracking";
 
 export default function CourseDetail() {
   const { id } = useParams();
@@ -14,6 +15,8 @@ export default function CourseDetail() {
         const res = await getCourseByIdAPI(id);
         if (res.data?.success) {
           setCourse(res.data.data);
+          // analytics_events no tiene columna course_id, así que va en properties.
+          track("course_view", { properties: { course_id: res.data.data.id } });
         }
       } catch (err) {
         console.error("Error fetching course", err);

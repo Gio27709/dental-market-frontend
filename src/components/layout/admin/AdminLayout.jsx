@@ -19,6 +19,8 @@ function AdminLayoutContent() {
     return location.pathname.startsWith(path);
   };
 
+  const isWideRoute = location.pathname.startsWith('/admin/analytics');
+
   const getLinkNotificationCount = (path) => {
     if (!stats) return 0;
     switch (path) {
@@ -238,7 +240,9 @@ function AdminLayoutContent() {
       
       {/* Main Content */}
       <div className="flex-1 pt-16 md:pt-6 p-4 md:p-8" style={{ background: '#f1ecf6' }}>
-        <div className="max-w-6xl mx-auto">
+        {/* Analíticas trae su propio rail de áreas y rejillas de 4 columnas:
+            con max-w-6xl las tablas y gráficas quedan estranguladas. */}
+        <div className={isWideRoute ? 'max-w-[1720px] mx-auto' : 'max-w-6xl mx-auto'}>
           <Outlet />
         </div>
       </div>

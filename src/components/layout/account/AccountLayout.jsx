@@ -22,6 +22,11 @@ export default function AccountLayout() {
       icon: "person",
     },
     {
+      name: "Gestión Clínica B2B 🏥",
+      path: "/clinic",
+      icon: "local_hospital",
+    },
+    {
       name: "Mis Pedidos",
       path: "/account/orders",
       icon: "shopping_bag",

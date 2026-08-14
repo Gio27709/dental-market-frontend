@@ -8,6 +8,7 @@ import {
   validateCartItemQuantity,
 } from "../utils/cartHelpers";
 import toast from "react-hot-toast";
+import { track } from "../services/tracking";
 import {
   fetchCart,
   addCartItem,
@@ -355,6 +356,13 @@ export const CartProvider = ({ children }) => {
             ];
           });
 
+          track("add_to_cart", {
+            product_id: product.id,
+            store_id: product.store_id,
+            category_id: product.category_id,
+            quantity: safeQuantity,
+            value_usd: finalPrice * safeQuantity,
+          });
           return true; // Success
         } catch (err) {
           console.error("Add to cart failed:", err);
@@ -380,6 +388,13 @@ export const CartProvider = ({ children }) => {
             );
           }
           return [...prev, newItem];
+        });
+        track("add_to_cart", {
+          product_id: product.id,
+          store_id: product.store_id,
+          category_id: product.category_id,
+          quantity: safeQuantity,
+          value_usd: finalPrice * safeQuantity,
         });
         return true;
       }

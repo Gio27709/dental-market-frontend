@@ -4,6 +4,27 @@
   --color-primary-500: #3b82f6;
   --color-primary-600: #2563eb;
   --color-secondary-500: #10b981;
+
+  /* ── Analíticas: superficies ── */
+  --color-fx-base: #12071f;
+  --color-fx-panel: #1b0d31;
+  --color-fx-raised: #24123f;
+  --color-fx-inset: #0d0418;
+  --color-fx-line: #ffffff14;
+  --color-fx-line-strong: #ffffff29;
+
+  /* ── Analíticas: texto ── */
+  --color-fx-text: #f4f1f8;
+  --color-fx-muted: #a99bc4;
+  --color-fx-faint: #7b6c99;
+
+  /* ── Analíticas: acento y series ── */
+  --color-fx-accent: #c3ff00;
+  --color-fx-violet: #a855f7;
+  --color-fx-pos: #34d399;
+  --color-fx-neg: #fb7185;
+  --color-fx-warn: #fbbf24;
+  --color-fx-info: #38bdf8;
 }
 
 html, body {
@@ -98,6 +119,115 @@ body {
 }
 .admin-scrollbar-light::-webkit-scrollbar-thumb:hover {
   background-color: rgba(107, 30, 150, 0.4);
+}
+
+/* ══════════════════════════════════════════════════════════
+   Analíticas del admin — capa de superficie
+   Un solo lugar define el "chrome" de panel. Sin blur ni glow:
+   el acento lima queda reservado al dato activo y a las CTA.
+
+   Van en @layer components a propósito: así cualquier utilidad
+   de Tailwind puesta en el mismo elemento (p-3, hover:border-…)
+   sigue ganando. Sin la capa, este CSS iría sin capa y pisaría
+   a las utilidades, que sí están en capa.
+   ══════════════════════════════════════════════════════════ */
+@layer components {
+
+.fx-card {
+  background-color: var(--color-fx-panel);
+  border: 1px solid var(--color-fx-line);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.fx-card-sm {
+  background-color: var(--color-fx-panel);
+  border: 1px solid var(--color-fx-line);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+/* Superficie sin relleno: la usan tablas y contenedores que
+   controlan su propio padding. */
+.fx-surface {
+  background-color: var(--color-fx-panel);
+  border: 1px solid var(--color-fx-line);
+  border-radius: 14px;
+}
+
+/* Hundido: filas de tabla alternas, campos, celdas de heatmap. */
+.fx-inset {
+  background-color: var(--color-fx-inset);
+  border: 1px solid var(--color-fx-line);
+  border-radius: 10px;
+}
+
+.fx-card-danger {
+  background-color: color-mix(in srgb, var(--color-fx-neg) 6%, var(--color-fx-panel));
+  border: 1px solid color-mix(in srgb, var(--color-fx-neg) 32%, transparent);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.fx-card-warn {
+  background-color: color-mix(in srgb, var(--color-fx-warn) 6%, var(--color-fx-panel));
+  border: 1px solid color-mix(in srgb, var(--color-fx-warn) 30%, transparent);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+/* Interactivo: solo se ilumina el borde, sin sombras de neón. */
+.fx-interactive {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  cursor: pointer;
+}
+.fx-interactive:hover {
+  background-color: var(--color-fx-raised);
+  border-color: var(--color-fx-line-strong);
+}
+
+/* Cifras: tabulares para que las columnas de números no bailen. */
+.fx-num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+}
+
+/* Barra lateral de áreas */
+.fx-rail::-webkit-scrollbar {
+  width: 4px;
+}
+.fx-rail::-webkit-scrollbar-track {
+  background: transparent;
+}
+.fx-rail::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+.fx-rail::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.22);
+}
+
+/* Entrada de contenido al cambiar de área. Sin librería de animación. */
+@keyframes fx-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fx-enter {
+  animation: fx-enter 0.22s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-enter {
+    animation: none;
+  }
 }
 
 
