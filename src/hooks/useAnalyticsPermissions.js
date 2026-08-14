@@ -1,5 +1,5 @@
 import { useAuth } from "../context/AuthContext";
-import { ROLE_PERMISSIONS_MAP } from "../../../backend/src/config/rolesPermissions.js";
+import { ROLE_PERMISSIONS_MAP } from "../config/rolesPermissions.js";
 
 /**
  * Hook de React para evaluar permisos del módulo analítico en el frontend
