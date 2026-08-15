@@ -6,14 +6,14 @@ import { ROLE_PERMISSIONS_MAP } from "../config/rolesPermissions.js";
  */
 export default function useAnalyticsPermissions() {
   const { user } = useAuth() || {};
-  const rawRole = (user?.role || "admin").toLowerCase();
+  const rawRole = (user?.role || "").toLowerCase();
   
   // Normalizar nombres de roles administrativos (super_admin, administrator, owner, admin)
   const normRole = (rawRole === "super_admin" || rawRole === "administrator" || rawRole === "owner" || rawRole === "admin") 
     ? "admin" 
     : rawRole;
 
-  const userPermissions = ROLE_PERMISSIONS_MAP[normRole] || ["*"];
+  const userPermissions = ROLE_PERMISSIONS_MAP[normRole] || [];
 
   /**
    * Verifica si el usuario actual tiene acceso a una pestaña o departamento analítico
