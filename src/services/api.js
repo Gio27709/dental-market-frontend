@@ -112,7 +112,8 @@ export const processAdminPayoutAPI = (id, formData) =>
   });
 
 // Admin Store Applications API
-export const getAdminStoreApplicationsAPI = () => api.get("/admin/store-applications");
+export const getAdminStoreApplicationsAPI = (params) => api.get("/admin/store-applications", { params });
+export const getStoreApplicationReviewAPI = (id) => api.get(`/admin/store-applications/${id}/review`);
 export const approveStoreApplicationAPI = (id) => api.post(`/admin/store-applications/${id}/approve`);
 export const rejectStoreApplicationAPI = (id) => api.post(`/admin/store-applications/${id}/reject`);
 export const deleteStoreApplicationAPI = (id) => api.delete(`/admin/store-applications/${id}`);
@@ -122,6 +123,7 @@ export const bulkDeleteStoreApplicationsAPI = (ids) => api.post(`/admin/store-ap
 export const getAdminRiderApplicationsAPI = () => api.get("/admin/rider-applications");
 export const approveRiderApplicationAPI = (id) => api.post(`/admin/rider-applications/${id}/approve`);
 export const rejectRiderApplicationAPI = (id) => api.post(`/admin/rider-applications/${id}/reject`);
+export const revokeRiderApplicationAPI = (id, reason) => api.post(`/admin/rider-applications/${id}/revoke`, { reason });
 
 // Admin Store Moderation API
 export const getStoreDetailsAPI = (userId) => api.get(`/admin/store-applications/stores/${userId}/details`);
