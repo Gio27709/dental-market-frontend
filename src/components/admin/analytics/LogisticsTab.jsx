@@ -8,6 +8,8 @@ import FreshnessBadge from "./FreshnessBadge";
 import DateRangePicker from "./DateRangePicker";
 import AnalyticsStoreFilter from "./AnalyticsStoreFilter";
 import AnalyticsExportButton from "./AnalyticsExportButton";
+import useDrilldown from "../../../hooks/useDrilldown";
+import DrilldownModal from "./DrilldownModal";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, LineChart, Line } from "recharts";
 
 export default function LogisticsTab() {
@@ -19,6 +21,7 @@ export default function LogisticsTab() {
   const [period, setPeriod] = useState("30d");
   const [selectedStoreIds, setSelectedStoreIds] = useState([]);
   const [chartMode, setChartMode] = useState("area");
+  const drilldown = useDrilldown();
 
   useEffect(() => {
     getStoresListAPI()
@@ -122,6 +125,13 @@ export default function LogisticsTab() {
               ? `Retenido. ${sla.shippedBeforeApproved} despachos están fechados antes de que se aprobara su propio pago, así que la resta no describe el desempeño.`
               : `Ventana de ${sla.configuredHours} h desde la aprobación del pago hasta la salida del paquete: es la misma que el cron sanciona con amonestaciones, multas y suspensiones. No se usa sla_promised_at (nunca se escribió) ni delivered_at (es un semáforo de escrow que se borra al liberar fondos).`
           }
+          onDrilldown={() =>
+            drilldown.open("shipments", {
+              title: "Despachos medibles contra el SLA",
+              subtitle: "Las horas hasta despachar de cada ítem aparecen en su columna",
+              filters: { sla_measurable: true }
+            })
+          }
         />
         <KpiCard
           title="Tiempo Prom. Despacho"
@@ -133,6 +143,13 @@ export default function LogisticsTab() {
               ? `Retenido. ${sla.shippedBeforeApproved} despachos figuran anteriores a la aprobación de su pago: el promedio saldría negativo.`
               : "Horas entre la aprobación del pago y la salida del paquete, la misma base que el SLA. Solo cuenta los ítems con ambas marcas registradas."
           }
+          onDrilldown={() =>
+            drilldown.open("shipments", {
+              title: "Despachos con ambas marcas de tiempo",
+              subtitle: "Base del tiempo promedio de despacho",
+              filters: { sla_measurable: true }
+            })
+          }
         />
         <KpiCard
           title="Tiempo Prom. en Ruta"
@@ -140,7 +157,12 @@ export default function LogisticsTab() {
           format="number"
           suffix={` hrs · n=${stageHours.n_deliver ?? 0}`}
           tooltip="Horas entre el evento de recogida y el de entrega, medidas dentro de delivery_events. No se usa order_items.delivered_at: esa columna es un semáforo de escrow que se borra al liberar los fondos."
-          drilldownUrl="/admin/orders"
+          onDrilldown={() =>
+            drilldown.open("delivery_events", {
+              title: "Bitácora de entrega del período",
+              subtitle: "Cada hito registrado por los repartidores"
+            })
+          }
         />
         <KpiCard
           title="Envíos Totales Procesados"
@@ -148,7 +170,9 @@ export default function LogisticsTab() {
           format="number"
           suffix=" envíos"
           tooltip="Mapeado en M32: Cantidad acumulada de paquetes despachados en el período."
-          drilldownUrl="/admin/orders"
+          onDrilldown={() =>
+            drilldown.open("shipments", { title: "Todos los envíos del período" })
+          }
         />
         <KpiCard
           title="Entregas Exitosas"
@@ -156,7 +180,12 @@ export default function LogisticsTab() {
           format="number"
           suffix=" paquetes"
           tooltip="Total de ítems con entrega confirmada exitosamente al cliente."
-          drilldownUrl="/admin/orders"
+          onDrilldown={() =>
+            drilldown.open("shipments", {
+              title: "Entregas confirmadas",
+              filters: { delivery_status: "delivered" }
+            })
+          }
         />
         <KpiCard
           title="Entregas Fallidas / Canceladas"
@@ -164,7 +193,12 @@ export default function LogisticsTab() {
           format="number"
           suffix=" ítems"
           tooltip="Mapeado en M35: Envíos no completados por cancelación o falla en ruta."
-          drilldownUrl="/admin/orders"
+          onDrilldown={() =>
+            drilldown.open("shipments", {
+              title: "Envíos fallidos o cancelados",
+              filters: { delivery_status: "cancelled" }
+            })
+          }
         />
       </div>
 
@@ -246,7 +280,23 @@ export default function LogisticsTab() {
       <DataTable
         title="Pipeline de Despachos por Estado"
         columns={[
-          { header: "Estado de Envíos", accessor: "delivery_status", render: (r) => <span className="font-bold uppercase text-fx-text">{r.delivery_status}</span> },
+          {
+            header: "Estado de Envíos",
+            accessor: "delivery_status",
+            render: (r) => (
+              <button
+                onClick={() =>
+                  drilldown.open("shipments", {
+                    title: `Envíos en estado "${r.delivery_status}"`,
+                    filters: { delivery_status: r.delivery_status }
+                  })
+                }
+                className="font-bold uppercase text-fx-accent hover:underline text-left"
+              >
+                {r.delivery_status}
+              </button>
+            )
+          },
           { header: "Cantidad de Envíos", accessor: "item_count", render: (r) => parseInt(r.item_count || 0).toLocaleString() },
         ]}
         data={dispatchPipeline}
@@ -287,13 +337,31 @@ export default function LogisticsTab() {
         <DataTable
           title="Volumen por Estado / Región Geográfica"
           columns={[
-            { header: "Estado", accessor: "state", render: (r) => <span className="font-bold text-fx-text">{r.state}</span> },
+            {
+              header: "Estado",
+              accessor: "state",
+              render: (r) => (
+                <button
+                  onClick={() =>
+                    drilldown.open("shipments", {
+                      title: `Envíos hacia ${r.state}`,
+                      filters: { destination_state: r.state }
+                    })
+                  }
+                  className="font-bold text-fx-accent hover:underline text-left"
+                >
+                  {r.state}
+                </button>
+              )
+            },
             { header: "Órdenes", accessor: "total_orders", render: (r) => parseInt(r.total_orders || 0).toLocaleString() },
             { header: "Volumen USD", accessor: "total_volume", render: (r) => `$${parseFloat(r.total_volume || 0).toFixed(2)}` }
           ]}
           data={geoVolume}
         />
       </div>
+
+      <DrilldownModal {...drilldown.props} period={period} />
     </div>
   );
 }

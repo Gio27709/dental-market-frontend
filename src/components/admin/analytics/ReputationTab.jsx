@@ -89,12 +89,21 @@ export default function ReputationTab() {
           format="number"
           suffix=" / 5"
           tooltip="Promedio de estrellas del período. Míralo siempre junto a la distribución: un 4.0 puede ser todo 4 estrellas o mitad 5 y mitad 1."
+          onDrilldown={() =>
+            drilldown.open("product_reviews", { title: "Reseñas del período" })
+          }
         />
         <KpiCard
           title="Saldo Neto (NPS)"
           value={kpis.npsLike}
           format="number"
           tooltip="Promotores (4-5 ★) menos detractores (1-2 ★), sobre el total. Adaptado a escala de 5 estrellas; va de -100 a +100."
+          onDrilldown={() =>
+            drilldown.open("product_reviews", {
+              title: "Reseñas del período",
+              subtitle: "Promotores: 4-5 ★ · Detractores: 1-2 ★"
+            })
+          }
         />
         <KpiCard
           title="Cobertura del Catálogo"
@@ -155,6 +164,13 @@ export default function ReputationTab() {
           format="number"
           suffix=" hrs"
           tooltip={`Tasa de respuesta histórica: ${kpis.answerRatePct ?? "—"}%. La media es ${kpis.avgHoursToAnswer ?? "—"} hrs, más sensible a casos extremos.`}
+          onDrilldown={() =>
+            drilldown.open("product_questions", {
+              title: "Preguntas respondidas y sus horas hasta responder",
+              subtitle: "Histórico completo, sin acotar al período",
+              filters: { unanswered: false, allTime: true }
+            })
+          }
         />
       </div>
 

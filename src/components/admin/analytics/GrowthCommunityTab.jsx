@@ -10,6 +10,8 @@ import CompareToggle from "./CompareToggle";
 import AnalyticsStoreFilter from "./AnalyticsStoreFilter";
 import AnalyticsExportButton from "./AnalyticsExportButton";
 import RetentionCohortHeatmap from "./RetentionCohortHeatmap";
+import useDrilldown from "../../../hooks/useDrilldown";
+import DrilldownModal from "./DrilldownModal";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, LineChart, Line } from "recharts";
 
 export default function GrowthCommunityTab() {
@@ -22,6 +24,7 @@ export default function GrowthCommunityTab() {
   const [isComparing, setIsComparing] = useState(false);
   const [selectedStoreIds, setSelectedStoreIds] = useState([]);
   const [chartMode, setChartMode] = useState("area");
+  const drilldown = useDrilldown();
 
   useEffect(() => {
     getStoresListAPI()
@@ -201,7 +204,23 @@ export default function GrowthCommunityTab() {
         <DataTable
           title="ROI de Cupones y Promociones Redimidas"
           columns={[
-            { header: "Cupón", accessor: "coupon_code", render: (r) => <span className="font-bold text-fx-accent uppercase font-mono">{r.coupon_code}</span> },
+            {
+              header: "Cupón",
+              accessor: "coupon_code",
+              render: (r) => (
+                <button
+                  onClick={() =>
+                    drilldown.open("orders", {
+                      title: `Pedidos con el cupón "${r.coupon_code}"`,
+                      filters: { coupon_code: r.coupon_code, not_cancelled: true }
+                    })
+                  }
+                  className="font-bold text-fx-accent uppercase font-mono hover:underline text-left"
+                >
+                  {r.coupon_code}
+                </button>
+              )
+            },
             { header: "Usos", accessor: "redemptions", render: (r) => parseInt(r.redemptions || 0).toLocaleString() },
             { header: "Descuento Dado", accessor: "total_discounted", render: (r) => `$${parseFloat(r.total_discounted || 0).toFixed(2)}` },
             { header: "Ventas Generadas", accessor: "sales_generated", render: (r) => <span className="font-bold text-fx-text">${parseFloat(r.sales_generated || 0).toFixed(2)}</span> }
@@ -211,7 +230,23 @@ export default function GrowthCommunityTab() {
         <DataTable
           title="Top Compradores Más Recurrentes"
           columns={[
-            { header: "Cliente", accessor: "buyer_name", render: (r) => <span className="font-bold text-fx-text">{r.buyer_name}</span> },
+            {
+              header: "Cliente",
+              accessor: "buyer_name",
+              render: (r) => (
+                <button
+                  onClick={() =>
+                    drilldown.open("orders", {
+                      title: `Pedidos de ${r.buyer_name}`,
+                      filters: { user_id: r.id, not_cancelled: true }
+                    })
+                  }
+                  className="font-bold text-fx-accent hover:underline text-left"
+                >
+                  {r.buyer_name}
+                </button>
+              )
+            },
             { header: "Email", accessor: "email", render: (r) => <span className="text-fx-faint font-mono text-xs">{r.email}</span> },
             { header: "Órdenes Totales", accessor: "total_orders", render: (r) => <span className="font-semibold text-fx-accent">{parseInt(r.total_orders || 0).toLocaleString()}</span> },
             { header: "Gasto Acumulado", accessor: "total_spent", render: (r) => `$${parseFloat(r.total_spent || 0).toFixed(2)}` }
@@ -224,7 +259,24 @@ export default function GrowthCommunityTab() {
       <DataTable
         title="Interés en los Cursos de Formación"
         columns={[
-          { header: "Título del Curso", accessor: "title", render: (r) => <span className="font-bold text-fx-text">{r.title}</span> },
+          {
+            header: "Título del Curso",
+            accessor: "title",
+            render: (r) => (
+              <button
+                onClick={() =>
+                  drilldown.open("analytics_events", {
+                    title: `Visitas al curso "${r.title}"`,
+                    subtitle: "Cada evento course_view registrado en el período",
+                    filters: { event_name: "course_view", course_id: r.id }
+                  })
+                }
+                className="font-bold text-fx-accent hover:underline text-left"
+              >
+                {r.title}
+              </button>
+            )
+          },
           { header: "Nivel", accessor: "level", render: (r) => <span className="text-fx-faint capitalize">{r.level || "—"}</span> },
           { header: "Acceso", accessor: "is_free", render: (r) => (r.is_free ? "Gratuito" : "De pago") },
           { header: "Visitas", accessor: "views", render: (r) => <span className="font-semibold text-fx-accent">{parseInt(r.views || 0).toLocaleString()}</span> },
@@ -232,6 +284,8 @@ export default function GrowthCommunityTab() {
         ]}
         data={courses}
       />
+
+      <DrilldownModal {...drilldown.props} period={period} />
     </div>
   );
 }

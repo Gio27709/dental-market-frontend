@@ -112,12 +112,25 @@ export default function DemandTab() {
           format="number"
           suffix={` · ${money(kpis.abandonedValueUsd)}`}
           tooltip="Carritos con productos cuyo dueño no ha generado ninguna orden desde la última vez que lo tocó."
+          onDrilldown={() =>
+            drilldown.open("carts", {
+              title: "Carritos abandonados",
+              subtitle: "Con productos y sin ninguna orden posterior del dueño",
+              filters: { non_empty: true, abandoned: true, allTime: true }
+            })
+          }
         />
         <KpiCard
           title="Ticket Promedio del Carrito"
           value={kpis.avgCartValueUsd}
           format="currency"
           tooltip="Valor medio de un carrito con contenido. Compáralo con el ticket promedio de las órdenes reales para ver cuánto se pierde en el camino."
+          onDrilldown={() =>
+            drilldown.open("carts", {
+              title: "Carritos con contenido y su valor",
+              filters: { non_empty: true, allTime: true }
+            })
+          }
         />
         <KpiCard
           title="Favoritos Guardados"
@@ -133,6 +146,12 @@ export default function DemandTab() {
           format="number"
           suffix={` · ${kpis.usersWithFavorites || 0} usuarios`}
           tooltip="Productos distintos que al menos una persona guardó en favoritos."
+          onDrilldown={() =>
+            drilldown.open("favorites", {
+              title: "Productos guardados en favoritos",
+              filters: { allTime: true }
+            })
+          }
         />
         <KpiCard
           title="Conversión de la Intención"
@@ -140,6 +159,13 @@ export default function DemandTab() {
           format="percent"
           suffix={` de ${kpis.intentPairs || 0} señales`}
           tooltip="De cada par usuario-producto que mostró intención (favorito o carrito), qué porcentaje terminó en una compra real de ese usuario."
+          onDrilldown={() =>
+            drilldown.open("favorites", {
+              title: "Intención que nunca se convirtió en compra",
+              subtitle: "Favoritos cuyo dueño jamás compró ese producto",
+              filters: { never_purchased: true, allTime: true }
+            })
+          }
         />
         <KpiCard
           title="Demanda Bloqueada"
@@ -147,6 +173,13 @@ export default function DemandTab() {
           format="number"
           suffix=" productos"
           tooltip="Productos que alguien quiere y la plataforma no puede vender: agotados, en borrador, desactivados o rechazados en moderación."
+          onDrilldown={() =>
+            drilldown.open("cart_items", {
+              title: "Demanda bloqueada en carritos",
+              subtitle: "Ítems de carrito cuyo producto no se puede vender hoy",
+              filters: { unavailable: true, allTime: true }
+            })
+          }
         />
       </div>
 
@@ -277,10 +310,18 @@ export default function DemandTab() {
             header: "Cliente",
             accessor: "user_name",
             render: (r) => (
-              <div>
-                <p className="font-bold text-fx-text">{r.user_name || "Sin nombre"}</p>
+              <button
+                onClick={() =>
+                  drilldown.open("cart_items", {
+                    title: `Qué hay dentro del carrito de ${r.user_name || r.email || "este cliente"}`,
+                    filters: { cart_id: r.cart_id, allTime: true }
+                  })
+                }
+                className="text-left"
+              >
+                <p className="font-bold text-fx-accent hover:underline">{r.user_name || "Sin nombre"}</p>
                 <p className="text-[10px] text-fx-muted font-mono">{r.email}</p>
-              </div>
+              </button>
             )
           },
           { header: "Líneas", accessor: "items", render: (r) => Number(r.items).toLocaleString("en-US") },
@@ -321,7 +362,19 @@ export default function DemandTab() {
               <tbody>
                 {data.blockedDemand.map((r) => (
                   <tr key={r.product_id} className="border-b border-fx-line hover:bg-purple-500/5 transition-colors">
-                    <td className="py-3 px-4 font-bold text-fx-text">{r.product_name}</td>
+                    <td className="py-3 px-4">
+                      <button
+                        onClick={() =>
+                          drilldown.open("cart_items", {
+                            title: `Carritos que esperan "${r.product_name}"`,
+                            filters: { product_id: r.product_id, allTime: true }
+                          })
+                        }
+                        className="font-bold text-fx-accent hover:underline text-left"
+                      >
+                        {r.product_name}
+                      </button>
+                    </td>
                     <td className="py-3 px-4">{r.store_name || "—"}</td>
                     <td className="py-3 px-4">{money(r.price)}</td>
                     <td className="py-3 px-4 font-bold text-fx-accent">{r.demand_signals}</td>
@@ -383,7 +436,23 @@ export default function DemandTab() {
       <DataTable
         title="Interés Acumulado por Tienda"
         columns={[
-          { header: "Tienda", accessor: "store_name", render: (r) => <span className="font-bold text-fx-text">{r.store_name || "—"}</span> },
+          {
+            header: "Tienda",
+            accessor: "store_name",
+            render: (r) => (
+              <button
+                onClick={() =>
+                  drilldown.open("favorites", {
+                    title: `Favoritos de la tienda ${r.store_name || ""}`,
+                    filters: { store_id: r.store_id, allTime: true }
+                  })
+                }
+                className="font-bold text-fx-accent hover:underline text-left"
+              >
+                {r.store_name || "—"}
+              </button>
+            )
+          },
           { header: "Favoritos", accessor: "favorites", render: (r) => Number(r.favorites).toLocaleString("en-US") },
           { header: "Productos Deseados", accessor: "products_favorited", render: (r) => Number(r.products_favorited).toLocaleString("en-US") },
           { header: "Usuarios Distintos", accessor: "distinct_users", render: (r) => Number(r.distinct_users).toLocaleString("en-US") }

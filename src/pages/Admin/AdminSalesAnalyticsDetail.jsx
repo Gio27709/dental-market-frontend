@@ -626,7 +626,7 @@ export default function AdminSalesAnalyticsDetail() {
                   render: (r) => (
                     <span className="inline-flex items-center gap-1 text-fx-warn font-semibold fx-num">
                       <Star className="w-3 h-3 fill-current" aria-hidden="true" />
-                      {parseFloat(r.rating_avg || 0).toFixed(1)}
+                      {r.rating_avg != null ? parseFloat(r.rating_avg).toFixed(1) : "N/A"}
                     </span>
                   )
                 },

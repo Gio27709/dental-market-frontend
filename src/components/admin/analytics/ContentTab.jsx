@@ -8,6 +8,8 @@ import SkeletonLoader from "./SkeletonLoader";
 import FreshnessBadge from "./FreshnessBadge";
 import DateRangePicker from "./DateRangePicker";
 import AnalyticsErrorPanel from "./AnalyticsErrorPanel";
+import useDrilldown from "../../../hooks/useDrilldown";
+import DrilldownModal from "./DrilldownModal";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer,
@@ -19,6 +21,7 @@ export default function ContentTab() {
   const [period, setPeriod] = useState("30d");
   const [chartMode, setChartMode] = useState("area");
   const { data, loading, error, reload } = useAnalyticsTabData(getContentAnalyticsAPI, period);
+  const drilldown = useDrilldown();
 
   if (loading && !data) return <SkeletonLoader type="kpiRow" />;
   if (error) return <AnalyticsErrorPanel title="Error al Cargar Contenido & Comunidad" message={error} onRetry={() => reload(true)} />;
@@ -44,7 +47,9 @@ export default function ContentTab() {
           format="number"
           suffix=" posts"
           tooltip="Publicaciones creadas dentro del período seleccionado."
-          drilldownUrl="/admin/posts"
+          onDrilldown={() =>
+            drilldown.open("posts", { title: "Publicaciones creadas en el período" })
+          }
         />
         <KpiCard
           title="Lecturas Totales"
@@ -52,6 +57,12 @@ export default function ContentTab() {
           format="number"
           suffix=" vistas"
           tooltip="Aperturas de publicaciones registradas por el seguimiento de eventos."
+          onDrilldown={() =>
+            drilldown.open("analytics_events", {
+              title: "Lecturas de publicaciones",
+              filters: { event_name: "post_view" }
+            })
+          }
         />
         <KpiCard
           title="Lectores Únicos"
@@ -59,20 +70,68 @@ export default function ContentTab() {
           format="number"
           suffix=" personas"
           tooltip="Visitantes distintos que abrieron al menos una publicación."
+          onDrilldown={() =>
+            drilldown.open("analytics_events", {
+              title: "Lecturas de publicaciones",
+              subtitle: "Cada lector aparece en las lecturas que hizo",
+              filters: { event_name: "post_view" }
+            })
+          }
         />
         <KpiCard
           title="Tasa de Interacción"
           value={kpis.engagementRatePct || 0}
           format="percent"
           tooltip="Suma de likes, comentarios y guardados dividida entre las lecturas del período."
+          onDrilldown={() =>
+            drilldown.open("post_interactions", {
+              title: "Todas las interacciones del período"
+            })
+          }
         />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
-        <KpiCard title="Publicaciones Activas" value={kpis.publishedPosts || 0} format="number" suffix=" publicadas" tooltip="Total histórico de publicaciones visibles en la comunidad." drilldownUrl="/admin/posts" />
-        <KpiCard title="Me Gusta" value={kpis.likes || 0} format="number" tooltip="Likes registrados en el período." />
-        <KpiCard title="Comentarios" value={kpis.comments || 0} format="number" tooltip="Comentarios publicados en el período." />
-        <KpiCard title="Guardados" value={kpis.saves || 0} format="number" tooltip="Veces que se guardó una publicación para leer después." />
+        <KpiCard
+          title="Publicaciones Activas"
+          value={kpis.publishedPosts || 0}
+          format="number"
+          suffix=" publicadas"
+          tooltip="Total histórico de publicaciones visibles en la comunidad."
+          onDrilldown={() =>
+            drilldown.open("posts", {
+              title: "Publicaciones activas (histórico)",
+              filters: { is_published: true, allTime: true }
+            })
+          }
+        />
+        <KpiCard
+          title="Me Gusta"
+          value={kpis.likes || 0}
+          format="number"
+          tooltip="Likes registrados en el período."
+          onDrilldown={() =>
+            drilldown.open("post_interactions", { title: "Me gusta del período", filters: { kind: "me_gusta" } })
+          }
+        />
+        <KpiCard
+          title="Comentarios"
+          value={kpis.comments || 0}
+          format="number"
+          tooltip="Comentarios publicados en el período."
+          onDrilldown={() =>
+            drilldown.open("post_interactions", { title: "Comentarios del período", filters: { kind: "comentario" } })
+          }
+        />
+        <KpiCard
+          title="Guardados"
+          value={kpis.saves || 0}
+          format="number"
+          tooltip="Veces que se guardó una publicación para leer después."
+          onDrilldown={() =>
+            drilldown.open("post_interactions", { title: "Guardados del período", filters: { kind: "guardado" } })
+          }
+        />
       </div>
 
       <ChartCard
@@ -126,7 +185,23 @@ export default function ContentTab() {
       <DataTable
         title="Publicaciones con Mejor Rendimiento"
         columns={[
-          { header: "Título", accessor: "title", render: (r) => <span className="font-bold text-fx-text">{r.title}</span> },
+          {
+            header: "Título",
+            accessor: "title",
+            render: (r) => (
+              <button
+                onClick={() =>
+                  drilldown.open("analytics_events", {
+                    title: `Lecturas de "${r.title}"`,
+                    filters: { event_name: "post_view", post_id: r.id }
+                  })
+                }
+                className="font-bold text-fx-accent hover:underline text-left"
+              >
+                {r.title}
+              </button>
+            ),
+          },
           { header: "Autor", accessor: "author_name", render: (r) => <span className="text-fx-faint">{r.author_name || "—"}</span> },
           { header: "Categoría", accessor: "category", render: (r) => r.category || "—" },
           { header: "Lecturas", accessor: "views", render: (r) => <span className="font-semibold text-fx-accent">{parseInt(r.views || 0).toLocaleString()}</span> },
@@ -143,7 +218,23 @@ export default function ContentTab() {
         <DataTable
           title="Autores Más Leídos"
           columns={[
-            { header: "Autor", accessor: "author_name", render: (r) => <span className="font-bold text-fx-text">{r.author_name}</span> },
+            {
+              header: "Autor",
+              accessor: "author_name",
+              render: (r) => (
+                <button
+                  onClick={() =>
+                    drilldown.open("posts", {
+                      title: `Publicaciones de ${r.author_name}`,
+                      filters: { author_id: r.id, allTime: true }
+                    })
+                  }
+                  className="font-bold text-fx-accent hover:underline text-left"
+                >
+                  {r.author_name}
+                </button>
+              ),
+            },
             { header: "Posts", accessor: "posts" },
             { header: "Lecturas", accessor: "total_views", render: (r) => <span className="font-semibold text-fx-accent">{parseInt(r.total_views || 0).toLocaleString()}</span> },
             { header: "Likes", accessor: "total_likes" },
@@ -154,7 +245,26 @@ export default function ContentTab() {
         <DataTable
           title="Categorías de Contenido"
           columns={[
-            { header: "Categoría", accessor: "category", render: (r) => <span className="font-bold text-fx-text capitalize">{r.category}</span> },
+            {
+              header: "Categoría",
+              accessor: "category",
+              render: (r) =>
+                r.category === "sin_categoria" ? (
+                  <span className="font-bold text-fx-text capitalize">Sin categoría</span>
+                ) : (
+                  <button
+                    onClick={() =>
+                      drilldown.open("posts", {
+                        title: `Publicaciones de la categoría "${r.category}"`,
+                        filters: { category: r.category, allTime: true }
+                      })
+                    }
+                    className="font-bold text-fx-accent hover:underline capitalize text-left"
+                  >
+                    {r.category}
+                  </button>
+                ),
+            },
             { header: "Publicaciones", accessor: "posts" },
             { header: "Lecturas", accessor: "views", render: (r) => <span className="font-semibold text-fx-accent">{parseInt(r.views || 0).toLocaleString()}</span> },
           ]}
@@ -162,6 +272,8 @@ export default function ContentTab() {
           searchPlaceholder="Buscar categoría..."
         />
       </div>
+
+      <DrilldownModal {...drilldown.props} period={period} />
     </div>
   );
 }

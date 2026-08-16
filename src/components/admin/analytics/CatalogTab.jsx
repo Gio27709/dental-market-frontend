@@ -99,6 +99,13 @@ export default function CatalogTab() {
           format="percent"
           suffix={` · mediana ${kpis.medianMarginPct ?? "—"}%`}
           tooltip="Calculado con cost_price contra precio de venta, solo sobre los productos que declaran costo. Si la mediana es muy distinta del promedio, unos pocos productos están distorsionando la lectura."
+          onDrilldown={() =>
+            drilldown.open("products", {
+              title: "Productos que declaran costo",
+              subtitle: "Solo sobre estos se puede calcular el margen real",
+              filters: { missing_cost: false, allTime: true }
+            })
+          }
         />
         <KpiCard
           title="Cobertura de Costos"
@@ -120,6 +127,12 @@ export default function CatalogTab() {
           format="number"
           suffix={` · ${kpis.fakeDiscounts || 0} descuentos falsos`}
           tooltip="Se venden por debajo de lo que cuestan: cada unidad vendida pierde dinero. Los descuentos falsos son productos cuyo precio 'antes' es igual o menor al actual."
+          onDrilldown={() =>
+            drilldown.open("products", {
+              title: "Productos vendidos por debajo de su costo",
+              filters: { below_cost: true, allTime: true }
+            })
+          }
         />
         <KpiCard
           title="Marcas en Uso"
@@ -155,6 +168,12 @@ export default function CatalogTab() {
           format="number"
           suffix={kpis.withoutCategory ? ` · ${kpis.withoutCategory} sin categoría` : " sin marca"}
           tooltip="Productos que no aparecerán en los filtros por marca ni en las páginas de marca. Son invisibles para quien busca por fabricante."
+          onDrilldown={() =>
+            drilldown.open("products", {
+              title: "Productos sin marca asignada",
+              filters: { without_brand: true, allTime: true }
+            })
+          }
         />
       </div>
 
@@ -169,7 +188,18 @@ export default function CatalogTab() {
             accessor: "product_name",
             render: (r) => (
               <div>
-                <p className="font-bold text-fx-text">{r.product_name}</p>
+                <button
+                  onClick={() =>
+                    drilldown.open("order_items", {
+                      title: `Ventas de "${r.product_name}"`,
+                      subtitle: "De dónde salió la ganancia generada",
+                      filters: { product_id: r.product_id, allTime: true }
+                    })
+                  }
+                  className="font-bold text-fx-accent hover:underline text-left"
+                >
+                  {r.product_name}
+                </button>
                 <p className="text-[10px] text-fx-muted">
                   {r.store_name || "—"}
                   {r.brand_name ? ` · ${r.brand_name}` : " · sin marca"}
@@ -207,7 +237,24 @@ export default function CatalogTab() {
           subtitle="Cada unidad vendida resta dinero"
           searchPlaceholder="Buscar producto..."
           columns={[
-            { header: "Producto", accessor: "product_name", render: (r) => <span className="font-bold text-fx-text">{r.product_name}</span> },
+            {
+              header: "Producto",
+              accessor: "product_name",
+              render: (r) => (
+                <button
+                  onClick={() =>
+                    drilldown.open("order_items", {
+                      title: `Ventas de "${r.product_name}"`,
+                      subtitle: "Cada línea vendida perdió dinero",
+                      filters: { product_id: r.product_id, allTime: true }
+                    })
+                  }
+                  className="font-bold text-fx-accent hover:underline text-left"
+                >
+                  {r.product_name}
+                </button>
+              )
+            },
             { header: "Tienda", accessor: "store_name", render: (r) => r.store_name || "—" },
             { header: "Precio", accessor: "price", render: (r) => money(r.price) },
             { header: "Costo", accessor: "cost_price", render: (r) => money(r.cost_price) },
@@ -227,7 +274,24 @@ export default function CatalogTab() {
           subtitle="Productos con ventas reales que nunca declararon costo"
           searchPlaceholder="Buscar producto..."
           columns={[
-            { header: "Producto", accessor: "product_name", render: (r) => <span className="font-bold text-fx-text">{r.product_name}</span> },
+            {
+              header: "Producto",
+              accessor: "product_name",
+              render: (r) => (
+                <button
+                  onClick={() =>
+                    drilldown.open("order_items", {
+                      title: `Ventas de "${r.product_name}"`,
+                      subtitle: "Facturado sin costo declarado: ganancia desconocida",
+                      filters: { product_id: r.product_id, allTime: true }
+                    })
+                  }
+                  className="font-bold text-fx-accent hover:underline text-left"
+                >
+                  {r.product_name}
+                </button>
+              )
+            },
             { header: "Tienda", accessor: "store_name", render: (r) => r.store_name || "—" },
             { header: "Precio", accessor: "price", render: (r) => money(r.price) },
             { header: "Vendidas", accessor: "units_sold", render: (r) => num(r.units_sold) },
@@ -262,7 +326,20 @@ export default function CatalogTab() {
               <tbody>
                 {data.fakeDiscounts.map((r) => (
                   <tr key={r.product_id} className="border-b border-fx-line hover:bg-purple-500/5 transition-colors">
-                    <td className="py-3 px-4 font-bold text-fx-text">{r.product_name}</td>
+                    <td className="py-3 px-4">
+                      <button
+                        onClick={() =>
+                          drilldown.open("price_history", {
+                            title: `Historial de precios de "${r.product_name}"`,
+                            subtitle: "Cómo llegó el precio 'antes' a quedar por debajo del actual",
+                            filters: { product_id: r.product_id, allTime: true }
+                          })
+                        }
+                        className="font-bold text-fx-accent hover:underline text-left"
+                      >
+                        {r.product_name}
+                      </button>
+                    </td>
                     <td className="py-3 px-4">{r.store_name || "—"}</td>
                     <td className="py-3 px-4 line-through text-gray-500">{money(r.compare_at_price)}</td>
                     <td className="py-3 px-4 font-semibold text-rose-400">{money(r.price)}</td>
@@ -510,7 +587,23 @@ export default function CatalogTab() {
             accessor: "created_at",
             render: (r) => new Date(r.created_at).toLocaleDateString("es-VE")
           },
-          { header: "Producto", accessor: "product_name", render: (r) => <span className="font-bold text-fx-text">{r.product_name}</span> },
+          {
+            header: "Producto",
+            accessor: "product_name",
+            render: (r) => (
+              <button
+                onClick={() =>
+                  drilldown.open("price_history", {
+                    title: `Historial de precios de "${r.product_name}"`,
+                    filters: { product_id: r.product_id, allTime: true }
+                  })
+                }
+                className="font-bold text-fx-accent hover:underline text-left"
+              >
+                {r.product_name}
+              </button>
+            )
+          },
           { header: "Tienda", accessor: "store_name", render: (r) => r.store_name || "—" },
           { header: "Antes", accessor: "old_price", render: (r) => <span className="text-fx-muted">{money(r.old_price)}</span> },
           { header: "Después", accessor: "new_price", render: (r) => money(r.new_price) },
@@ -545,7 +638,23 @@ export default function CatalogTab() {
               accessor: "created_at",
               render: (r) => new Date(r.created_at).toLocaleDateString("es-VE")
             },
-            { header: "Producto", accessor: "product_name", render: (r) => <span className="font-bold text-fx-text">{r.product_name}</span> },
+            {
+            header: "Producto",
+            accessor: "product_name",
+            render: (r) => (
+              <button
+                onClick={() =>
+                  drilldown.open("price_history", {
+                    title: `Historial de precios de "${r.product_name}"`,
+                    filters: { product_id: r.product_id, allTime: true }
+                  })
+                }
+                className="font-bold text-fx-accent hover:underline text-left"
+              >
+                {r.product_name}
+              </button>
+            )
+          },
             { header: "Antes", accessor: "old_price", render: (r) => money(r.old_price) },
             { header: "Después", accessor: "new_price", render: (r) => money(r.new_price) },
             {

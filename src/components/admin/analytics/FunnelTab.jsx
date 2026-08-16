@@ -10,6 +10,8 @@ import DateRangePicker from "./DateRangePicker";
 import EmptyState from "./EmptyState";
 import AnalyticsErrorPanel from "./AnalyticsErrorPanel";
 import ConversionFunnelChart from "./ConversionFunnelChart";
+import useDrilldown from "../../../hooks/useDrilldown";
+import DrilldownModal from "./DrilldownModal";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer,
@@ -21,6 +23,7 @@ export default function FunnelTab() {
   const [period, setPeriod] = useState("30d");
   const [chartMode, setChartMode] = useState("area");
   const { data, loading, error, reload } = useAnalyticsTabData(getFunnelAnalyticsAPI, period);
+  const drilldown = useDrilldown();
 
   if (loading && !data) return <SkeletonLoader type="kpiRow" />;
   if (error) return <AnalyticsErrorPanel title="Error al Cargar el Embudo de Conversión" message={error} onRetry={() => reload(true)} />;
@@ -48,6 +51,12 @@ export default function FunnelTab() {
           value={kpis.conversionRatePct || 0}
           format="percent"
           tooltip="Porcentaje de sesiones que terminaron en una compra. Se calcula sobre el tráfico medido, no sobre una estimación."
+          onDrilldown={() =>
+            drilldown.open("analytics_events", {
+              title: "Compras registradas por el tracking",
+              filters: { event_name: "purchase" }
+            })
+          }
         />
         <KpiCard
           title="Sesiones con Visita"
@@ -55,6 +64,9 @@ export default function FunnelTab() {
           format="number"
           suffix=" sesiones"
           tooltip="Punto de entrada del embudo: sesiones que cargaron al menos una página."
+          onDrilldown={() =>
+            drilldown.open("analytics_sessions", { title: "Sesiones del período" })
+          }
         />
         <KpiCard
           title="Sesiones con Compra"
@@ -69,6 +81,13 @@ export default function FunnelTab() {
           value={kpis.checkoutAbandonmentPct || 0}
           format="percent"
           tooltip="De quienes llegaron a la pantalla de pago, cuántos se fueron sin comprar. Es la fuga más cara del embudo."
+          onDrilldown={() =>
+            drilldown.open("analytics_events", {
+              title: "Quiénes llegaron a la pantalla de pago",
+              subtitle: "Compárese con los eventos de compra: la diferencia es el abandono",
+              filters: { event_name: "checkout_start" }
+            })
+          }
         />
       </div>
 
@@ -123,7 +142,23 @@ export default function FunnelTab() {
           <DataTable
             title="Embudo por Tipo de Dispositivo"
             columns={[
-              { header: "Dispositivo", accessor: "device_type", render: (r) => <span className="font-bold text-fx-text capitalize">{r.device_type}</span> },
+              {
+                header: "Dispositivo",
+                accessor: "device_type",
+                render: (r) => (
+                  <button
+                    onClick={() =>
+                      drilldown.open("analytics_events", {
+                        title: `Eventos desde ${r.device_type}`,
+                        filters: { device_type: r.device_type }
+                      })
+                    }
+                    className="font-bold text-fx-accent hover:underline capitalize text-left"
+                  >
+                    {r.device_type}
+                  </button>
+                ),
+              },
               { header: "Visitas", accessor: "visits" },
               { header: "Vieron producto", accessor: "product_views" },
               { header: "Al carrito", accessor: "add_to_carts" },
@@ -150,7 +185,23 @@ export default function FunnelTab() {
             <DataTable
               title="Búsquedas Más Frecuentes"
               columns={[
-                { header: "Término", accessor: "query", render: (r) => <span className="font-bold text-fx-text">{r.query}</span> },
+                {
+                  header: "Término",
+                  accessor: "query",
+                  render: (r) => (
+                    <button
+                      onClick={() =>
+                        drilldown.open("analytics_events", {
+                          title: `Búsquedas de "${r.query}"`,
+                          filters: { search_query: r.query }
+                        })
+                      }
+                      className="font-bold text-fx-accent hover:underline text-left"
+                    >
+                      {r.query}
+                    </button>
+                  ),
+                },
                 { header: "Búsquedas", accessor: "searches", render: (r) => <span className="font-semibold text-fx-accent">{parseInt(r.searches || 0).toLocaleString()}</span> },
                 { header: "Personas", accessor: "unique_searchers" },
                 { header: "Resultados prom.", accessor: "avg_results", render: (r) => parseFloat(r.avg_results || 0).toFixed(1) },
@@ -189,7 +240,24 @@ export default function FunnelTab() {
           <DataTable
             title="Productos: de la Vista al Carrito"
             columns={[
-              { header: "Producto", accessor: "name", render: (r) => <span className="font-bold text-fx-text">{r.name}</span> },
+              {
+                header: "Producto",
+                accessor: "name",
+                render: (r) => (
+                  <button
+                    onClick={() =>
+                      drilldown.open("analytics_events", {
+                        title: `Eventos de "${r.name}"`,
+                        subtitle: "Vistas de producto y agregados al carrito",
+                        filters: { product_id: r.id }
+                      })
+                    }
+                    className="font-bold text-fx-accent hover:underline text-left"
+                  >
+                    {r.name}
+                  </button>
+                ),
+              },
               { header: "Vistas", accessor: "views", render: (r) => parseInt(r.views || 0).toLocaleString() },
               { header: "Al carrito", accessor: "add_to_carts", render: (r) => parseInt(r.add_to_carts || 0).toLocaleString() },
               {
@@ -205,7 +273,23 @@ export default function FunnelTab() {
           <DataTable
             title="Muy Vistos, Nunca Agregados"
             columns={[
-              { header: "Producto", accessor: "name", render: (r) => <span className="font-bold text-fx-text">{r.name}</span> },
+              {
+                header: "Producto",
+                accessor: "name",
+                render: (r) => (
+                  <button
+                    onClick={() =>
+                      drilldown.open("analytics_events", {
+                        title: `Vistas de "${r.name}"`,
+                        filters: { event_name: "product_view", product_id: r.id }
+                      })
+                    }
+                    className="font-bold text-fx-accent hover:underline text-left"
+                  >
+                    {r.name}
+                  </button>
+                ),
+              },
               { header: "Vistas sin conversión", accessor: "views", render: (r) => <span className="font-semibold text-amber-300">{parseInt(r.views || 0).toLocaleString()}</span> },
             ]}
             data={data?.viewedNeverAddedProducts || []}
@@ -213,6 +297,8 @@ export default function FunnelTab() {
           />
         </>
       )}
+
+      <DrilldownModal {...drilldown.props} period={period} />
     </div>
   );
 }

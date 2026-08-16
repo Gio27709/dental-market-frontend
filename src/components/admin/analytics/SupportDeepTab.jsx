@@ -298,6 +298,13 @@ export default function SupportDeepTab() {
             format="number"
             suffix=" h"
             tooltip="La mitad de las respuestas llegó antes de este tiempo. Resiste los valores extremos que distorsionan la media."
+            onDrilldown={() =>
+              drilldown.open("support_tickets", {
+                title: "Tickets con respuesta real de soporte",
+                subtitle: "Las horas de la primera respuesta aparecen en su columna",
+                filters: { no_staff_reply: false }
+              })
+            }
           />
           <KpiCard
             title="Percentil 90"
@@ -305,6 +312,13 @@ export default function SupportDeepTab() {
             format="number"
             suffix=" h"
             tooltip="El 10% más lento tardó más que esto. Es el compromiso que realmente se le puede prometer a un cliente."
+            onDrilldown={() =>
+              drilldown.open("support_tickets", {
+                title: "Tickets con respuesta real de soporte",
+                subtitle: "Ordénese por la columna de primera respuesta para ver la cola lenta",
+                filters: { no_staff_reply: false }
+              })
+            }
           />
           <KpiCard
             title="Cobertura"
@@ -385,6 +399,12 @@ export default function SupportDeepTab() {
             value={stamp.stampedWithStaffReply}
             format="number"
             tooltip="La intersección entre ambos universos. Si es cero, el KPI antiguo y la realidad no comparten un solo ticket."
+            onDrilldown={() =>
+              drilldown.open("support_tickets", {
+                title: "Tickets con estampa y respuesta real",
+                filters: { has_stamp: true, no_staff_reply: false }
+              })
+            }
           />
         </div>
       </div>
@@ -404,6 +424,12 @@ export default function SupportDeepTab() {
             format="number"
             suffix=" h"
             tooltip="Promedio de updated_at menos created_at en tickets cerrados. Incluye las filas sembradas sin conversación, que lo inflan."
+            onDrilldown={() =>
+              drilldown.open("support_tickets", {
+                title: "Tickets cerrados del período",
+                filters: { is_open: false }
+              })
+            }
           />
           <KpiCard
             title="Resolución con Conversación"
@@ -411,18 +437,36 @@ export default function SupportDeepTab() {
             format="number"
             suffix={` · ${num(res.closedWithConvo)} casos`}
             tooltip="La misma aproximación, restringida a tickets que sí tuvieron mensajes. Es la cifra que se parece a un tiempo de trabajo real."
+            onDrilldown={() =>
+              drilldown.open("support_tickets", {
+                title: "Tickets cerrados con conversación",
+                filters: { is_open: false, has_messages: true }
+              })
+            }
           />
           <KpiCard
             title="Cerrados con la Última Palabra del Cliente"
             value={health.closedLastWordCustomer}
             format="number"
             tooltip="Se cerraron sin que soporte respondiera al último mensaje del cliente."
+            onDrilldown={() =>
+              drilldown.open("support_tickets", {
+                title: "Cerrados con la última palabra del cliente",
+                filters: { closed_last_word_customer: true }
+              })
+            }
           />
           <KpiCard
             title="Esperando a Soporte"
             value={health.awaitingStaff}
             format="number"
             tooltip="El último mensaje del hilo es del cliente y sigue sin contestar."
+            onDrilldown={() =>
+              drilldown.open("support_tickets", {
+                title: "Tickets esperando a soporte",
+                filters: { awaiting_staff: true }
+              })
+            }
           />
         </div>
       </div>

@@ -292,6 +292,9 @@ export default function LogisticsDeepTab() {
             format="number"
             suffix={` de ${num(ins.totalItems)}`}
             tooltip="Solo los envíos de entrega local llevan repartidor propio; el resto va por transportista externo."
+            onDrilldown={() =>
+              drilldown.open("shipments", { title: "Envíos con repartidor asignado", filters: { has_rider: true } })
+            }
           />
         </div>
       </div>
@@ -408,6 +411,12 @@ export default function LogisticsDeepTab() {
             format="percent"
             suffix={` · ${num(sla.measurable)} de ${num(ins.statusDelivered)}`}
             tooltip="Porcentaje de las entregas declaradas que tienen un evento con hora. El resto no se puede evaluar contra ningún SLA."
+            onDrilldown={() =>
+              drilldown.open("shipments", {
+                title: "Entregas con evento fechado",
+                filters: { measurable_delivery: true }
+              })
+            }
           />
           <KpiCard
             title="Entregas No Evaluables"
@@ -450,6 +459,12 @@ export default function LogisticsDeepTab() {
             format="number"
             suffix={` de ${num(car.items)}`}
             tooltip="Envíos cuyo pedido traía preferred_shipping_carrier. El campo existe en checkout pero casi nadie lo usa."
+            onDrilldown={() =>
+              drilldown.open("shipments", {
+                title: "Envíos con transportista declarado",
+                filters: { has_declared_carrier: true }
+              })
+            }
           />
           <KpiCard
             title="Preferencia Perdida"
@@ -468,6 +483,12 @@ export default function LogisticsDeepTab() {
             value={car.declaredButChanged}
             format="number"
             tooltip="Salió con un transportista distinto al pedido. Cero aquí junto a 'perdida' alta significa que el dato no se contradice: simplemente se descarta."
+            onDrilldown={() =>
+              drilldown.open("shipments", {
+                title: "Envíos con transportista distinto al pedido",
+                filters: { carrier_preference_changed: true }
+              })
+            }
           />
           <KpiCard
             title="Envíos sin Guía"
@@ -518,6 +539,13 @@ export default function LogisticsDeepTab() {
             format="number"
             suffix={` vs ${num(geo.shipping)} por envío`}
             tooltip="Modalidad de entrega. La local usa repartidor propio y coordenadas; el envío usa transportista y guía."
+            onDrilldown={() =>
+              drilldown.open("shipments", {
+                title: "Ítems de entrega local",
+                subtitle: "El KPI cuenta pedidos; el detalle baja al ítem",
+                filters: { delivery_type: "local_delivery" }
+              })
+            }
           />
           <KpiCard
             title="Pedidos con Coordenadas"
@@ -525,6 +553,13 @@ export default function LogisticsDeepTab() {
             format="number"
             suffix={` de ${num(geo.orders)}`}
             tooltip="delivery_lat/lng poblados. Coinciden exactamente con los de entrega local: el envío por transportista nunca geolocaliza."
+            onDrilldown={() =>
+              drilldown.open("shipments", {
+                title: "Ítems de pedidos con coordenadas",
+                subtitle: "El KPI cuenta pedidos; el detalle baja al ítem",
+                filters: { has_order_coords: true }
+              })
+            }
           />
           <KpiCard
             title="Fletes Cobrados"
@@ -532,6 +567,13 @@ export default function LogisticsDeepTab() {
             format="currency"
             suffix={` · ${num(geo.withFee)} pedidos`}
             tooltip="Suma de delivery_fee_total. Si casi ningún pedido cobra flete, el costo de la entrega lo está absorbiendo la plataforma o la tienda."
+            onDrilldown={() =>
+              drilldown.open("shipments", {
+                title: "Ítems de pedidos con flete cobrado",
+                subtitle: "El KPI cuenta pedidos; el detalle baja al ítem",
+                filters: { has_delivery_fee: true }
+              })
+            }
           />
         </div>
 

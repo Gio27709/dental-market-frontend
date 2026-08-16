@@ -77,6 +77,8 @@ export default function PromotionsTab() {
   const pi = data?.pricingIntegrity || {};
 
   const promotedUnbuyable = (pr.promotedProducts || []).filter((p) => !p.isBuyable).length;
+  // byUser viene ordenado por cedido: el primero es quien concentra el cupón.
+  const topCouponUser = (cup.byUser || [])[0] || null;
 
   const hasIntegrityIssues =
     (ck.orphanedCodesCount || 0) > 0 ||
@@ -195,6 +197,13 @@ export default function PromotionsTab() {
             value={ck.cededUsd}
             format="currency"
             tooltip="Dinero que la plataforma dejó de cobrar por el cupón, sumado directamente de los pedidos."
+            onDrilldown={() =>
+              drilldown.open("orders", {
+                title: "Pedidos con cupón",
+                subtitle: "De estos pedidos salió lo cedido",
+                filters: { has_coupon: true }
+              })
+            }
           />
           <KpiCard
             title="Descuento Efectivo"
@@ -202,6 +211,9 @@ export default function PromotionsTab() {
             format="percent"
             suffix={` · nominal hoy ${ck.nominalDiscountPct}%`}
             tooltip="Lo cedido sobre lo que el pedido habría costado sin cupón. Queda por debajo del nominal porque en checkout el descuento se aplica solo al ítem más caro, no a la factura completa."
+            onDrilldown={() =>
+              drilldown.open("orders", { title: "Pedidos con cupón", filters: { has_coupon: true } })
+            }
           />
           <KpiCard
             title="Concentración"
@@ -209,6 +221,16 @@ export default function PromotionsTab() {
             format="percent"
             suffix={` · ${num(ck.topUserRedemptions)} de ${num(ck.redemptions)}`}
             tooltip="Porcentaje de todas las redenciones que se llevó un solo usuario. No existe tope por persona en ninguna parte del código: esta cifra es la única defensa."
+            onDrilldown={
+              topCouponUser
+                ? () =>
+                    drilldown.open("orders", {
+                      title: `Pedidos con cupón de ${topCouponUser.fullName}`,
+                      subtitle: "El usuario que más redenciones concentra",
+                      filters: { has_coupon: true, user_id: topCouponUser.userId }
+                    })
+                : undefined
+            }
           />
           <KpiCard
             title="Facturado con Cupón"
@@ -216,6 +238,9 @@ export default function PromotionsTab() {
             format="currency"
             suffix=" antes de descuento"
             tooltip="Lo que esos pedidos habrían costado sin cupón. El total guardado en el pedido ya viene descontado, así que este es el denominador honesto."
+            onDrilldown={() =>
+              drilldown.open("orders", { title: "Pedidos con cupón", filters: { has_coupon: true } })
+            }
           />
           <KpiCard
             title="Ticket con Cupón"
@@ -223,6 +248,12 @@ export default function PromotionsTab() {
             format="currency"
             suffix={` vs ${usd(ck.avgTicketWithout)} sin`}
             tooltip="Si el ticket con cupón no supera al de sin cupón, el descuento no está comprando compras más grandes: está regalando margen sobre compras que ya iban a ocurrir."
+            onDrilldown={() =>
+              drilldown.open("orders", {
+                title: "Órdenes con cupón y su ticket",
+                filters: { has_coupon: true }
+              })
+            }
           />
           <KpiCard
             title="Sin Suscripción"
@@ -230,12 +261,29 @@ export default function PromotionsTab() {
             format="number"
             suffix={` de ${num(ck.redemptions)}`}
             tooltip="Redenciones de usuarios que no figuran en newsletter_subscribers. El cupón se llama 'de boletín' pero checkout nunca comprueba la suscripción."
+            onDrilldown={() =>
+              drilldown.open("orders", {
+                title: "Pedidos con cupón sin suscripción al boletín",
+                subtitle: "Redimieron el cupón 'de boletín' sin estar suscritos",
+                filters: { has_coupon: true, coupon_without_subscription: true }
+              })
+            }
           />
           <KpiCard
             title="Códigos Huérfanos"
             value={ck.orphanedCodesCount}
             format="number"
             tooltip="Códigos que se usaron alguna vez y que hoy checkout ya no reconoce, porque el porcentaje del ajuste cambió y con él el código sintetizado."
+            onDrilldown={
+              cfg.activeCode
+                ? () =>
+                    drilldown.open("orders", {
+                      title: "Pedidos con códigos que checkout ya no reconoce",
+                      subtitle: `Cualquier código distinto de ${cfg.activeCode} está muerto`,
+                      filters: { coupon_code_not: cfg.activeCode, allTime: true }
+                    })
+                : undefined
+            }
           />
         </div>
 
@@ -283,7 +331,17 @@ export default function PromotionsTab() {
             accessor: "code",
             render: (r) => (
               <div>
-                <p className="font-mono font-semibold text-fx-text">{r.code}</p>
+                <button
+                  onClick={() =>
+                    drilldown.open("orders", {
+                      title: `Pedidos con el código ${r.code}`,
+                      filters: { coupon_code: r.code, allTime: true }
+                    })
+                  }
+                  className="font-mono font-semibold text-fx-accent hover:underline text-left"
+                >
+                  {r.code}
+                </button>
                 <p className="text-[10px] text-fx-muted">
                   {fecha(r.firstUse)} → {fecha(r.lastUse)}
                 </p>
@@ -366,7 +424,17 @@ export default function PromotionsTab() {
             accessor: "fullName",
             render: (r) => (
               <div>
-                <p className="font-bold text-fx-text">{r.fullName}</p>
+                <button
+                  onClick={() =>
+                    drilldown.open("orders", {
+                      title: `Pedidos con cupón de ${r.fullName}`,
+                      filters: { has_coupon: true, user_id: r.userId }
+                    })
+                  }
+                  className="font-bold text-fx-accent hover:underline text-left"
+                >
+                  {r.fullName}
+                </button>
                 <p className="text-[10px] text-fx-muted font-mono">{r.email || "sin correo"}</p>
               </div>
             )
@@ -500,6 +568,12 @@ export default function PromotionsTab() {
           value={dk.withoutEndDate}
           format="number"
           tooltip="Reglas que nunca terminan por sí solas. Alguien tiene que acordarse de apagarlas a mano."
+          onDrilldown={() =>
+            drilldown.open("store_discounts", {
+              title: "Descuentos sin fecha de fin",
+              filters: { without_end_date: true, allTime: true }
+            })
+          }
         />
       </div>
 
@@ -513,7 +587,18 @@ export default function PromotionsTab() {
             accessor: "name",
             render: (r) => (
               <div>
-                <p className="font-bold text-fx-text">{r.name || "Sin nombre"}</p>
+                <button
+                  onClick={() =>
+                    drilldown.open("order_items", {
+                      title: `Usos reales de "${r.name || "Sin nombre"}"`,
+                      subtitle: "Ítems de pedido que aplicaron este descuento",
+                      filters: { discount_id: r.id, allTime: true }
+                    })
+                  }
+                  className="font-bold text-fx-accent hover:underline text-left"
+                >
+                  {r.name || "Sin nombre"}
+                </button>
                 <p className="text-[10px] text-fx-muted">{r.storeName}</p>
               </div>
             )
@@ -652,6 +737,13 @@ export default function PromotionsTab() {
           value={pi.avgRealDiscountPct}
           format="percent"
           tooltip="Promedio del ahorro real que sostiene el compare_at_price, contando solo los productos donde el precio anterior sí era mayor."
+          onDrilldown={() =>
+            drilldown.open("products", {
+              title: "Productos con un descuento real",
+              subtitle: "Su precio 'antes' sí supera al actual",
+              filters: { real_compare_at: true, allTime: true }
+            })
+          }
         />
       </div>
 
@@ -665,7 +757,18 @@ export default function PromotionsTab() {
             accessor: "title",
             render: (r) => (
               <div>
-                <p className="font-bold text-fx-text">{r.title}</p>
+                <button
+                  onClick={() =>
+                    drilldown.open("promoted_products", {
+                      title: `Productos de "${r.title}"`,
+                      subtitle: "Lo que esta promoción está mostrando en la vitrina",
+                      filters: { promotion_id: r.id, allTime: true }
+                    })
+                  }
+                  className="font-bold text-fx-accent hover:underline text-left"
+                >
+                  {r.title}
+                </button>
                 <p className="text-[10px] text-fx-muted">{r.badgeText || "sin etiqueta"}</p>
               </div>
             )
@@ -728,7 +831,18 @@ export default function PromotionsTab() {
             accessor: "productName",
             render: (r) => (
               <div>
-                <p className="font-bold text-fx-text">{r.productName}</p>
+                <button
+                  onClick={() =>
+                    drilldown.open("promoted_products", {
+                      title: `Productos de "${r.promotionTitle}"`,
+                      subtitle: "Todo lo que esta promoción muestra, comprable o no",
+                      filters: { promotion_id: r.promotionId, allTime: true }
+                    })
+                  }
+                  className="font-bold text-fx-accent hover:underline text-left"
+                >
+                  {r.productName}
+                </button>
                 <p className="text-[10px] text-fx-muted">{r.promotionTitle}</p>
               </div>
             )

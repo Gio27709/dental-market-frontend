@@ -113,6 +113,12 @@ export default function NotificationsTab() {
           format="number"
           suffix=" hrs"
           tooltip={`La mediana resiste los valores extremos. La media es ${kpis.avgHoursToRead ?? "—"} hrs, inflada por notificaciones abiertas semanas después.`}
+          onDrilldown={() =>
+            drilldown.open("notifications", {
+              title: "Notificaciones leídas y su tiempo hasta abrir",
+              filters: { is_read: true }
+            })
+          }
         />
         <KpiCard
           title="Destinatarios Alcanzados"
@@ -128,6 +134,13 @@ export default function NotificationsTab() {
           format="number"
           suffix=" tipos"
           tooltip="Tipos con al menos 10 envíos y menos del 20% de lectura. Son ruido que desgasta la atención del usuario."
+          onDrilldown={() =>
+            drilldown.open("notifications", {
+              title: "Notificaciones sin leer",
+              subtitle: "El KPI cuenta tipos ignorados; aquí está el detalle de lo no leído",
+              filters: { is_read: false }
+            })
+          }
         />
         <KpiCard
           title="Suscriptores Newsletter"

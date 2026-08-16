@@ -183,6 +183,12 @@ export default function OnboardingTab() {
           format="number"
           suffix=" h"
           tooltip={`La mediana es ${kpis.medianHoursToDecide ?? "—"} h. Si el promedio la supera con holgura, hay solicitudes olvidadas durante semanas arrastrando el número.`}
+          onDrilldown={() =>
+            drilldown.open("store_applications", {
+              title: "Solicitudes decididas y sus horas hasta decidir",
+              filters: { decided: true, allTime: true }
+            })
+          }
         />
         <KpiCard
           title="Mediana de Decisión"
@@ -190,6 +196,12 @@ export default function OnboardingTab() {
           format="number"
           suffix=" h"
           tooltip="La experiencia del solicitante típico, sin que la distorsionen los casos extremos."
+          onDrilldown={() =>
+            drilldown.open("store_applications", {
+              title: "Solicitudes decididas y sus horas hasta decidir",
+              filters: { decided: true, allTime: true }
+            })
+          }
         />
         <KpiCard
           title="Tiendas sin Solicitud"

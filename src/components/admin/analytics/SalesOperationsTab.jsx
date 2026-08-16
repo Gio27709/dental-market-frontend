@@ -11,6 +11,8 @@ import AnalyticsStoreFilter from "./AnalyticsStoreFilter";
 import AnalyticsExportButton from "./AnalyticsExportButton";
 import StoreActivationFunnel from "./StoreActivationFunnel";
 import PriceAuditTimeline from "./PriceAuditTimeline";
+import useDrilldown from "../../../hooks/useDrilldown";
+import DrilldownModal from "./DrilldownModal";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, LineChart, Line } from "recharts";
 
 export default function SalesOperationsTab() {
@@ -23,6 +25,7 @@ export default function SalesOperationsTab() {
   const [isComparing, setIsComparing] = useState(false);
   const [selectedStoreIds, setSelectedStoreIds] = useState([]);
   const [chartMode, setChartMode] = useState("area");
+  const drilldown = useDrilldown();
 
   useEffect(() => {
     getStoresListAPI()
@@ -162,8 +165,8 @@ export default function SalesOperationsTab() {
               <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
               <YAxis stroke="#7b6c99" fontSize={11} />
               <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-              <Bar dataKey="daily_gmv" name="Ventas ($)" fill="#c3ff00" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="daily_units" name="Unidades" fill="#a855f7" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="sales_volume" name="Ventas ($)" fill="#c3ff00" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="units_sold" name="Unidades" fill="#a855f7" radius={[4, 4, 0, 0]} />
             </BarChart>
           ) : chartMode === "line" ? (
             <LineChart data={salesTrend}>
@@ -171,8 +174,8 @@ export default function SalesOperationsTab() {
               <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
               <YAxis stroke="#7b6c99" fontSize={11} />
               <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-              <Line type="monotone" dataKey="daily_gmv" name="Ventas ($)" stroke="#c3ff00" strokeWidth={3} dot={false} />
-              <Line type="monotone" dataKey="daily_units" name="Unidades" stroke="#a855f7" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="sales_volume" name="Ventas ($)" stroke="#c3ff00" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="units_sold" name="Unidades" stroke="#a855f7" strokeWidth={2} dot={false} />
             </LineChart>
           ) : (
             <AreaChart data={salesTrend}>
@@ -186,7 +189,7 @@ export default function SalesOperationsTab() {
               <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
               <YAxis stroke="#7b6c99" fontSize={11} />
               <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-              <Area type="monotone" dataKey="daily_gmv" name="Ventas ($)" stroke="#c3ff00" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
+              <Area type="monotone" dataKey="sales_volume" name="Ventas ($)" stroke="#c3ff00" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
             </AreaChart>
           )}
         </ResponsiveContainer>
@@ -196,11 +199,28 @@ export default function SalesOperationsTab() {
       <DataTable
         title="Matriz de Rendimiento de Tiendas"
         columns={[
-          { header: "Tienda / Comercio", accessor: "store_name", render: (r) => <span className="font-bold text-fx-text">{r.store_name}</span> },
-          { header: "Ventas Brutas (GMV)", accessor: "gmv", render: (r) => `$${parseFloat(r.gmv || 0).toFixed(2)}` },
+          {
+            header: "Tienda / Comercio",
+            accessor: "business_name",
+            render: (r) => (
+              <button
+                onClick={() =>
+                  drilldown.open("order_items", {
+                    title: `Ventas de "${r.business_name}"`,
+                    subtitle: "Ítems de pedido de esta tienda en el período",
+                    filters: { store_id: r.store_id }
+                  })
+                }
+                className="font-bold text-fx-accent hover:underline text-left"
+              >
+                {r.business_name}
+              </button>
+            )
+          },
+          { header: "Ventas Brutas (GMV)", accessor: "total_gmv", render: (r) => `$${parseFloat(r.total_gmv || 0).toFixed(2)}` },
           { header: "Órdenes", accessor: "total_orders", render: (r) => parseInt(r.total_orders || 0).toLocaleString() },
-          { header: "Tasa Cancelación", accessor: "cancellation_rate_pct", render: (r) => <span className={`font-semibold ${parseFloat(r.cancellation_rate_pct) > 5 ? "text-rose-400" : "text-emerald-400"}`}>{r.cancellation_rate_pct}%</span> },
-          { header: "Rating Promedio", accessor: "rating_avg", render: (r) => <span className="text-amber-300 font-bold">★ {parseFloat(r.rating_avg || 0).toFixed(1)}</span> },
+          { header: "Tasa Cancelación", accessor: "cancel_rate", render: (r) => <span className={`font-semibold ${parseFloat(r.cancel_rate) > 5 ? "text-rose-400" : "text-emerald-400"}`}>{parseFloat(r.cancel_rate || 0).toFixed(2)}%</span> },
+          { header: "Rating Promedio", accessor: "rating_avg", render: (r) => <span className="text-amber-300 font-bold">{r.rating_avg != null ? `★ ${parseFloat(r.rating_avg).toFixed(1)}` : "★ N/A"}</span> },
         ]}
         data={storePerformance}
       />
@@ -216,8 +236,8 @@ export default function SalesOperationsTab() {
         <DataTable
           title="Stock en Riesgo (Variaciones con <= 5 unidades)"
           columns={[
-            { header: "Producto", accessor: "product_title", render: (r) => <span className="font-semibold text-fx-muted">{r.product_title}</span> },
-            { header: "Tienda", accessor: "store_name", render: (r) => <span className="text-fx-muted">{r.store_name}</span> },
+            { header: "Producto", accessor: "product_name", render: (r) => <span className="font-semibold text-fx-muted">{r.product_name}</span> },
+            { header: "SKU", accessor: "sku", render: (r) => <span className="font-mono text-[11px] text-fx-faint">{r.sku || "—"}</span> },
             { header: "Stock Restante", accessor: "stock", render: (r) => <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">{r.stock} un.</span> },
           ]}
           data={lowStock}
@@ -228,7 +248,7 @@ export default function SalesOperationsTab() {
           columns={[
             { header: "Categoría", accessor: "category_name", render: (r) => <span className="font-bold text-fx-text">{r.category_name}</span> },
             { header: "Unidades Vendidas", accessor: "units_sold", render: (r) => parseInt(r.units_sold || 0).toLocaleString() },
-            { header: "Índice Rotación", accessor: "rotation_ratio", render: (r) => <span className="text-fx-accent font-bold">{parseFloat(r.rotation_ratio || 0).toFixed(2)}x</span> },
+            { header: "Índice Rotación", accessor: "rotation_rate", render: (r) => <span className="text-fx-accent font-bold">{parseFloat(r.rotation_rate || 0).toFixed(2)}x</span> },
           ]}
           data={inventoryRotation}
         />
@@ -239,9 +259,26 @@ export default function SalesOperationsTab() {
         <DataTable
           title="Top 10 Productos Más Vendidos"
           columns={[
-            { header: "Producto", accessor: "title", render: (r) => <span className="font-bold text-fx-text">{r.title}</span> },
-            { header: "Unidades Vendidas", accessor: "units_sold", render: (r) => parseInt(r.units_sold || 0).toLocaleString() },
-            { header: "Ingreso Bruto", accessor: "revenue_usd", render: (r) => `$${parseFloat(r.revenue_usd || 0).toFixed(2)}` },
+            {
+              header: "Producto",
+              accessor: "name",
+              render: (r) => (
+                <button
+                  onClick={() =>
+                    drilldown.open("order_items", {
+                      title: `Ventas de "${r.name}"`,
+                      subtitle: "Cada línea de pedido que compone este total",
+                      filters: { product_id: r.id }
+                    })
+                  }
+                  className="font-bold text-fx-accent hover:underline text-left"
+                >
+                  {r.name}
+                </button>
+              )
+            },
+            { header: "Unidades Vendidas", accessor: "total_units", render: (r) => parseInt(r.total_units || 0).toLocaleString() },
+            { header: "Ingreso Bruto", accessor: "total_revenue", render: (r) => `$${parseFloat(r.total_revenue || 0).toFixed(2)}` },
           ]}
           data={topProducts}
         />
@@ -250,12 +287,14 @@ export default function SalesOperationsTab() {
           title="Ventas por Categoría de Producto"
           columns={[
             { header: "Categoría", accessor: "category_name", render: (r) => <span className="font-bold text-fx-text">{r.category_name}</span> },
-            { header: "GMV", accessor: "gmv", render: (r) => `$${parseFloat(r.gmv || 0).toFixed(2)}` },
-            { header: "Unidades", accessor: "units", render: (r) => parseInt(r.units || 0).toLocaleString() },
+            { header: "GMV", accessor: "total_sales", render: (r) => `$${parseFloat(r.total_sales || 0).toFixed(2)}` },
+            { header: "Unidades", accessor: "total_units", render: (r) => parseInt(r.total_units || 0).toLocaleString() },
           ]}
           data={salesByCategory}
         />
       </div>
+
+      <DrilldownModal {...drilldown.props} period={period} />
     </div>
   );
 }

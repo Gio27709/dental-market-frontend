@@ -12,6 +12,8 @@ import CompareToggle from "./CompareToggle";
 import AnalyticsStoreFilter from "./AnalyticsStoreFilter";
 import AnalyticsExportButton from "./AnalyticsExportButton";
 import GmvDrilldownModal from "./GmvDrilldownModal";
+import useDrilldown from "../../../hooks/useDrilldown";
+import DrilldownModal from "./DrilldownModal";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, LineChart, Line } from "recharts";
 
 export default function ExecutiveOverviewTab({ onNavigateTab }) {
@@ -24,6 +26,7 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
   const [isComparing, setIsComparing] = useState(false);
   const [selectedStoreIds, setSelectedStoreIds] = useState([]);
   const [chartMode, setChartMode] = useState("area");
+  const drilldown = useDrilldown();
 
   useEffect(() => {
     getStoresListAPI()
@@ -260,7 +263,24 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
         <DataTable
           title="Top 5 Tiendas por GMV"
           columns={[
-            { header: "Comercio", accessor: "name", render: (r) => <span className="font-bold text-fx-text">{r.name}</span> },
+            {
+              header: "Comercio",
+              accessor: "name",
+              render: (r) => (
+                <button
+                  onClick={() =>
+                    drilldown.open("order_items", {
+                      title: `Ventas de "${r.name}"`,
+                      subtitle: "Ítems vendidos por esta tienda en el período",
+                      filters: { store_id: r.id, not_cancelled: true }
+                    })
+                  }
+                  className="font-bold text-fx-accent hover:underline text-left"
+                >
+                  {r.name}
+                </button>
+              )
+            },
             { header: "Órdenes", accessor: "orders", render: (r) => parseInt(r.orders || 0).toLocaleString() },
             { header: "GMV Total", accessor: "gmv", render: (r) => `$${parseFloat(r.gmv || 0).toFixed(2)}` },
           ]}
@@ -269,7 +289,24 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
         <DataTable
           title="Top 5 Productos por Ventas"
           columns={[
-            { header: "Producto", accessor: "name", render: (r) => <span className="font-semibold text-fx-muted">{r.name}</span> },
+            {
+              header: "Producto",
+              accessor: "name",
+              render: (r) => (
+                <button
+                  onClick={() =>
+                    drilldown.open("order_items", {
+                      title: `Ventas de "${r.name}"`,
+                      subtitle: "Cada línea de pedido que compone este total",
+                      filters: { product_id: r.id, not_cancelled: true }
+                    })
+                  }
+                  className="font-semibold text-fx-accent hover:underline text-left"
+                >
+                  {r.name}
+                </button>
+              )
+            },
             { header: "Unidades", accessor: "units", render: (r) => parseInt(r.units || 0).toLocaleString() },
             { header: "Ingreso", accessor: "revenue", render: (r) => `$${parseFloat(r.revenue || 0).toFixed(2)}` },
           ]}
@@ -287,6 +324,8 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
         ]}
         data={feed}
       />
+
+      <DrilldownModal {...drilldown.props} period={period} />
     </div>
   );
 }

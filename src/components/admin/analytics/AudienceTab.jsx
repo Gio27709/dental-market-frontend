@@ -10,6 +10,8 @@ import DateRangePicker from "./DateRangePicker";
 import EmptyState from "./EmptyState";
 import AnalyticsErrorPanel from "./AnalyticsErrorPanel";
 import TrafficHeatmap from "./TrafficHeatmap";
+import useDrilldown from "../../../hooks/useDrilldown";
+import DrilldownModal from "./DrilldownModal";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer,
@@ -22,6 +24,7 @@ export default function AudienceTab() {
   const [period, setPeriod] = useState("30d");
   const [chartMode, setChartMode] = useState("area");
   const { data, loading, error, reload } = useAnalyticsTabData(getAudienceAnalyticsAPI, period);
+  const drilldown = useDrilldown();
 
   const kpis = data?.kpis || {};
   const dailyTrend = data?.dailyTrend || [];
@@ -61,6 +64,12 @@ export default function AudienceTab() {
           format="number"
           suffix=" personas"
           tooltip="Dispositivos distintos que visitaron la plataforma en el período, identificados de forma anónima."
+          onDrilldown={() =>
+            drilldown.open("analytics_sessions", {
+              title: "Sesiones del período",
+              subtitle: "Un mismo visitante puede abrir varias sesiones"
+            })
+          }
         />
         <KpiCard
           title="Sesiones Totales"
@@ -68,12 +77,21 @@ export default function AudienceTab() {
           format="number"
           suffix=" sesiones"
           tooltip="Una sesión agrupa toda la actividad de una visita. Se cierra tras 30 minutos de inactividad."
+          onDrilldown={() =>
+            drilldown.open("analytics_sessions", { title: "Sesiones del período" })
+          }
         />
         <KpiCard
           title="Páginas Vistas"
           value={kpis.totalPageViews || 0}
           format="number"
           tooltip="Total de pantallas cargadas. Dividido entre las sesiones da el promedio de profundidad de navegación."
+          onDrilldown={() =>
+            drilldown.open("analytics_events", {
+              title: "Páginas vistas del período",
+              filters: { event_name: "page_view" }
+            })
+          }
         />
         <KpiCard
           title="Visitantes Identificados"
@@ -81,7 +99,12 @@ export default function AudienceTab() {
           format="number"
           suffix=" con sesión"
           tooltip="Visitantes que navegaron con la sesión iniciada. El resto navegó de forma anónima."
-          drilldownUrl="/admin/users"
+          onDrilldown={() =>
+            drilldown.open("analytics_sessions", {
+              title: "Sesiones con usuario identificado",
+              filters: { has_user: true }
+            })
+          }
         />
       </div>
 
@@ -111,6 +134,12 @@ export default function AudienceTab() {
           value={kpis.bounceRatePct || 0}
           format="percent"
           tooltip="Sesiones que vieron una sola página y se fueron. Cuanto más baja, mejor engancha la portada."
+          onDrilldown={() =>
+            drilldown.open("analytics_sessions", {
+              title: "Sesiones que rebotaron",
+              filters: { is_bounce: true }
+            })
+          }
         />
       </div>
 
@@ -121,6 +150,12 @@ export default function AudienceTab() {
           format="number"
           suffix=" segundos"
           tooltip="Tiempo promedio entre el primer y el último evento de cada sesión."
+          onDrilldown={() =>
+            drilldown.open("analytics_sessions", {
+              title: "Sesiones y su duración",
+              subtitle: "La duración de cada sesión aparece en su columna"
+            })
+          }
         />
         <KpiCard
           title="Páginas por Sesión"
@@ -128,6 +163,12 @@ export default function AudienceTab() {
           format="number"
           suffix=" págs."
           tooltip="Profundidad media de navegación por visita."
+          onDrilldown={() =>
+            drilldown.open("analytics_sessions", {
+              title: "Sesiones y sus páginas vistas",
+              subtitle: "Las páginas vistas de cada sesión aparecen en su columna"
+            })
+          }
         />
       </div>
 
@@ -225,7 +266,23 @@ export default function AudienceTab() {
             <DataTable
               title="Páginas Más Visitadas"
               columns={[
-                { header: "Ruta", accessor: "path", render: (r) => <span className="font-mono text-fx-faint">{r.path}</span> },
+                {
+                  header: "Ruta",
+                  accessor: "path",
+                  render: (r) => (
+                    <button
+                      onClick={() =>
+                        drilldown.open("analytics_events", {
+                          title: `Vistas de "${r.path}"`,
+                          filters: { event_name: "page_view", path: r.path }
+                        })
+                      }
+                      className="font-mono text-fx-accent hover:underline text-left"
+                    >
+                      {r.path}
+                    </button>
+                  ),
+                },
                 { header: "Vistas", accessor: "views", render: (r) => <span className="font-semibold text-fx-accent">{parseInt(r.views || 0).toLocaleString()}</span> },
                 { header: "Visitantes", accessor: "unique_visitors", render: (r) => parseInt(r.unique_visitors || 0).toLocaleString() },
               ]}
@@ -238,11 +295,22 @@ export default function AudienceTab() {
                 {
                   header: "Origen",
                   accessor: "source",
-                  render: (r) => (
-                    <span className="font-bold text-fx-text">
-                      {r.source === "direct" ? "Directo / marcador" : r.source}
-                    </span>
-                  ),
+                  render: (r) =>
+                    r.source === "direct" ? (
+                      <span className="font-bold text-fx-text">Directo / marcador</span>
+                    ) : (
+                      <button
+                        onClick={() =>
+                          drilldown.open("analytics_sessions", {
+                            title: `Sesiones llegadas desde "${r.source}"`,
+                            filters: { referrer_host: r.source }
+                          })
+                        }
+                        className="font-bold text-fx-accent hover:underline text-left"
+                      >
+                        {r.source}
+                      </button>
+                    ),
                 },
                 { header: "Sesiones", accessor: "sessions", render: (r) => <span className="font-semibold text-fx-accent">{parseInt(r.sessions || 0).toLocaleString()}</span> },
               ]}
@@ -255,7 +323,23 @@ export default function AudienceTab() {
             <DataTable
               title="Campañas de Marketing (UTM)"
               columns={[
-                { header: "Fuente", accessor: "utm_source", render: (r) => <span className="font-bold text-fx-text">{r.utm_source}</span> },
+                {
+                  header: "Fuente",
+                  accessor: "utm_source",
+                  render: (r) => (
+                    <button
+                      onClick={() =>
+                        drilldown.open("analytics_sessions", {
+                          title: `Sesiones de la fuente UTM "${r.utm_source}"`,
+                          filters: { utm_source: r.utm_source }
+                        })
+                      }
+                      className="font-bold text-fx-accent hover:underline text-left"
+                    >
+                      {r.utm_source}
+                    </button>
+                  ),
+                },
                 { header: "Medio", accessor: "utm_medium", render: (r) => <span className="text-fx-faint">{r.utm_medium || "—"}</span> },
                 { header: "Campaña", accessor: "utm_campaign", render: (r) => r.utm_campaign || "—" },
                 { header: "Sesiones", accessor: "sessions", render: (r) => <span className="font-semibold text-fx-accent">{parseInt(r.sessions || 0).toLocaleString()}</span> },
@@ -277,7 +361,23 @@ export default function AudienceTab() {
           <DataTable
             title="Navegadores y Sistemas Operativos"
             columns={[
-              { header: "Navegador", accessor: "browser", render: (r) => <span className="font-bold text-fx-text">{r.browser}</span> },
+              {
+                header: "Navegador",
+                accessor: "browser",
+                render: (r) => (
+                  <button
+                    onClick={() =>
+                      drilldown.open("analytics_sessions", {
+                        title: `Sesiones con ${r.browser}`,
+                        filters: { browser: r.browser }
+                      })
+                    }
+                    className="font-bold text-fx-accent hover:underline text-left"
+                  >
+                    {r.browser}
+                  </button>
+                ),
+              },
               { header: "Sistema", accessor: "os", render: (r) => <span className="text-fx-faint">{r.os}</span> },
               { header: "Sesiones", accessor: "sessions", render: (r) => <span className="font-semibold text-fx-accent">{parseInt(r.sessions || 0).toLocaleString()}</span> },
             ]}
@@ -286,6 +386,8 @@ export default function AudienceTab() {
           />
         </>
       )}
+
+      <DrilldownModal {...drilldown.props} period={period} />
     </div>
   );
 }

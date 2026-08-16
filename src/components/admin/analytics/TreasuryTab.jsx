@@ -127,6 +127,13 @@ export default function TreasuryTab() {
           format="currency"
           suffix={` · ${money(kpis.totalPendingUsd)} pendiente`}
           tooltip="Dinero que la plataforma custodia y las tiendas pueden retirar hoy. El pendiente aún está en escrow."
+          onDrilldown={() =>
+            drilldown.open("store_wallets", {
+              title: "Saldo por billetera",
+              subtitle: "Cada billetera con su saldo, su libro mayor y su descuadre",
+              filters: { allTime: true }
+            })
+          }
         />
         <KpiCard
           title="Descuadre de Libro Mayor"
@@ -135,10 +142,10 @@ export default function TreasuryTab() {
           suffix={` · ${kpis.mismatchedWallets || 0} billeteras`}
           tooltip="Diferencia absoluta entre el saldo guardado y la suma de las transacciones que lo explican. Debería ser cero."
           onDrilldown={() =>
-            drilldown.open("wallet_transactions", {
-              title: "Libro mayor completo",
-              subtitle: "Todos los movimientos que deberían explicar los saldos",
-              filters: { allTime: true }
+            drilldown.open("store_wallets", {
+              title: "Billeteras descuadradas",
+              subtitle: "Saldo guardado que no coincide con la suma de su libro mayor",
+              filters: { mismatched: true, allTime: true }
             })
           }
         />
@@ -181,6 +188,13 @@ export default function TreasuryTab() {
           format="number"
           suffix={` h mediana · ${kpis.avgHoursToPay || 0} h promedio`}
           tooltip="Horas entre la solicitud y su pago. Si el promedio es mucho mayor que la mediana, unos pocos retiros se quedaron atascados mucho tiempo."
+          onDrilldown={() =>
+            drilldown.open("payout_requests", {
+              title: "Retiros pagados y sus tiempos",
+              subtitle: "La columna Horas es el tiempo entre la solicitud y su pago",
+              filters: { status: "completed", allTime: true }
+            })
+          }
         />
         <KpiCard
           title="Total Ya Pagado"
@@ -198,6 +212,12 @@ export default function TreasuryTab() {
           format="number"
           suffix=" tiendas con saldo"
           tooltip="Tiendas que tienen dinero acumulado y no registraron ningún método de pago. Su dinero está atrapado por un dato faltante."
+          onDrilldown={() =>
+            drilldown.open("store_wallets", {
+              title: "Billeteras con saldo y sin método de cobro",
+              filters: { no_payout_method: true, has_balance: true, allTime: true }
+            })
+          }
         />
       </div>
 
@@ -412,7 +432,19 @@ export default function TreasuryTab() {
                 {data.orphanPayouts.map((r) => (
                   <tr key={r.id} className="border-b border-fx-line hover:bg-purple-500/5 transition-colors">
                     <td className="py-3 px-4">{new Date(r.created_at).toLocaleDateString("es-VE")}</td>
-                    <td className="py-3 px-4 font-bold text-fx-text">{r.store_name || "—"}</td>
+                    <td className="py-3 px-4">
+                      <button
+                        onClick={() =>
+                          drilldown.open("wallet_transactions", {
+                            title: `Retiros sin solicitud de "${r.store_name}"`,
+                            filters: { store_id: r.store_id, orphan_payout: true, allTime: true }
+                          })
+                        }
+                        className="font-bold text-fx-accent hover:underline text-left"
+                      >
+                        {r.store_name || "—"}
+                      </button>
+                    </td>
                     <td className="py-3 px-4 font-semibold text-rose-400">{money(r.amount)}</td>
                     <td className="py-3 px-4 text-fx-muted">{r.description || "—"}</td>
                     <td className="py-3 px-4">
@@ -432,7 +464,23 @@ export default function TreasuryTab() {
         subtitle="Cada hora aquí es una tienda esperando su dinero"
         searchPlaceholder="Buscar tienda..."
         columns={[
-          { header: "Tienda", accessor: "store_name", render: (r) => <span className="font-bold text-fx-text">{r.store_name || "—"}</span> },
+          {
+            header: "Tienda",
+            accessor: "store_name",
+            render: (r) => (
+              <button
+                onClick={() =>
+                  drilldown.open("payout_requests", {
+                    title: `Retiros de "${r.store_name}"`,
+                    filters: { store_id: r.store_id, allTime: true }
+                  })
+                }
+                className="font-bold text-fx-accent hover:underline text-left"
+              >
+                {r.store_name || "—"}
+              </button>
+            )
+          },
           { header: "Monto", accessor: "amount", render: (r) => <span className="font-semibold text-fx-accent">{money(r.amount)}</span> },
           {
             header: "Saldo Disponible",
@@ -522,7 +570,23 @@ export default function TreasuryTab() {
           subtitle="Tiendas con saldo que no registraron ningún método de cobro: no se les puede pagar aunque lo pidan"
           searchPlaceholder="Buscar tienda..."
           columns={[
-            { header: "Tienda", accessor: "store_name", render: (r) => <span className="font-bold text-fx-text">{r.store_name || "—"}</span> },
+            {
+              header: "Tienda",
+              accessor: "store_name",
+              render: (r) => (
+                <button
+                  onClick={() =>
+                    drilldown.open("wallet_transactions", {
+                      title: `Libro mayor de "${r.store_name}"`,
+                      filters: { store_id: r.store_id, allTime: true }
+                    })
+                  }
+                  className="font-bold text-fx-accent hover:underline text-left"
+                >
+                  {r.store_name || "—"}
+                </button>
+              )
+            },
             {
               header: "Disponible",
               accessor: "balance_available",
@@ -545,7 +609,23 @@ export default function TreasuryTab() {
             accessor: "created_at",
             render: (r) => new Date(r.created_at).toLocaleDateString("es-VE")
           },
-          { header: "Tienda", accessor: "store_name", render: (r) => <span className="font-bold text-fx-text">{r.store_name || "—"}</span> },
+          {
+            header: "Tienda",
+            accessor: "store_name",
+            render: (r) => (
+              <button
+                onClick={() =>
+                  drilldown.open("wallet_transactions", {
+                    title: `Libro mayor de "${r.store_name}"`,
+                    filters: { store_id: r.store_id, allTime: true }
+                  })
+                }
+                className="font-bold text-fx-accent hover:underline text-left"
+              >
+                {r.store_name || "—"}
+              </button>
+            )
+          },
           {
             header: "Tipo",
             accessor: "type",

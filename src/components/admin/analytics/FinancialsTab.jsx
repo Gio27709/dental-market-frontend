@@ -9,6 +9,8 @@ import DateRangePicker from "./DateRangePicker";
 import AnalyticsStoreFilter from "./AnalyticsStoreFilter";
 import AnalyticsExportButton from "./AnalyticsExportButton";
 import EscrowAgingStackedBar from "./EscrowAgingStackedBar";
+import useDrilldown from "../../../hooks/useDrilldown";
+import DrilldownModal from "./DrilldownModal";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, LineChart, Line } from "recharts";
 
 export default function FinancialsTab() {
@@ -20,6 +22,7 @@ export default function FinancialsTab() {
   const [period, setPeriod] = useState("30d");
   const [selectedStoreIds, setSelectedStoreIds] = useState([]);
   const [chartMode, setChartMode] = useState("line");
+  const drilldown = useDrilldown();
 
   useEffect(() => {
     getStoresListAPI()
@@ -118,14 +121,24 @@ export default function FinancialsTab() {
           value={payouts.pendingTotalUsd || 0}
           format="currency"
           tooltip="Mapeado en M14: Monto acumulado de solicitudes de retiro de tiendas en espera de liquidación."
-          drilldownUrl="/admin/payouts"
+          onDrilldown={() =>
+            drilldown.open("payout_requests", {
+              title: "Retiros pendientes de liquidar",
+              filters: { status: "pending", allTime: true }
+            })
+          }
         />
         <KpiCard
           title="Retiros Liquidados"
           value={payouts.completedTotalUsd || 0}
           format="currency"
           tooltip="Mapeado en M15: Suma total de dinero transferido exitosamente a comercios."
-          drilldownUrl="/admin/payment-history"
+          onDrilldown={() =>
+            drilldown.open("payout_requests", {
+              title: "Retiros liquidados en el período",
+              filters: { status: "completed" }
+            })
+          }
         />
         <KpiCard
           title="Tiempo Prom. Procesamiento"
@@ -140,14 +153,25 @@ export default function FinancialsTab() {
           value={refunds.totalRefundedUsd || 0}
           format="currency"
           tooltip="Mapeado en M18: Monto de dinero reembolsado a compradores por disputas aprobadas."
-          drilldownUrl="/admin/refunds"
+          onDrilldown={() =>
+            drilldown.open("refund_requests", {
+              title: "Reembolsos aprobados en el período",
+              filters: { status: "approved" }
+            })
+          }
         />
         <KpiCard
           title="Comisiones en Tránsito"
           value={data?.commissionsInTransitUsd || 0}
           format="currency"
           tooltip="Mapeado en M21: Tarifa de plataforma en pedidos despachados en camino de entrega."
-          drilldownUrl="/admin/orders"
+          onDrilldown={() =>
+            drilldown.open("order_items", {
+              title: "Ítems despachados en tránsito",
+              subtitle: "Pedidos cuya comisión aún no se ha consolidado",
+              filters: { delivery_status: "shipped", not_cancelled: true }
+            })
+          }
         />
       </div>
 
@@ -200,7 +224,23 @@ export default function FinancialsTab() {
         <DataTable
           title="Mix por Método de Pago Utilizado"
           columns={[
-            { header: "Método de Pago", accessor: "payment_method", render: (r) => <span className="font-bold uppercase text-fx-text">{r.payment_method}</span> },
+            {
+              header: "Método de Pago",
+              accessor: "payment_method",
+              render: (r) => (
+                <button
+                  onClick={() =>
+                    drilldown.open("orders", {
+                      title: `Pedidos pagados con "${r.payment_method}"`,
+                      filters: { payment_method: r.payment_method, not_cancelled: true }
+                    })
+                  }
+                  className="font-bold uppercase text-fx-accent hover:underline text-left"
+                >
+                  {r.payment_method}
+                </button>
+              )
+            },
             { header: "Órdenes", accessor: "order_count", render: (r) => parseInt(r.order_count || 0).toLocaleString() },
             { header: "Monto Procesado", accessor: "total_usd", render: (r) => `$${parseFloat(r.total_usd || 0).toFixed(2)}` },
           ]}
@@ -215,6 +255,8 @@ export default function FinancialsTab() {
           data={categoryRevenue}
         />
       </div>
+
+      <DrilldownModal {...drilldown.props} period={period} />
     </div>
   );
 }
