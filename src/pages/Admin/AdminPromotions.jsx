@@ -176,9 +176,9 @@ export default function AdminPromotions() {
   }, [discounts, discountFilter]);
 
   return (
-    <div className="max-w-6xl mx-auto pb-12 px-4 sm:px-6">
+    <div className="w-full pb-12 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
             Gestión de Promociones
@@ -307,13 +307,13 @@ export default function AdminPromotions() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      <th className="px-6 py-4 font-bold">Promoción</th>
-                      <th className="px-6 py-4 font-bold text-center">Tipo Selección</th>
-                      <th className="px-6 py-4 font-bold text-center">Vigencia</th>
-                      <th className="px-6 py-4 font-bold text-center">Estado</th>
-                      <th className="px-6 py-4 font-bold text-center">Visitas</th>
-                      <th className="px-6 py-4 font-bold text-right">Acciones</th>
+                    <tr className="bg-gray-50/80 border-b border-gray-200/70 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="py-3.5 pl-6 pr-4 font-bold">Promoción</th>
+                      <th className="py-3.5 px-4 font-bold text-center">Tipo Selección</th>
+                      <th className="py-3.5 px-4 font-bold text-center">Vigencia</th>
+                      <th className="py-3.5 px-4 font-bold text-center">Estado</th>
+                      <th className="py-3.5 px-4 font-bold text-center">Visitas</th>
+                      <th className="py-3.5 pl-4 pr-6 font-bold text-right whitespace-nowrap">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-sm">
@@ -327,9 +327,9 @@ export default function AdminPromotions() {
                       const isActive = promo.is_active && !isExpired && !isScheduled;
 
                       return (
-                        <tr key={promo.id} className="hover:bg-gray-50/50 transition-colors group">
+                        <tr key={promo.id} className="hover:bg-purple-50/20 transition-colors group">
                           {/* Promo Image and Title */}
-                          <td className="px-6 py-4">
+                          <td className="py-3.5 pl-6 pr-4">
                             <div className="flex items-center gap-4">
                               <div className="w-16 h-10 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0 flex items-center justify-center">
                                 {promo.hero_image_url ? (
@@ -365,7 +365,7 @@ export default function AdminPromotions() {
                           </td>
 
                           {/* Selection Type */}
-                          <td className="px-6 py-4 text-center">
+                          <td className="py-3.5 px-4 text-center">
                             {promo.selection_type === "manual" && (
                               <span className="inline-flex px-2 py-1 text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-150 rounded-lg uppercase tracking-wider">
                                 Manual ({promo.product_ids?.length || 0} prod)
@@ -384,7 +384,7 @@ export default function AdminPromotions() {
                           </td>
 
                           {/* Vigencia */}
-                          <td className="px-6 py-4 text-center text-xs text-gray-500 font-medium">
+                          <td className="py-3.5 px-4 text-center text-xs text-gray-500 font-medium">
                             <div className="flex flex-col gap-0.5 justify-center">
                               <span>{new Date(promo.starts_at).toLocaleDateString()}</span>
                               {promo.ends_at ? (
@@ -400,7 +400,7 @@ export default function AdminPromotions() {
                           </td>
 
                           {/* Status */}
-                          <td className="px-6 py-4 text-center">
+                          <td className="py-3.5 px-4 text-center">
                             {isExpired && (
                               <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">
                                 <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Expirado
@@ -425,26 +425,26 @@ export default function AdminPromotions() {
                           </td>
 
                           {/* Views count */}
-                          <td className="px-6 py-4 text-center font-mono text-xs text-gray-500">
+                          <td className="py-3.5 px-4 text-center font-mono text-xs text-gray-500">
                             {promo.views_count || 0}
                           </td>
 
                           {/* Actions */}
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <td className="py-3.5 pl-4 pr-6 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1.5">
                               <button
                                 onClick={() => openEditModal(promo)}
-                                className="p-2 rounded-lg text-gray-400 hover:text-[#531575] hover:bg-purple-50 transition-colors"
+                                className="p-2 rounded-xl text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/60 transition-all shadow-xs active:scale-95 cursor-pointer"
                                 title="Editar Promoción"
                               >
-                                <span className="material-symbols-outlined text-[18px]">edit</span>
+                                <span className="material-symbols-outlined text-[18px] block">edit</span>
                               </button>
                               <button
                                 onClick={() => confirmDelete(promo)}
-                                className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                className="p-2 rounded-xl text-rose-600 bg-rose-50 hover:bg-rose-100 hover:text-rose-700 border border-rose-200/60 transition-all shadow-xs active:scale-95 cursor-pointer"
                                 title="Eliminar Promoción"
                               >
-                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                                <span className="material-symbols-outlined text-[18px] block">delete</span>
                               </button>
                             </div>
                           </td>
@@ -551,22 +551,22 @@ export default function AdminPromotions() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      <th className="px-6 py-4 font-bold">Descuento / Tienda</th>
-                      <th className="px-6 py-4 font-bold text-center">Tipo / Valor</th>
-                      <th className="px-6 py-4 font-bold text-center">Alcance</th>
-                      <th className="px-6 py-4 font-bold text-center">Vigencia</th>
-                      <th className="px-6 py-4 font-bold text-center">Estado</th>
-                      <th className="px-6 py-4 font-bold text-right">Acciones de Moderación</th>
+                    <tr className="bg-gray-50/80 border-b border-gray-200/70 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="py-3.5 pl-6 pr-4 font-bold">Descuento / Tienda</th>
+                      <th className="py-3.5 px-4 font-bold text-center">Tipo / Valor</th>
+                      <th className="py-3.5 px-4 font-bold text-center">Alcance</th>
+                      <th className="py-3.5 px-4 font-bold text-center">Vigencia</th>
+                      <th className="py-3.5 px-4 font-bold text-center">Estado</th>
+                      <th className="py-3.5 pl-4 pr-6 font-bold text-right whitespace-nowrap">Acciones de Moderación</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-sm">
                     {filteredDiscounts.map((d) => {
                       const isActive = d.is_active && d.is_started && !d.is_expired;
                       return (
-                        <tr key={d.id} className="hover:bg-gray-50/50 transition-colors group">
+                        <tr key={d.id} className="hover:bg-purple-50/20 transition-colors group">
                           {/* Discount Name & Store */}
-                          <td className="px-6 py-4">
+                          <td className="py-3.5 pl-6 pr-4">
                             <div>
                               <div className="font-extrabold text-gray-900 leading-tight">
                                 {d.name}
@@ -578,14 +578,14 @@ export default function AdminPromotions() {
                           </td>
 
                           {/* Value */}
-                          <td className="px-6 py-4 text-center">
+                          <td className="py-3.5 px-4 text-center">
                             <span className="inline-flex px-2.5 py-1 text-xs font-black bg-[#6b1e96]/10 text-[#6b1e96] rounded-full">
                               {d.discount_type === "percentage" ? `-${d.discount_value}%` : `-$${d.discount_value}`}
                             </span>
                           </td>
 
                           {/* Scope / Products list */}
-                          <td className="px-6 py-4 text-center">
+                          <td className="py-3.5 px-4 text-center">
                             <div className="flex flex-col gap-1 items-center">
                               {d.scope === "product" && (
                                 <span className="inline-flex px-2 py-0.5 text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-150 rounded-lg uppercase tracking-wider">
@@ -606,7 +606,7 @@ export default function AdminPromotions() {
                           </td>
 
                           {/* Validity */}
-                          <td className="px-6 py-4 text-center text-xs text-gray-500 font-medium">
+                          <td className="py-3.5 px-4 text-center text-xs text-gray-500 font-medium">
                             <div className="flex flex-col gap-0.5 justify-center">
                               <span>{new Date(d.starts_at).toLocaleDateString()}</span>
                               {d.ends_at ? (
@@ -622,7 +622,7 @@ export default function AdminPromotions() {
                           </td>
 
                           {/* Status */}
-                          <td className="px-6 py-4 text-center">
+                          <td className="py-3.5 px-4 text-center">
                             {d.approval_status === "pending" && (
                               <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Pendiente
@@ -646,33 +646,35 @@ export default function AdminPromotions() {
                           </td>
 
                           {/* Actions */}
-                          <td className="px-6 py-4 text-right">
+                          <td className="py-3.5 pl-4 pr-6 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-2">
                               {/* Approve Button */}
                               <button
                                 onClick={() => handleModerateDiscount(d.id, "approve")}
                                 disabled={moderatingId === d.id || d.approval_status === "approved"}
-                                className={`p-2 rounded-lg transition-colors border ${
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1 cursor-pointer ${
                                   d.approval_status === "approved"
-                                    ? "text-gray-300 border-gray-100 bg-gray-50 cursor-not-allowed"
-                                    : "text-emerald-600 border-emerald-100 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-700 shadow-sm"
+                                    ? "text-gray-400 border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
+                                    : "text-emerald-700 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 shadow-xs"
                                 }`}
                                 title="Aprobar Descuento"
                               >
-                                <span className="material-symbols-outlined text-[18px]">check</span>
+                                <span className="material-symbols-outlined text-[16px]">check</span>
+                                <span>Aprobar</span>
                               </button>
                               {/* Reject Button */}
                               <button
                                 onClick={() => handleModerateDiscount(d.id, "reject")}
                                 disabled={moderatingId === d.id || d.approval_status === "rejected"}
-                                className={`p-2 rounded-lg transition-colors border ${
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1 cursor-pointer ${
                                   d.approval_status === "rejected"
-                                    ? "text-gray-300 border-gray-100 bg-gray-50 cursor-not-allowed"
-                                    : "text-red-600 border-red-100 bg-red-50 hover:bg-red-100 hover:text-red-700 shadow-sm"
+                                    ? "text-gray-400 border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
+                                    : "text-rose-600 border-rose-200 bg-rose-50 hover:bg-rose-100 shadow-xs"
                                 }`}
                                 title="Rechazar Descuento"
                               >
-                                <span className="material-symbols-outlined text-[18px]">close</span>
+                                <span className="material-symbols-outlined text-[16px]">close</span>
+                                <span>Rechazar</span>
                               </button>
                             </div>
                           </td>
