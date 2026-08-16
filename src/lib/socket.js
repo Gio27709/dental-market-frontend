@@ -27,12 +27,17 @@ export const socket = io(finalSocketUrl, {
 
 export const connectSocket = (token) => {
   if (!token) return;
+
+  // Hay que comparar ANTES de asignar: si no, se compara el token nuevo contra sí
+  // mismo, la condición nunca se cumple y al cambiar de cuenta en la misma pestaña
+  // el socket sigue autenticado como el usuario anterior hasta recargar.
+  const tokenChanged = socket.auth?.token !== token;
   socket.auth = { token };
-  
+
   if (!socket.connected) {
     console.log("[Socket] Connecting to:", finalSocketUrl);
     socket.connect();
-  } else if (socket.auth.token !== token) {
+  } else if (tokenChanged) {
     console.log("[Socket] Token changed, reconnecting with new credentials...");
     socket.disconnect().connect();
   }
