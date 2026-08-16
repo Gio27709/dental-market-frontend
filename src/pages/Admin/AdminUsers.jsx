@@ -2,6 +2,18 @@ import { useState, useEffect, useCallback } from "react";
 import api from "../../services/api";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
+import { socket } from "../../lib/socket";
+
+// "hace 3 min" a partir de un ISO. Para la lista de conectados, donde lo único que
+// importa es cuánto llevan dentro.
+const timeConnected = (iso) => {
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return "recién llegó";
+  if (mins < 60) return `hace ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `hace ${hours} h`;
+  return `hace ${Math.floor(hours / 24)} d`;
+};
 
 const PERMISSIONS_LIST = [
   { key: "manage_users", label: "Gestión de Usuarios", desc: "Crear cuentas, asignar roles y modificar permisos de usuarios." },
@@ -68,6 +80,10 @@ export default function AdminUsers() {
   const [roleFilter, setRoleFilter] = useState("");
   const [perPage, setPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Presencia en vivo (sockets abiertos ahora mismo)
+  const [online, setOnline] = useState({ count: 0, users: [] });
+  const [onlinePanelOpen, setOnlinePanelOpen] = useState(false);
 
   // Modals state
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -186,6 +202,23 @@ export default function AdminUsers() {
     }
   }, []);
 
+  const fetchOnline = useCallback(async () => {
+    try {
+      const res = await api.get("/admin/users/online");
+      setOnline({ count: res.data?.count ?? 0, users: res.data?.data || [] });
+    } catch {
+      // La presencia es accesoria: si falla, la página sigue siendo usable.
+    }
+  }, []);
+
+  // El backend avisa a la sala "admins" cada vez que alguien entra o sale, así que
+  // no hace falta preguntar cada X segundos: solo al montar y cuando algo cambia.
+  useEffect(() => {
+    fetchOnline();
+    socket.on("presence_update", fetchOnline);
+    return () => socket.off("presence_update", fetchOnline);
+  }, [fetchOnline]);
+
   // Debounced fetch
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -296,6 +329,81 @@ export default function AdminUsers() {
             Refrescar
           </button>
         </div>
+      </div>
+
+      {/* ── Conectados ahora (presencia en vivo por socket) ── */}
+      <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #f0f0f0", marginBottom: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", overflow: "hidden" }}>
+        <button
+          onClick={() => setOnlinePanelOpen((o) => !o)}
+          disabled={online.count === 0}
+          style={{
+            width: "100%", display: "flex", alignItems: "center", gap: "16px",
+            padding: "16px 20px", background: "transparent", border: "none",
+            textAlign: "left", cursor: online.count === 0 ? "default" : "pointer",
+          }}
+        >
+          <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: online.count > 0 ? "rgba(16,185,129,0.10)" : "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span
+              className={online.count > 0 ? "animate-pulse" : ""}
+              style={{ width: "10px", height: "10px", borderRadius: "50%", background: online.count > 0 ? "#10b981" : "#d1d5db", display: "block" }}
+            />
+          </div>
+
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9ca3af" }}>
+              Conectados ahora
+            </p>
+            <p style={{ margin: "2px 0 0 0", fontSize: "26px", lineHeight: 1.1, fontWeight: 800, color: "#1a0a2e", fontVariantNumeric: "tabular-nums" }}>
+              {online.count}
+            </p>
+          </div>
+
+          <p style={{ margin: "0 0 0 auto", fontSize: "12px", color: "#9ca3af", display: "flex", alignItems: "center", gap: "6px" }}>
+            {online.count === 0
+              ? "Nadie tiene la app abierta"
+              : onlinePanelOpen ? "Ocultar la lista" : "Ver quiénes son"}
+            {online.count > 0 && (
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ transform: onlinePanelOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+              </svg>
+            )}
+          </p>
+        </button>
+
+        {onlinePanelOpen && online.count > 0 && (
+          <div style={{ borderTop: "1px solid #f0f0f0", maxHeight: "320px", overflowY: "auto" }}>
+            {online.users.map((u) => {
+              const badge = ROLE_BADGES[u.role] || ROLE_BADGES.user;
+              const name = u.full_name || u.email;
+              return (
+                <div key={u.user_id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 20px", borderBottom: "1px solid #fafafa" }}>
+                  <div style={{ position: "relative", flexShrink: 0 }}>
+                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg, #531575 0%, #6b1e96 100%)", color: "#c3ff00", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700 }}>
+                      {String(name).charAt(0).toUpperCase()}
+                    </div>
+                    <span style={{ position: "absolute", right: "-1px", bottom: "-1px", width: "10px", height: "10px", borderRadius: "50%", background: "#10b981", border: "2px solid #fff" }} />
+                  </div>
+
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: "#1f2937", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</p>
+                    {u.full_name && (
+                      <p style={{ margin: 0, fontSize: "11px", color: "#9ca3af", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</p>
+                    )}
+                  </div>
+
+                  <span style={{ fontSize: "10px", fontWeight: 700, padding: "3px 8px", borderRadius: "6px", color: badge.color, background: badge.bg, whiteSpace: "nowrap" }}>
+                    {badge.label}
+                  </span>
+
+                  <span style={{ fontSize: "11px", color: "#9ca3af", whiteSpace: "nowrap", minWidth: "78px", textAlign: "right" }}>
+                    {timeConnected(u.connected_at)}
+                    {u.connections > 1 && ` · ${u.connections} pestañas`}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Search & Filters ── */}
