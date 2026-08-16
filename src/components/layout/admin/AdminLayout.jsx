@@ -5,6 +5,20 @@ import { navGroups, backToStoreIcon } from "../../../config/adminNavConfig";
 import { AdminStatsProvider, useAdminStats } from "../../../context/AdminStatsContext";
 import useHomeSections from "../../../hooks/useHomeSections";
 
+// Rutas que se ahogan con el max-w-6xl por defecto.
+const ROUTE_WIDTHS = [
+  // Analíticas trae su propio rail de áreas y rejillas de 4 columnas.
+  { prefix: '/admin/analytics', width: 'max-w-[1720px]' },
+  // Sanciones: tabla ancha con una columna de acciones que no debe recortarse.
+  { prefix: '/admin/penalties', width: 'max-w-[1360px]' },
+  // Repartidores: tabla con 6 columnas y panel de acciones.
+  { prefix: '/admin/rider-applications', width: 'max-w-[1440px]' },
+  // Promociones: campañas globales y moderación de ofertas.
+  { prefix: '/admin/promotions', width: 'max-w-[1440px]' },
+  // Tiendas: 6 columnas y tres botones de acción en las pendientes.
+  { prefix: '/admin/store-applications', width: 'max-w-[1440px]' },
+];
+
 function AdminLayoutContent() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
@@ -19,7 +33,8 @@ function AdminLayoutContent() {
     return location.pathname.startsWith(path);
   };
 
-  const isWideRoute = location.pathname.startsWith('/admin/analytics');
+  const contentWidth =
+    ROUTE_WIDTHS.find((r) => location.pathname.startsWith(r.prefix))?.width || 'max-w-6xl';
 
   const getLinkNotificationCount = (path) => {
     if (!stats) return 0;
@@ -240,9 +255,7 @@ function AdminLayoutContent() {
       
       {/* Main Content */}
       <div className="flex-1 pt-16 md:pt-6 p-4 md:p-8" style={{ background: '#f1ecf6' }}>
-        {/* Analíticas trae su propio rail de áreas y rejillas de 4 columnas:
-            con max-w-6xl las tablas y gráficas quedan estranguladas. */}
-        <div className={isWideRoute ? 'max-w-[1720px] mx-auto' : 'max-w-6xl mx-auto'}>
+        <div className={`${contentWidth} mx-auto`}>
           <Outlet />
         </div>
       </div>
