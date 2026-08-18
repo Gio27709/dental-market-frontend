@@ -111,8 +111,9 @@ export default function TreasuryTab() {
             {parseFloat(kpis.fxDaysStale) > 7 && (
               <li>
                 La tasa {kpis.fxPair} lleva{" "}
-                <span className="font-semibold text-rose-300">{kpis.fxDaysStale} días</span> sin actualizarse
-                (Bs. {kpis.fxRate}). Todo precio en bolívares que ve el cliente usa este valor.
+                <span className="font-semibold text-rose-300">{kpis.fxDaysStale} días</span> sin que el cron la
+                verifique contra el BCV (Bs. {kpis.fxRate}). Todo precio en bolívares que ve el cliente y todo
+                retiro que congela su equivalencia usan este valor.
               </li>
             )}
           </ul>
@@ -167,7 +168,7 @@ export default function TreasuryTab() {
           value={kpis.fxDaysStale}
           format="number"
           suffix={` días · Bs. ${kpis.fxRate ?? "—"}`}
-          tooltip="Días desde la última actualización de exchange_rates. Cada día que pasa, la conversión a bolívares se aleja más de la realidad."
+          tooltip={`Días desde que el cron autoUpdateBcvRate verificó la tasa contra el BCV. La fuente es global_settings.bcv_rate, la misma que usan el checkout y los retiros; la tabla exchange_rates es un vestigio y no se lee. El valor cambió por última vez hace ${kpis.fxDaysSinceChange ?? "—"} días (origen: ${kpis.fxSource ?? "—"}).`}
         />
         <KpiCard
           title="Retiros Esperando Pago"

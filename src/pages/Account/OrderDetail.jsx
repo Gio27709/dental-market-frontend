@@ -846,7 +846,7 @@ export default function OrderDetail() {
                     item.delivery_status === "shipped" ||
                     item.delivery_status === "picked_up" ||
                     item.delivery_status === "arrived" ||
-                    (item.delivery_status === "delivered" && item.delivered_at !== null)) && (
+                    (item.delivery_status === "delivered" && item.escrow_released_at === null)) && (
                     <div className="pl-16 md:pl-20 mt-2">
                       <DeliveryConfirmation
                         itemId={item.id}

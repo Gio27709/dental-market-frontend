@@ -125,9 +125,9 @@ export default function SupportDeepTab() {
               <span className="font-semibold text-rose-300">
                 El &quot;tiempo de primera respuesta&quot; del panel anterior no mide ninguna respuesta.
               </span>{" "}
-              La columna <span className="font-mono">first_response_at</span> la escribe un trigger{" "}
-              <span className="font-mono">BEFORE UPDATE</span> cuando el ticket cambia de ESTADO, no cuando alguien
-              contesta. Por eso los {num(stamp.stamped)} tickets con esa marca no tienen{" "}
+              La columna <span className="font-mono">first_response_at</span> debería estamparla el primer mensaje de{" "}
+              <span className="font-mono">owner</span>/<span className="font-mono">admin</span>. Si esto aparece, algo
+              la está escribiendo por otra vía. Los {num(stamp.stamped)} tickets con esa marca no tienen{" "}
               <span className="font-semibold text-rose-300">un solo mensaje</span>, mientras que las{" "}
               {num(stamp.conversationsUnstamped)} conversaciones que sí recibieron respuesta la tienen vacía. Son dos
               conjuntos que no se tocan: {horas(stamp.stampedAvgHours)} publicadas contra{" "}
@@ -358,14 +358,15 @@ export default function SupportDeepTab() {
           Auditoría de <span className="font-mono normal-case">first_response_at</span>
         </h3>
         <p className="text-[11px] text-fx-muted mb-4">
-          La columna que alimenta el KPI antiguo, contrastada contra la evidencia de mensajes
+          La columna, contrastada contra la evidencia de mensajes. Desde la migración 045 la estampa el primer
+          mensaje de soporte, así que lo sano es 0 en las dos tarjetas del medio
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
           <KpiCard
             title="Tickets con Estampa"
             value={stamp.stamped}
             format="number"
-            tooltip="Tickets cuya columna first_response_at tiene valor porque alguien cambió su estado."
+            tooltip="Tickets con hora de primera respuesta. Desde la migración 045 la escribe el primer mensaje de owner/admin."
             onDrilldown={() =>
               drilldown.open("support_tickets", { title: "Tickets con estampa", filters: { has_stamp: true } })
             }
@@ -374,7 +375,7 @@ export default function SupportDeepTab() {
             title="Estampados sin un Mensaje"
             value={stamp.stampedWithoutMessages}
             format="number"
-            tooltip="Tienen hora de 'primera respuesta' y cero mensajes. Es la prueba de que la columna registra un cambio de estado."
+            tooltip="Tienen hora de 'primera respuesta' y cero mensajes. Debe ser 0: si sube, la columna volvió a escribirse sin que nadie contestara."
             onDrilldown={() =>
               drilldown.open("support_tickets", {
                 title: "Estampados sin conversación",
@@ -386,7 +387,7 @@ export default function SupportDeepTab() {
             title="Conversaciones sin Estampa"
             value={stamp.conversationsUnstamped}
             format="number"
-            tooltip="Recibieron respuesta real de soporte pero la columna quedó nula: se cerraron antes de que existiera el trigger."
+            tooltip="Recibieron respuesta real de soporte pero la columna quedó nula. Debe ser 0: la migración 045 rellenó las históricas."
             onDrilldown={() =>
               drilldown.open("support_tickets", {
                 title: "Conversaciones sin estampa",
@@ -398,7 +399,7 @@ export default function SupportDeepTab() {
             title="Estampados con Respuesta Real"
             value={stamp.stampedWithStaffReply}
             format="number"
-            tooltip="La intersección entre ambos universos. Si es cero, el KPI antiguo y la realidad no comparten un solo ticket."
+            tooltip="La intersección entre ambos universos. Debe igualar a 'Tickets con Estampa': cada estampa respaldada por su mensaje."
             onDrilldown={() =>
               drilldown.open("support_tickets", {
                 title: "Tickets con estampa y respuesta real",

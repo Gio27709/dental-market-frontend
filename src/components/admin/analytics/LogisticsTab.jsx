@@ -123,7 +123,7 @@ export default function LogisticsTab() {
           tooltip={
             slaBlocked
               ? `Retenido. ${sla.shippedBeforeApproved} despachos están fechados antes de que se aprobara su propio pago, así que la resta no describe el desempeño.`
-              : `Ventana de ${sla.configuredHours} h desde la aprobación del pago hasta la salida del paquete: es la misma que el cron sanciona con amonestaciones, multas y suspensiones. No se usa sla_promised_at (nunca se escribió) ni delivered_at (es un semáforo de escrow que se borra al liberar fondos).`
+              : `Ventana de ${sla.configuredHours} h desde la aprobación del pago hasta la salida del paquete: es la misma que el cron sanciona con amonestaciones, multas y suspensiones. No se usa sla_promised_at, que nunca se escribió, ni delivered_at, que solo tiene hora fiable desde la migración 046.`
           }
           onDrilldown={() =>
             drilldown.open("shipments", {
@@ -156,7 +156,7 @@ export default function LogisticsTab() {
           value={stageHours.avg_hours_to_deliver ?? null}
           format="number"
           suffix={` hrs · n=${stageHours.n_deliver ?? 0}`}
-          tooltip="Horas entre el evento de recogida y el de entrega, medidas dentro de delivery_events. No se usa order_items.delivered_at: esa columna es un semáforo de escrow que se borra al liberar los fondos."
+          tooltip="Horas entre el evento de recogida y el de entrega, medidas dentro de delivery_events. No se cruza con order_items.delivered_at porque las dos tablas no comparten reloj en los datos históricos; además esa columna solo tiene hora fiable desde la migración 046."
           onDrilldown={() =>
             drilldown.open("delivery_events", {
               title: "Bitácora de entrega del período",

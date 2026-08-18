@@ -146,10 +146,11 @@ export default function LogisticsDeepTab() {
               <span className="font-semibold text-rose-300">
                 {num(ins.deliveredWithoutTimestamp)} ítems entregados
               </span>{" "}
-              no tienen hora de entrega. <span className="font-mono">delivered_at</span> no es un registro histórico
-              sino un semáforo de escrow: se escribe al entregar y se borra al liberar los fondos, porque el módulo de
-              custodia lee <span className="font-mono">delivered_at IS NULL</span> como &quot;ya pagado&quot;. Todo
-              promedio calculado sobre esa columna tiende a cero por construcción.
+              no tienen hora de entrega. Son legado: hasta la migración 046,{" "}
+              <span className="font-mono">delivered_at</span> hacía de semáforo de escrow y se borraba al liberar los
+              fondos, así que la hora real se perdió y no hay de dónde deducirla. Desde entonces la estampa el trigger
+              al entrar en &quot;entregado&quot; y el escrow usa{" "}
+              <span className="font-mono">escrow_released_at</span>: los envíos nuevos ya no engrosan esta cifra.
             </li>
           )}
           {(ins.withSlaPromisedAt || 0) === 0 && (ins.totalItems || 0) > 0 && (
@@ -238,7 +239,7 @@ export default function LogisticsDeepTab() {
             value={ins.deliveredWithoutTimestamp}
             format="number"
             suffix={` de ${num(ins.statusDelivered)} entregados`}
-            tooltip="Estado 'entregado' pero delivered_at vacío, porque el escrow lo borra al liberar los fondos."
+            tooltip="Estado 'entregado' pero delivered_at vacío. Son entregas anteriores a la migración 046, cuando el escrow borraba esa columna al liberar los fondos; la hora real ya no existe. Las entregas nuevas la estampan siempre."
             onDrilldown={() =>
               drilldown.open("shipments", {
                 title: "Entregados sin marca de tiempo",
