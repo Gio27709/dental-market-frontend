@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNotifications } from "../../hooks/useNotifications";
 import NotificationItem from "../../components/notifications/NotificationItem";
+import NotificationPreferences from "../../components/notifications/NotificationPreferences";
 
+// "prefs" no es un filtro del listado: cambia la vista entera.
 const FILTERS = [
   { key: "", label: "Todas", icon: "notifications" },
   { key: "unread", label: "No leídas", icon: "mark_email_unread" },
+  { key: "prefs", label: "Preferencias", icon: "tune" },
 ];
 
 export default function Notifications() {
@@ -30,7 +33,10 @@ export default function Notifications() {
     setInitialLoaded(true);
   }, [fetchNotifications, activeFilter]);
 
+  const showingPrefs = activeFilter === "prefs";
+
   useEffect(() => {
+    if (activeFilter === "prefs") return;
     loadNotifications(1, activeFilter);
     setPage(1);
   }, [activeFilter]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -77,13 +83,15 @@ export default function Notifications() {
               margin: "4px 0 0",
             }}
           >
-            {unreadCount > 0
-              ? `Tienes ${unreadCount} notificación${unreadCount !== 1 ? "es" : ""} sin leer`
-              : "Estás al día"}
+            {showingPrefs
+              ? "Decide qué avisos quieres recibir"
+              : unreadCount > 0
+                ? `Tienes ${unreadCount} notificación${unreadCount !== 1 ? "es" : ""} sin leer`
+                : "Estás al día"}
           </p>
         </div>
 
-        {unreadCount > 0 && (
+        {!showingPrefs && unreadCount > 0 && (
           <button
             onClick={markAllRead}
             style={{
@@ -161,7 +169,9 @@ export default function Notifications() {
           overflow: "hidden",
         }}
       >
-        {loading && !initialLoaded ? (
+        {showingPrefs ? (
+          <NotificationPreferences />
+        ) : loading && !initialLoaded ? (
           <div style={{ textAlign: "center", padding: "60px 24px", color: "#9ca3af" }}>
             <span className="material-symbols-outlined" style={{ fontSize: "40px", marginBottom: "12px", display: "block" }}>
               hourglass_top
@@ -234,7 +244,7 @@ export default function Notifications() {
         )}
 
         {/* Load More */}
-        {pagination && pagination.page < pagination.totalPages && (
+        {!showingPrefs && pagination && pagination.page < pagination.totalPages && (
           <div style={{ padding: "12px 16px", borderTop: "1px solid #f0f0f5", textAlign: "center" }}>
             <button
               onClick={handleLoadMore}

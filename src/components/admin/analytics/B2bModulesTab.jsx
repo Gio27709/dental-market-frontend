@@ -161,11 +161,11 @@ export default function B2bModulesTab() {
               <span className="font-semibold text-amber-300">
                 Ningún usuario ha configurado sus preferencias de notificación
               </span>{" "}
-              ({num(prefs.configured)} de {num(prefs.totalUsers)}), y no es una elección: no existe pantalla de
-              preferencias. Las {num(prefs.notificationsSent)} notificaciones enviadas salieron por el default
-              implícito de <span className="font-mono">notificationService.js:71</span> (
-              <span className="font-mono">if (!data) return true</span>): todo activado, sin consentimiento explícito y
-              sin forma de apagarlo.
+              ({num(prefs.configured)} de {num(prefs.totalUsers)}). La pantalla ya existe (
+              <span className="font-mono">/account/notifications → Preferencias</span>), así que ahora es falta de uso.
+              Mientras tanto, las {num(prefs.notificationsSent)} notificaciones enviadas salen por el default implícito
+              de <span className="font-mono">notificationService.js:71</span> (
+              <span className="font-mono">if (!data) return true</span>): todo activado, sin consentimiento explícito.
             </li>
           )}
           {inertes.length > 0 && (
@@ -587,7 +587,7 @@ export default function B2bModulesTab() {
             Preferencias de notificación
           </h3>
           <p className="text-[11px] text-fx-muted mb-4">
-            Backend y API listos, pantalla inexistente. Todo el mundo corre sobre el default implícito{" "}
+            Cadena completa desde el 18-ago-2026. Quien no entre a la pestaña sigue sobre el default implícito{" "}
             <span className="font-mono">todo activado</span>.
           </p>
           <div className="grid grid-cols-2 gap-3">
@@ -608,7 +608,7 @@ export default function B2bModulesTab() {
               title="Notificaciones enviadas"
               value={prefs.notificationsSent}
               format="number"
-              tooltip="Todas salieron por el default implícito, sin que nadie lo eligiera ni pudiera apagarlo."
+              tooltip="Las de usuarios sin fila salen por el default implícito de notificationService.js:71 (todo activado)."
               onDrilldown={() =>
                 drilldown.open("notifications", { title: "Notificaciones enviadas", filters: { allTime: true } })
               }

@@ -356,18 +356,24 @@ export default function NotificationsTab() {
       {/* Preferencias */}
       <div className="fx-card">
         <h3 className="text-base font-bold text-fx-text mb-1">Preferencias de Notificación</h3>
+        <p className="text-[11px] text-fx-muted mb-1">
+          Cuántos apagaron cada categoría en /account/notifications. Solo las 5 de la app: las
+          columnas <span className="font-mono">email_*</span> existen en la tabla pero ninguna ruta
+          de envío las consulta.
+        </p>
         {(data?.preferences?.users_configured || 0) === 0 ? (
           <p className="text-xs text-fx-muted">
             Ningún usuario ha personalizado sus preferencias todavía. Todos reciben la configuración
-            por defecto, así que aún no hay señal de rechazo por canal que medir.
+            por defecto, así que aún no hay señal de rechazo por categoría que medir.
           </p>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-3">
             {[
-              ["Promociones por email", data.preferences.optout_email_promotions],
-              ["Pedidos por email", data.preferences.optout_email_orders],
-              ["Envíos por email", data.preferences.optout_email_shipping],
-              ["Promociones en la app", data.preferences.optout_inapp_promotions]
+              ["Pedidos", data.preferences.optout_inapp_orders],
+              ["Pagos", data.preferences.optout_inapp_payments],
+              ["Envíos", data.preferences.optout_inapp_shipping],
+              ["Reseñas", data.preferences.optout_inapp_reviews],
+              ["Promociones", data.preferences.optout_inapp_promotions]
             ].map(([label, count]) => (
               <div key={label} className="bg-fx-inset border border-fx-line rounded-2xl p-3">
                 <p className="text-[10px] uppercase text-fx-faint font-bold">{label}</p>
