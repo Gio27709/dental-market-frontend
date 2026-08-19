@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Outlet } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ProductProvider } from "./context/ProductContext";
@@ -19,6 +19,7 @@ import AccountLayout from "./components/layout/account/AccountLayout";
 import AdminLayout from "./components/layout/admin/AdminLayout";
 import StoreLayout from "./components/layout/store/StoreLayout";
 import LoadingSkeleton from "./components/LoadingSkeleton";
+import Landing from "./pages/Landing";
 import { usePageTracking } from "./hooks/usePageTracking";
 
 const Home = lazy(() => import("./pages/Home"));
@@ -120,6 +121,22 @@ function EcommerceLayout() {
       <Footer />
     </div>
   );
+}
+
+/**
+ * En `/`: la primera visita ve la landing de bienvenida; después, la Home de siempre.
+ * Se decide una sola vez al montar para no parpadear entre las dos.
+ */
+function HomeGate() {
+  const [seen] = useState(() => {
+    try {
+      return localStorage.getItem("forcepx_welcome_seen") === "1";
+    } catch {
+      return true;
+    }
+  });
+
+  return seen ? <Home /> : <Landing />;
 }
 
 export default function App() {
@@ -243,7 +260,8 @@ export default function App() {
 
                       {/* --- RUTAS PÚBLICAS / CLIENTE (Con Header y Footer de E-commerce) --- */}
                       <Route element={<EcommerceLayout />}>
-                        <Route path="/" element={<Home />} />
+                        <Route path="/" element={<HomeGate />} />
+                        <Route path="/inicio" element={<Home />} />
                         <Route path="/product/:id" element={<ProductDetail />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
