@@ -62,7 +62,7 @@ export default function AdminPayouts() {
   const [counts, setCounts] = useState(EMPTY_COUNTS);
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("pending");
+  const [activeTab, setActiveTab] = useState("all");
 
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
