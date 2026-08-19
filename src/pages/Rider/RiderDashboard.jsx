@@ -152,9 +152,13 @@ export default function RiderDashboard() {
     setFailedModal({ open: false, itemId: null });
   };
 
-  const openMap = (lat, lng) => {
+  const openMap = (lat, lng, address) => {
     if (lat && lng) {
       window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, "_blank");
+    } else if (address) {
+      // Pedidos sin GPS: buscar por la dirección escrita en vez de un botón muerto
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${address}, Venezuela`)}`, "_blank");
+      toast("Sin GPS exacto: buscando por la dirección escrita.", { icon: "🗺️" });
     } else {
       toast.error("Coordenadas no proporcionadas.");
     }
@@ -318,7 +322,7 @@ export default function RiderDashboard() {
         {/* Top Row: Navigation + Call */}
         <div className="flex gap-2.5">
           <button
-            onClick={() => openMap(job.orders?.delivery_lat, job.orders?.delivery_lng)}
+            onClick={() => openMap(job.orders?.delivery_lat, job.orders?.delivery_lng, job.orders?.delivery_address)}
             className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-2xl text-[12px] uppercase tracking-wide transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]">map</span>
@@ -426,6 +430,43 @@ export default function RiderDashboard() {
                </p>
             </div>
          </div>
+
+         {/* Punto de recogida */}
+         {(riderInfo?.store?.business_address || riderInfo?.store?.business_phone) && (
+           <div className="relative z-10 mt-5 pt-5 border-t border-white/15 flex flex-col sm:flex-row sm:items-center gap-4">
+             <div className="flex items-start gap-2.5 flex-1 min-w-0 text-center sm:text-left justify-center sm:justify-start">
+               <span className="material-symbols-outlined text-[18px] text-[#c3ff00] mt-0.5 hidden sm:block">storefront</span>
+               <div className="min-w-0">
+                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c3ff00]/90">Punto de recogida</span>
+                 <p className="text-sm font-medium text-white/85 leading-relaxed mt-0.5">
+                   {riderInfo?.store?.business_address
+                     ? `${riderInfo.store.business_address}${riderInfo.store.state ? `, ${riderInfo.store.state}` : ""}`
+                     : "Dirección no registrada por la tienda"}
+                 </p>
+               </div>
+             </div>
+             <div className="flex gap-2.5 justify-center sm:justify-end shrink-0">
+               {riderInfo?.store?.business_address && (
+                 <button
+                   onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${riderInfo.store.business_address}${riderInfo.store.state ? `, ${riderInfo.store.state}` : ""}, Venezuela`)}`, "_blank")}
+                   className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold rounded-2xl text-[11px] uppercase tracking-wide transition-colors backdrop-blur-sm"
+                 >
+                   <span className="material-symbols-outlined text-[16px]">near_me</span>
+                   Cómo llegar
+                 </button>
+               )}
+               {riderInfo?.store?.business_phone && (
+                 <button
+                   onClick={() => window.open(`tel:${riderInfo.store.business_phone}`, "_self")}
+                   className="flex items-center gap-2 px-4 py-2.5 bg-[#c3ff00] hover:bg-[#aee600] text-[#531575] font-bold rounded-2xl text-[11px] uppercase tracking-wide transition-colors"
+                 >
+                   <span className="material-symbols-outlined text-[16px]">call</span>
+                   Llamar tienda
+                 </button>
+               )}
+             </div>
+           </div>
+         )}
       </div>
 
       {/* Stats */}
