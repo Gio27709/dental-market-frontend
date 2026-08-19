@@ -318,22 +318,22 @@ export default function AllOrders() {
           </div>
 
           {/* Premium Date Range Filter */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f9fafb", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e5e7eb", transition: "all 0.2s" }} className="date-filter-container">
-            <CalendarIcon className="h-4 w-4" style={{ color: "#6b1e96" }} />
-            <input 
-              type="date" 
-              value={dateFrom} 
-              onChange={(e) => setDateFrom(e.target.value)} 
-              style={{ background: "transparent", border: "none", fontSize: "12px", color: dateFrom ? "#1f2937" : "#9ca3af", outline: "none", cursor: "pointer", fontWeight: 500 }} 
-              title="Fecha desde" 
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1 1 260px", minWidth: 0, background: "#f9fafb", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e5e7eb", transition: "all 0.2s" }} className="date-filter-container">
+            <CalendarIcon className="h-4 w-4" style={{ color: "#6b1e96", flexShrink: 0 }} />
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              style={{ background: "transparent", border: "none", fontSize: "12px", color: dateFrom ? "#1f2937" : "#9ca3af", outline: "none", cursor: "pointer", fontWeight: 500, flex: "1 1 0", minWidth: 0 }}
+              title="Fecha desde"
             />
-            <span style={{ fontSize: "12px", color: "#d1d5db", fontWeight: "bold" }}>→</span>
-            <input 
-              type="date" 
-              value={dateTo} 
-              onChange={(e) => setDateTo(e.target.value)} 
-              style={{ background: "transparent", border: "none", fontSize: "12px", color: dateTo ? "#1f2937" : "#9ca3af", outline: "none", cursor: "pointer", fontWeight: 500 }} 
-              title="Fecha hasta" 
+            <span style={{ fontSize: "12px", color: "#d1d5db", fontWeight: "bold", flexShrink: 0 }}>→</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              style={{ background: "transparent", border: "none", fontSize: "12px", color: dateTo ? "#1f2937" : "#9ca3af", outline: "none", cursor: "pointer", fontWeight: 500, flex: "1 1 0", minWidth: 0 }}
+              title="Fecha hasta"
             />
           </div>
 

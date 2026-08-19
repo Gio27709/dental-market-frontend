@@ -467,7 +467,7 @@ export default function StoreDiscounts() {
                 </div>
 
                 {/* Type + Value */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">Tipo</label>
                     <div className="flex gap-2">
@@ -592,7 +592,7 @@ export default function StoreDiscounts() {
                 )}
 
                 {/* Dates */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">Fecha de Inicio</label>
                     <input
@@ -614,7 +614,7 @@ export default function StoreDiscounts() {
                 </div>
 
                 {/* Advanced */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">Compra Mínima ($) (Opcional)</label>
                     <input

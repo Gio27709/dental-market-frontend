@@ -378,7 +378,9 @@ export default function StoreLayout() {
       )}
       
       {/* Main Content */}
-      <div className="flex-1 pt-14 md:pt-6 p-4 md:p-8" style={{ background: '#f1ecf6' }}>
+      {/* `min-w-0`: sin él, el min-width:auto del item flex deja que el contenido
+          ancho (tablas) estire la página entera y anula los `overflow-x-auto`. */}
+      <div className="flex-1 min-w-0 pt-14 md:pt-6 p-4 md:p-8" style={{ background: '#f1ecf6' }}>
         <div className="max-w-6xl mx-auto">
           {renderContent()}
         </div>

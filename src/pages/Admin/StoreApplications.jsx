@@ -360,8 +360,8 @@ export default function StoreApplications() {
           <button
             onClick={() => setOpenDropdown(openDropdown === rowKey(app) ? null : rowKey(app))}
             aria-label="Acciones"
-            className={`p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-all md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100 ${
-              openDropdown === rowKey(app) ? "md:opacity-100 bg-slate-100 text-slate-900" : ""
+            className={`p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-all [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100 ${
+              openDropdown === rowKey(app) ? "[@media(hover:hover)]:opacity-100 bg-slate-100 text-slate-900" : ""
             }`}
           >
             <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">

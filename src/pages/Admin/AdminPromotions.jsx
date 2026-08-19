@@ -1022,7 +1022,7 @@ function PromotionFormModal({ promo, onSave, onClose }) {
               </div>
 
               {/* Badge visual settings */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
                     Texto del Badge
@@ -1193,7 +1193,7 @@ function PromotionFormModal({ promo, onSave, onClose }) {
                     )}
                   </div>
 
-                  <div className="border border-gray-200 rounded-xl bg-gray-50/50 max-h-[180px] overflow-y-auto p-3 grid grid-cols-2 gap-2">
+                  <div className="border border-gray-200 rounded-xl bg-gray-50/50 max-h-[180px] overflow-y-auto p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {loadingSelections ? (
                       <p className="col-span-2 text-xs text-gray-400 text-center py-4">Cargando categorías...</p>
                     ) : categoriesList.length === 0 ? (
@@ -1256,7 +1256,7 @@ function PromotionFormModal({ promo, onSave, onClose }) {
                 Programación y Ajustes
               </h3>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
                     Fecha de Inicio *
@@ -1284,7 +1284,7 @@ function PromotionFormModal({ promo, onSave, onClose }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
                     Posición (Sort Order)

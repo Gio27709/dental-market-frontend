@@ -173,7 +173,7 @@ export default function PaymentApprovalQueue({
                     {formatCurrencyUSD(isGroup ? groupTotalUsd : primaryOrder.total_usd)}
                   </span>
                   <span className="text-xs font-semibold text-gray-500">
-                    Bs {formatCurrencyVES(isGroup ? groupTotalVes : primaryOrder.total_ves)}
+                    {formatCurrencyVES(isGroup ? groupTotalVes : primaryOrder.total_ves)}
                   </span>
                   {isGroup && (
                     <span className="text-[10px] text-gray-400 mt-0.5">

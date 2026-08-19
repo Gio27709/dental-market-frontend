@@ -484,8 +484,79 @@ export default function AdminUsers() {
         </div>
       ) : (
         <>
+          {/* Mobile cards */}
+          <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {users.map((user) => {
+              const badge = ROLE_BADGES[user.role] || ROLE_BADGES.user;
+              const isTargetOwner = user.role === "owner";
+              const isUpdating = updatingId === user.id;
+              const permissionsDisabled = (isTargetOwner && !isOwner) || user.id === currentUser?.id;
+
+              const createdDate = user.created_at ? new Date(user.created_at).toLocaleDateString("es-VE", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+              const lastLogin = user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString("es-VE", { day: "2-digit", month: "short", year: "numeric" }) : "Nunca";
+
+              const displayName = user.full_name
+                || [user.user_metadata?.first_name, user.user_metadata?.last_name].filter(Boolean).join(" ")
+                || "Sin nombre";
+
+              return (
+                <div key={user.id} style={{ background: "#fff", borderRadius: "14px", border: "1px solid #f0f0f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", padding: "14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "linear-gradient(135deg, #e9d5ff, #f3e8ff)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid rgba(107,30,150,0.1)" }}>
+                      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#6b1e96" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                      </svg>
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: "13px", fontWeight: 600, color: "#1f2937", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</div>
+                      <div style={{ fontSize: "11px", color: "#9ca3af", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</div>
+                    </div>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "4px 9px", borderRadius: "16px", background: badge.bg, color: badge.color, fontSize: "10px", fontWeight: 700, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.04em", flexShrink: 0 }}>
+                      {isTargetOwner && <span style={{ fontSize: "11px" }}>👑</span>}
+                      {badge.label}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "16px", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #f3f4f6", fontSize: "11px", color: "#6b7280" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: "9px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.04em" }}>Registro</div>
+                      <div>{createdDate}</div>
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: "9px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.04em" }}>Último acceso</div>
+                      <div style={{ color: lastLogin === "Nunca" ? "#d1d5db" : "#6b7280" }}>{lastLogin}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "8px", marginTop: "12px", alignItems: "center" }}>
+                    <select
+                      disabled={isTargetOwner || isUpdating}
+                      value={user.role}
+                      onChange={(e) => handleRoleChange(user.id, e.target.value, user.email)}
+                      style={{ flex: 1, minWidth: 0, padding: "9px 10px", borderRadius: "8px", border: "1.5px solid #e5e7eb", fontSize: "12px", fontWeight: 600, color: "#1f2937", background: isTargetOwner ? "#f9fafb" : "#fff", cursor: isTargetOwner || isUpdating ? "not-allowed" : "pointer", outline: "none", opacity: isTargetOwner || isUpdating ? 0.5 : 1 }}
+                    >
+                      {ROLE_SELECT_OPTIONS.map((r) => (
+                        <option key={r.value} value={r.value}>{r.label}</option>
+                      ))}
+                    </select>
+                    <button
+                      disabled={permissionsDisabled}
+                      onClick={() => handleOpenPermissionsModal(user)}
+                      style={{ flexShrink: 0, padding: "9px 14px", borderRadius: "8px", border: "1.5px solid rgba(107,30,150,0.15)", background: "rgba(107,30,150,0.04)", color: "#6b1e96", fontSize: "12px", fontWeight: 600, cursor: permissionsDisabled ? "not-allowed" : "pointer", opacity: permissionsDisabled ? 0.4 : 1, display: "inline-flex", alignItems: "center", gap: "5px" }}
+                    >
+                      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z" />
+                      </svg>
+                      Permisos
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           {/* Table */}
-          <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #f0f0f0", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+          <div className="hidden md:block" style={{ background: "#fff", borderRadius: "16px", border: "1px solid #f0f0f0", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", overflow: "hidden" }}>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", minWidth: "720px" }}>
                 <thead>
@@ -622,7 +693,7 @@ export default function AdminUsers() {
           </div>
 
           {/* ── Footer: Count + Pagination ── */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "16px", padding: "14px 20px", background: "#fff", borderRadius: "12px", border: "1px solid #f0f0f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginTop: "16px", padding: "14px 20px", background: "#fff", borderRadius: "12px", border: "1px solid #f0f0f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
             <div style={{ fontSize: "12px", color: "#6b7280" }}>
               Mostrando{" "}
               <span style={{ fontWeight: 700, color: "#1a0a2e" }}>
@@ -635,7 +706,7 @@ export default function AdminUsers() {
             </div>
 
             {pagination.totalPages > 1 && (
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={pagination.page === 1}

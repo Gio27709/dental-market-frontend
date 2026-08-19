@@ -118,6 +118,7 @@ export default function AdminCourses() {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-gray-50/80 border-b border-gray-100 uppercase tracking-wider text-xs font-bold text-gray-500">
               <tr>
@@ -181,6 +182,7 @@ export default function AdminCourses() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -232,7 +234,7 @@ function CourseModal({ course, onSave, onClose }) {
              <input required type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full px-4 py-2 border rounded-xl" placeholder="Ej: Especialización en Ortodoncia..." />
            </div>
            
-           <div className="grid grid-cols-2 gap-4">
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                  <label className="block text-sm font-semibold text-gray-700 mb-1">Instructor</label>
                  <input type="text" value={form.instructor} onChange={e => setForm({...form, instructor: e.target.value})} className="w-full px-4 py-2 border rounded-xl" />
@@ -243,7 +245,7 @@ function CourseModal({ course, onSave, onClose }) {
               </div>
            </div>
 
-           <div className="grid grid-cols-2 gap-4">
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                  <label className="block text-sm font-semibold text-gray-700 mb-1">Dificultad / Nivel</label>
                  <select value={form.level} onChange={e => setForm({...form, level: e.target.value})} className="w-full px-4 py-2 border rounded-xl">

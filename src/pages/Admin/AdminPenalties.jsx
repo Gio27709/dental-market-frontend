@@ -413,7 +413,7 @@ export default function AdminPenalties() {
               />
             </div>
 
-            <div className="w-[190px]">
+            <div className="w-full sm:w-[190px]">
               <SearchableSelect
                 options={storeOptions}
                 value={filters.storeId}
@@ -424,7 +424,7 @@ export default function AdminPenalties() {
               />
             </div>
 
-            <div className="w-[170px]">
+            <div className="w-[calc(50%-5px)] sm:w-[170px]">
               <SearchableSelect
                 options={TYPE_OPTIONS}
                 value={filters.type}
@@ -435,7 +435,7 @@ export default function AdminPenalties() {
               />
             </div>
 
-            <div className="w-[170px]">
+            <div className="w-[calc(50%-5px)] sm:w-[170px]">
               <SearchableSelect
                 options={STATUS_OPTIONS}
                 value={filters.status}

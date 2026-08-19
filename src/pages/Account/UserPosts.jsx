@@ -14,6 +14,35 @@ import api from "../../services/api";
 import toast from "react-hot-toast";
 import PostModal from "../../components/posts/PostModal";
 
+function PostStatusBadge({ post }) {
+  if (post.status === "pending") {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200" title="En aprobación por el administrador">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> En Aprobación
+      </span>
+    );
+  }
+  if (post.status === "rejected") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">
+        <span className="w-1 h-1 rounded-full bg-red-500"></span> Rechazado
+      </span>
+    );
+  }
+  if (post.is_published) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
+        <span className="w-1 h-1 rounded-full bg-green-500"></span> Público
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-200">
+      <span className="w-1 h-1 rounded-full bg-gray-400"></span> Oculto
+    </span>
+  );
+}
+
 export default function UserPosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -256,7 +285,66 @@ export default function UserPosts() {
             )}
           </div>
         ) : (
-          <div className="border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+          <>
+          {/* Tarjetas en móvil */}
+          <div className="grid grid-cols-1 gap-3 md:hidden">
+            {posts.map((post) => (
+              <div key={post.id} className="border border-gray-100 rounded-xl shadow-sm p-3.5 bg-white">
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center border border-gray-100">
+                    {post.thumbnail_url ? (
+                      <img src={post.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="material-symbols-outlined text-gray-400 text-[18px]">image</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-gray-900 line-clamp-2" title={post.title}>{post.title}</p>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className="inline-flex px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider bg-purple-50 text-[#6b1e96] rounded border border-purple-100">
+                        {post.category || 'General'}
+                      </span>
+                      <span className="text-[10px] text-gray-500 font-mono">
+                        {new Date(post.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-gray-100">
+                  <PostStatusBadge post={post} />
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button
+                      onClick={() => openEditModal(post)}
+                      className="p-2 rounded-lg text-gray-400 hover:text-[#6b1e96] hover:bg-purple-50 transition-colors cursor-pointer"
+                      title="Editar"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">edit</span>
+                    </button>
+                    <button
+                      onClick={() => confirmDelete(post)}
+                      className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                      title="Eliminar"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+                </div>
+
+                {post.status === "rejected" && post.moderation_notes && (
+                  <button
+                    onClick={() => setViewNotesTarget(post)}
+                    className="text-[11px] text-red-600 hover:underline font-bold flex items-center gap-0.5 mt-2.5"
+                  >
+                    <span className="material-symbols-outlined text-[13px]">info</span>
+                    Ver motivo de rechazo
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden md:block border border-gray-100 rounded-xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs whitespace-nowrap">
                 <thead className="bg-gray-50 border-b border-gray-100 uppercase tracking-wider font-bold text-gray-500">
@@ -303,23 +391,7 @@ export default function UserPosts() {
                         {new Date(post.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-5 py-3.5 text-center">
-                        {post.status === "pending" ? (
-                          <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200" title="En aprobación por el administrador">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> En Aprobación
-                          </span>
-                        ) : post.status === "rejected" ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">
-                            <span className="w-1 h-1 rounded-full bg-red-500"></span> Rechazado
-                          </span>
-                        ) : post.is_published ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
-                            <span className="w-1 h-1 rounded-full bg-green-500"></span> Público
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-200">
-                            <span className="w-1 h-1 rounded-full bg-gray-400"></span> Oculto
-                          </span>
-                        )}
+                        <PostStatusBadge post={post} />
                       </td>
                       <td className="px-5 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
@@ -345,6 +417,7 @@ export default function UserPosts() {
               </table>
             </div>
           </div>
+          </>
         )
       ) : activeTab === "liked-posts" ? (
         /* LIKED ARTICLES TAB */

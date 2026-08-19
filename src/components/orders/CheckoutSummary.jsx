@@ -345,7 +345,7 @@ export default function CheckoutSummary({ cartItems, total_usd, total_ves, deliv
         </div>
         <div className="text-right text-[10px] font-extrabold text-slate-400 flex items-center justify-end gap-1.5">
           <span className="px-1.5 py-0.5 rounded bg-white text-[#6b1e96] border border-purple-100/50 font-bold">VES</span>
-          <span>Aprox. {formatCurrencyVES(finalVes)} Bs</span>
+          <span>Aprox. {formatCurrencyVES(finalVes)}</span>
         </div>
       </div>
     </div>

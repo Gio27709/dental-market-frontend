@@ -138,7 +138,7 @@ export default function Promotions() {
           {/* Grid pattern overlay */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)] opacity-40" />
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20 md:py-24 relative z-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20 md:py-24 relative z-10">
             <div className="text-center max-w-3xl mx-auto">
               {activePromo.badge_text && (
                 <span
@@ -153,7 +153,7 @@ export default function Promotions() {
                 </span>
               )}
               
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white mb-6 leading-tight tracking-tight drop-shadow-md">
+              <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white mb-6 leading-tight tracking-tight drop-shadow-md break-words">
                 {activePromo.title}
               </h1>
               

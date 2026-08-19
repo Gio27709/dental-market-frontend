@@ -17,6 +17,8 @@ const ROUTE_WIDTHS = [
   { prefix: '/admin/promotions', width: 'max-w-[1440px]' },
   // Tiendas: 6 columnas y tres botones de acción en las pendientes.
   { prefix: '/admin/store-applications', width: 'max-w-[1440px]' },
+  // Retiros: 8 columnas, con las de resolución (fecha, admin, comprobante).
+  { prefix: '/admin/payouts', width: 'max-w-[1440px]' },
 ];
 
 function AdminLayoutContent() {
@@ -254,7 +256,9 @@ function AdminLayoutContent() {
       )}
       
       {/* Main Content */}
-      <div className="flex-1 pt-16 md:pt-6 p-4 md:p-8" style={{ background: '#f1ecf6' }}>
+      {/* `min-w-0`: sin él, el min-width:auto del item flex deja que el contenido
+          ancho (tablas) estire la página entera y anula los `overflow-x-auto`. */}
+      <div className="flex-1 min-w-0 pt-16 md:pt-6 p-4 md:p-8" style={{ background: '#f1ecf6' }}>
         <div className={`${contentWidth} mx-auto`}>
           <Outlet />
         </div>

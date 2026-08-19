@@ -266,7 +266,7 @@ export default function HomeContentManager() {
             </div>
           </SectionBox>
           <SectionBox title="Botones">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Botón Primario — Texto" value={d.primary_button?.text} onChange={v => update({...d, primary_button: {...(d.primary_button||{}), text: v}})} />
               <Field label="Botón Primario — Link" value={d.primary_button?.link} onChange={v => update({...d, primary_button: {...(d.primary_button||{}), link: v}})} />
               <Field label="Botón Secundario — Texto" value={d.secondary_button?.text} onChange={v => update({...d, secondary_button: {...(d.secondary_button||{}), text: v}})} />
@@ -284,7 +284,7 @@ export default function HomeContentManager() {
                     <span className="text-xs font-bold text-gray-500">Card {i + 1}</span>
                     <RemoveButton onClick={() => { const arr = [...cards]; arr.splice(i, 1); update({...d, promo_cards: arr}); }} />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <Field label="Badge" value={card.badge} onChange={v => { const arr = [...cards]; arr[i] = {...arr[i], badge: v}; update({...d, promo_cards: arr}); }} />
                     <Field label="Color Badge" value={card.badge_color} onChange={v => { const arr = [...cards]; arr[i] = {...arr[i], badge_color: v}; update({...d, promo_cards: arr}); }} placeholder="red, primary, orange" />
                     <Field label="Título" value={card.title} onChange={v => { const arr = [...cards]; arr[i] = {...arr[i], title: v}; update({...d, promo_cards: arr}); }} />
@@ -321,7 +321,7 @@ export default function HomeContentManager() {
                   <span className="text-xs font-bold text-gray-500">Feature {i + 1}</span>
                   <RemoveButton onClick={() => { const arr = [...features]; arr.splice(i, 1); update({...d, features: arr}); }} />
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <Field label="Ícono (Material)" value={f.icon} onChange={v => { const arr = [...features]; arr[i] = {...arr[i], icon: v}; update({...d, features: arr}); }} placeholder="support_agent" />
                   <Field label="Título" value={f.title} onChange={v => { const arr = [...features]; arr[i] = {...arr[i], title: v}; update({...d, features: arr}); }} />
                   <Field label="Descripción" value={f.description} onChange={v => { const arr = [...features]; arr[i] = {...arr[i], description: v}; update({...d, features: arr}); }} />
@@ -445,7 +445,7 @@ export default function HomeContentManager() {
                 <span className="text-xs font-bold text-[#6b1e96]">Banner {i + 1} — {b.position || 'N/A'}</span>
                 <RemoveButton onClick={() => { const arr = [...banners]; arr.splice(i, 1); update({...d, banners: arr}); }} />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Field label="Posición" value={b.position} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], position: v}; update({...d, banners: arr}); }} placeholder="left, center, right" />
                 <Field label="Color Fondo" value={b.bg_color} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], bg_color: v}; update({...d, banners: arr}); }} />
                 <Field label="Título" value={b.heading} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], heading: v}; update({...d, banners: arr}); }} />
@@ -455,7 +455,7 @@ export default function HomeContentManager() {
                 <Field label="Color Botón" value={b.button_color} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], button_color: v}; update({...d, banners: arr}); }} placeholder="sky, primary" />
               </div>
               {b.discount_text !== undefined && (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <Field label="Texto Descuento" value={b.discount_text} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], discount_text: v}; update({...d, banners: arr}); }} />
                   <Field label="Sub-texto Descuento" value={b.discount_subtext} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], discount_subtext: v}; update({...d, banners: arr}); }} />
                 </div>
@@ -496,14 +496,14 @@ export default function HomeContentManager() {
         <div className="p-4 overflow-y-auto flex-1 space-y-4">
           <SectionBox title="Textos de la Sección">
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Título Sección" value={d.section_title} onChange={v => update({...d, section_title: v})} />
                 <Field label="Título Grid" value={d.grid_title} onChange={v => update({...d, grid_title: v})} />
               </div>
               <Field label="Badge" value={d.badge_text} onChange={v => update({...d, badge_text: v})} />
               <Field label="Título Promo (usar \\n para salto de línea)" value={d.promo_heading} onChange={v => update({...d, promo_heading: v})} type="textarea" rows={2} />
               <Field label="Subtexto Promo" value={d.promo_subtext} onChange={v => update({...d, promo_subtext: v})} />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Texto Botón" value={d.button_text} onChange={v => update({...d, button_text: v})} />
                 <Field label="Link Botón" value={d.button_link} onChange={v => update({...d, button_link: v})} />
               </div>
@@ -552,7 +552,7 @@ export default function HomeContentManager() {
                 <span className="text-xs font-bold text-[#6b1e96]">Banner {i + 1}</span>
                 <RemoveButton onClick={() => { const arr = [...banners]; arr.splice(i, 1); update({...d, banners: arr}); }} />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Field label="Badge" value={b.badge} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], badge: v}; update({...d, banners: arr}); }} />
                 <Field label="Título" value={b.heading} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], heading: v}; update({...d, banners: arr}); }} />
                 <Field label="Texto Botón" value={b.button_text} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], button_text: v}; update({...d, banners: arr}); }} />
@@ -574,7 +574,7 @@ export default function HomeContentManager() {
             <div className="space-y-3">
               <Field label="Título" value={d.heading} onChange={v => update({...d, heading: v})} />
               <Field label="Subtítulo" value={d.subheading} onChange={v => update({...d, subheading: v})} type="textarea" rows={2} />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Texto Botón" value={d.button_text} onChange={v => update({...d, button_text: v})} />
                 <Field label="Link Botón" value={d.button_link} onChange={v => update({...d, button_link: v})} />
               </div>
@@ -591,7 +591,7 @@ export default function HomeContentManager() {
                 <RemoveButton onClick={() => { const arr = [...posts]; arr.splice(i, 1); update({...d, posts: arr}); }} />
               </div>
               <Field label="Título" value={p.title} onChange={v => { const arr = [...posts]; arr[i] = {...arr[i], title: v}; update({...d, posts: arr}); }} />
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <Field label="Autor" value={p.author} onChange={v => { const arr = [...posts]; arr[i] = {...arr[i], author: v}; update({...d, posts: arr}); }} />
                 <Field label="Fecha" value={p.date} onChange={v => { const arr = [...posts]; arr[i] = {...arr[i], date: v}; update({...d, posts: arr}); }} placeholder="05 Jun, 2024" />
                 <Field label="Comentarios" value={p.comments} onChange={v => { const arr = [...posts]; arr[i] = {...arr[i], comments: parseInt(v) || 0}; update({...d, posts: arr}); }} type="number" />
@@ -656,7 +656,7 @@ export default function HomeContentManager() {
             </div>
           </SectionBox>
           <SectionBox title="Redes Sociales">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Instagram" value={socialLinks.instagram} onChange={v => update({...d, social_links: {...socialLinks, instagram: v}})} placeholder="https://..." />
               <Field label="Facebook" value={socialLinks.facebook} onChange={v => update({...d, social_links: {...socialLinks, facebook: v}})} placeholder="https://..." />
               <Field label="Twitter/X" value={socialLinks.twitter} onChange={v => update({...d, social_links: {...socialLinks, twitter: v}})} placeholder="https://..." />
@@ -709,7 +709,7 @@ export default function HomeContentManager() {
           <SectionBox title="Top Bar Promo">
             <div className="space-y-3">
               <Field label="Texto Promocional" value={topBar.promo_text} onChange={v => update({...d, top_bar: {...topBar, promo_text: v}})} />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Texto del Enlace" value={topBar.promo_link_text} onChange={v => update({...d, top_bar: {...topBar, promo_link_text: v}})} />
                 <Field label="URL del Enlace" value={topBar.promo_link_url} onChange={v => update({...d, top_bar: {...topBar, promo_link_url: v}})} />
               </div>
