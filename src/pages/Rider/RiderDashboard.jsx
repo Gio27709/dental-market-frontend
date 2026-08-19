@@ -432,7 +432,7 @@ export default function RiderDashboard() {
          </div>
 
          {/* Punto de recogida */}
-         {(riderInfo?.store?.business_address || riderInfo?.store?.business_phone) && (
+         {(riderInfo?.store?.business_address || riderInfo?.store?.business_phone || (riderInfo?.store?.lat && riderInfo?.store?.lng)) && (
            <div className="relative z-10 mt-5 pt-5 border-t border-white/15 flex flex-col sm:flex-row sm:items-center gap-4">
              <div className="flex items-start gap-2.5 flex-1 min-w-0 text-center sm:text-left justify-center sm:justify-start">
                <span className="material-symbols-outlined text-[18px] text-[#c3ff00] mt-0.5 hidden sm:block">storefront</span>
@@ -446,9 +446,16 @@ export default function RiderDashboard() {
                </div>
              </div>
              <div className="flex gap-2.5 justify-center sm:justify-end shrink-0">
-               {riderInfo?.store?.business_address && (
+               {(riderInfo?.store?.business_address || (riderInfo?.store?.lat && riderInfo?.store?.lng)) && (
                  <button
-                   onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${riderInfo.store.business_address}${riderInfo.store.state ? `, ${riderInfo.store.state}` : ""}, Venezuela`)}`, "_blank")}
+                   onClick={() => {
+                     // El pin de la tienda manda; la dirección escrita es el fallback
+                     const s = riderInfo.store;
+                     const query = s.lat && s.lng
+                       ? `${s.lat},${s.lng}`
+                       : encodeURIComponent(`${s.business_address}${s.state ? `, ${s.state}` : ""}, Venezuela`);
+                     window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
+                   }}
                    className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold rounded-2xl text-[11px] uppercase tracking-wide transition-colors backdrop-blur-sm"
                  >
                    <span className="material-symbols-outlined text-[16px]">near_me</span>

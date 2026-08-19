@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import { checkStoreNameAPI } from "../../services/api";
 import toast from "react-hot-toast";
 import { VENEZUELA_STATES } from "../../utils/venezuelaStates";
+import MapAddressPicker from "../../components/common/MapAddressPicker";
 
 export default function StoreProfile() {
   const { storeProfile, loading, updateProfile, uploadImage } = useStore();
@@ -21,6 +22,8 @@ export default function StoreProfile() {
     delivery_coverage_description: "",
     is_open: true,
     business_hours: "",
+    lat: null,
+    lng: null,
   });
   const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -45,6 +48,8 @@ export default function StoreProfile() {
         delivery_coverage_description: storeProfile.delivery_coverage_description || "",
         is_open: storeProfile.is_open ?? true,
         business_hours: storeProfile.business_hours || "",
+        lat: storeProfile.lat ?? null,
+        lng: storeProfile.lng ?? null,
       });
       originalName.current = storeProfile.business_name || "";
     }
@@ -504,6 +509,41 @@ export default function StoreProfile() {
                   Odontólogos locales verán tus productos con prioridad.
                 </p>
               </div>
+            </div>
+
+            {/* Ubicación exacta (pin en el mapa) */}
+            <div>
+              <label style={labelStyle}>
+                Ubicación exacta en el mapa
+              </label>
+              <p style={{ fontSize: "11px", color: "#6b7280", margin: "0 0 10px 0" }}>
+                Coloca el pin en la entrada de tu local. Tus repartidores navegarán a este punto
+                exacto, no a la dirección escrita.
+              </p>
+              <MapAddressPicker
+                value={form.lat != null && form.lng != null ? { lat: form.lat, lng: form.lng } : null}
+                onChange={(lat, lng) => {
+                  setForm((prev) => ({ ...prev, lat, lng }));
+                  setSaved(false);
+                }}
+                height="300px"
+              />
+              {form.lat != null && form.lng != null ? (
+                <p style={{ fontSize: "11px", color: "#059669", margin: "8px 0 0 0", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                  ✓ Pin fijado ({Number(form.lat).toFixed(5)}, {Number(form.lng).toFixed(5)})
+                  <button
+                    type="button"
+                    onClick={() => { setForm((prev) => ({ ...prev, lat: null, lng: null })); setSaved(false); }}
+                    style={{ border: "none", background: "none", color: "#dc2626", fontSize: "11px", fontWeight: 700, cursor: "pointer", padding: 0, textDecoration: "underline" }}
+                  >
+                    Quitar pin
+                  </button>
+                </p>
+              ) : (
+                <p style={{ fontSize: "11px", color: "#d97706", margin: "8px 0 0 0", fontWeight: 600 }}>
+                  Sin pin: tus repartidores solo verán la dirección escrita.
+                </p>
+              )}
             </div>
 
             {/* Description */}
