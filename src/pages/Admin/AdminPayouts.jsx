@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { getAdminPayoutsAPI, processAdminPayoutAPI } from "../../services/api";
+import Pagination from "../../components/admin/Pagination";
 import toast from "react-hot-toast";
 import { useAdminStats } from "../../context/AdminStatsContext";
 
@@ -38,13 +39,38 @@ const TABS = [
   { id: "pending", label: "Pendientes", icon: "⏳" },
   { id: "completed", label: "Aprobados", icon: "✅" },
   { id: "rejected", label: "Rechazados", icon: "❌" },
+  { id: "all", label: "Todos", icon: "📒" },
 ];
+
+const PAYOUT_METHODS = [
+  { value: "pago_movil", label: "Pago Móvil" },
+  { value: "transferencia", label: "Transferencia" },
+  { value: "zelle", label: "Zelle" },
+];
+
+const PER_PAGE = 20;
+
+const EMPTY_COUNTS = { all: 0, pending: 0, processing: 0, completed: 0, rejected: 0 };
+const EMPTY_SUMMARY = { pending_usd: 0, processing_usd: 0, completed_usd: 0, rejected_usd: 0 };
 
 export default function AdminPayouts() {
   const { refreshStats } = useAdminStats();
+
+  const latestRequest = useRef(0);
   const [payouts, setPayouts] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [counts, setCounts] = useState(EMPTY_COUNTS);
+  const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("pending");
+
+  // Filtros
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [method, setMethod] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [page, setPage] = useState(1);
 
   // Modal control
   const [selectedPayout, setSelectedPayout] = useState(null);
@@ -52,24 +78,66 @@ export default function AdminPayouts() {
   const [submitting, setSubmitting] = useState(false);
   const [receiptFile, setReceiptFile] = useState(null); // Payout screenshot file
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
   const fetchPayouts = useCallback(async () => {
+    // Cambiar de pestaña rápido deja que una respuesta lenta pise a la buena.
+    const requestId = ++latestRequest.current;
     setLoading(true);
     try {
-      const { data } = await getAdminPayoutsAPI({ status: activeTab });
+      const { data } = await getAdminPayoutsAPI({
+        status: activeTab,
+        search: debouncedSearch || undefined,
+        method: method || undefined,
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
+        limit: PER_PAGE,
+        offset: (page - 1) * PER_PAGE,
+      });
+      if (requestId !== latestRequest.current) return;
       if (data?.success) {
         setPayouts(data.data || []);
+        setTotal(data.count || 0);
+        setCounts({ ...EMPTY_COUNTS, ...(data.counts || {}) });
+        setSummary({ ...EMPTY_SUMMARY, ...(data.summary || {}) });
       }
     } catch (err) {
+      if (requestId !== latestRequest.current) return;
       toast.error("Error al cargar solicitudes de retiro: " + err.message);
       console.error(err);
     } finally {
-      setLoading(false);
+      if (requestId === latestRequest.current) setLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, debouncedSearch, method, startDate, endDate, page]);
 
   useEffect(() => {
     fetchPayouts();
   }, [fetchPayouts]);
+
+  // Cualquier cambio de filtro invalida la página en la que estabas.
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, debouncedSearch, method, startDate, endDate]);
+
+  // Las filas de la pestaña anterior no pueden quedarse en pantalla mientras carga
+  // la nueva: la columna de acción se pinta según el estado de cada fila y se verían
+  // retiros ya resueltos bajo la pestaña de pendientes.
+  useEffect(() => {
+    setPayouts([]);
+    setTotal(0);
+  }, [activeTab]);
+
+  const hasFilters = Boolean(searchTerm || method || startDate || endDate);
+
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setMethod("");
+    setStartDate("");
+    setEndDate("");
+  };
 
   const handleOpenDetails = (payout) => {
     setSelectedPayout(payout);
@@ -160,12 +228,12 @@ export default function AdminPayouts() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 mb-6 bg-gray-100/50 p-1.5 rounded-2xl w-max border border-gray-200 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2 mb-6 bg-gray-100/50 p-1.5 rounded-2xl w-max max-w-full border border-gray-200 shadow-sm">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm ${
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm ${
               activeTab === tab.id
                 ? "bg-[#6b1e96] text-white"
                 : "bg-white text-gray-500 hover:text-gray-800"
@@ -173,8 +241,94 @@ export default function AdminPayouts() {
           >
             <span className="text-lg">{tab.icon}</span>
             {tab.label}
+            <span
+              className={`px-1.5 py-0.5 rounded-md text-[10px] font-black tabular-nums ${
+                activeTab === tab.id ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              {counts[tab.id] ?? 0}
+            </span>
           </button>
         ))}
+      </div>
+
+      {/* KPIs contables: sólo en el historial completo */}
+      {activeTab === "all" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: "Pagado", amount: summary.completed_usd, n: counts.completed, cls: "border-green-100 bg-green-50/60", text: "text-green-700" },
+            { label: "Pendiente", amount: summary.pending_usd, n: counts.pending, cls: "border-yellow-100 bg-yellow-50/60", text: "text-yellow-700" },
+            { label: "En proceso", amount: summary.processing_usd, n: counts.processing, cls: "border-blue-100 bg-blue-50/60", text: "text-blue-700" },
+            { label: "Rechazado", amount: summary.rejected_usd, n: counts.rejected, cls: "border-red-100 bg-red-50/60", text: "text-red-700" },
+          ].map((kpi) => (
+            <div key={kpi.label} className={`rounded-2xl border p-4 shadow-sm ${kpi.cls}`}>
+              <span className={`block text-[10px] font-bold uppercase tracking-widest ${kpi.text}`}>{kpi.label}</span>
+              <div className="text-2xl font-black text-gray-900 font-mono mt-1">
+                ${Number(kpi.amount || 0).toFixed(2)}
+              </div>
+              <span className="text-xs text-gray-500 font-medium">
+                {kpi.n} {kpi.n === 1 ? "retiro" : "retiros"}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Filtros */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="lg:col-span-2">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Buscar tienda</label>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Nombre comercial o RIF…"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Desde</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Hasta</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Método</label>
+            <select
+              value={method}
+              onChange={(e) => setMethod(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all"
+            >
+              <option value="">Todos los métodos</option>
+              {PAYOUT_METHODS.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        {hasFilters && (
+          <button
+            onClick={handleClearFilters}
+            className="mt-3 text-xs font-semibold text-red-500 hover:text-red-700 transition-colors"
+          >
+            Limpiar filtros
+          </button>
+        )}
       </div>
 
       {/* Content */}
@@ -190,7 +344,9 @@ export default function AdminPayouts() {
           <div className="text-5xl mb-4">💸</div>
           <h3 className="text-lg font-bold text-gray-900 font-['Manrope']">Sin solicitudes registradas</h3>
           <p className="text-sm text-gray-400 mt-1 max-w-sm mx-auto">
-            No se encontraron solicitudes de retiro con estado <span className="font-semibold text-gray-600">&ldquo;{STATUS_CONFIG[activeTab]?.label}&rdquo;</span>.
+            {activeTab === "all"
+              ? "No se encontraron solicitudes de retiro con los filtros aplicados."
+              : <>No se encontraron solicitudes de retiro con estado <span className="font-semibold text-gray-600">&ldquo;{STATUS_CONFIG[activeTab]?.label}&rdquo;</span>.</>}
           </p>
         </div>
       ) : (
@@ -199,12 +355,14 @@ export default function AdminPayouts() {
             <table className="w-full text-left border-collapse hidden md:table">
               <thead>
                 <tr className="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                  <th className="px-6 py-4">Fecha / Hora</th>
-                  <th className="px-6 py-4">Comercio</th>
+                  <th className="px-6 py-4">Solicitado</th>
+                  <th className="px-6 py-4">Tienda</th>
                   <th className="px-6 py-4">Método</th>
                   <th className="px-6 py-4">Monto (USD)</th>
                   <th className="px-6 py-4">Estado</th>
-                  <th className="px-6 py-4 text-center">Acciones</th>
+                  <th className="px-6 py-4">Resuelto</th>
+                  <th className="px-6 py-4">Por</th>
+                  <th className="px-6 py-4 text-center">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
@@ -232,6 +390,28 @@ export default function AdminPayouts() {
                           <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
                           {status.label}
                         </span>
+                      </td>
+                      <td className="px-6 py-4.5 whitespace-nowrap text-xs text-gray-500 font-medium">
+                        {p.status === "pending" ? (
+                          "—"
+                        ) : (
+                          <div className="flex flex-col gap-0.5">
+                            <span>{formatDate(p.updated_at)}</span>
+                            {p.payment_details?.receipt_url && (
+                              <a
+                                href={p.payment_details.receipt_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#6b1e96] font-bold hover:underline"
+                              >
+                                Comprobante ↗
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4.5 whitespace-nowrap text-xs text-gray-600 font-semibold">
+                        {p.processed_by_name || "—"}
                       </td>
                       <td className="px-6 py-4.5 whitespace-nowrap text-center">
                         <button
@@ -279,6 +459,30 @@ export default function AdminPayouts() {
                       </div>
                     </div>
 
+                    {p.status !== "pending" && (
+                      <div className="flex justify-between items-center text-xs pt-2 border-t border-gray-100">
+                        <div className="flex flex-col">
+                          <span className="text-gray-400">Resuelto:</span>
+                          <span className="font-semibold text-gray-600 mt-0.5">{formatDate(p.updated_at)}</span>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <span className="text-gray-400">Por:</span>
+                          <span className="font-semibold text-gray-600 mt-0.5">{p.processed_by_name || "—"}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {p.payment_details?.receipt_url && (
+                      <a
+                        href={p.payment_details.receipt_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-xs font-bold text-[#6b1e96] hover:underline"
+                      >
+                        📄 Ver comprobante ↗
+                      </a>
+                    )}
+
                     <div className="pt-2">
                       <button
                         onClick={() => handleOpenDetails(p)}
@@ -291,6 +495,16 @@ export default function AdminPayouts() {
                 );
               })}
             </div>
+          </div>
+
+          <div className="px-5 pb-5">
+            <Pagination
+              page={page}
+              totalPages={Math.max(1, Math.ceil(total / PER_PAGE))}
+              total={total}
+              limit={PER_PAGE}
+              onPageChange={setPage}
+            />
           </div>
         </div>
       )}
@@ -327,7 +541,7 @@ export default function AdminPayouts() {
             {/* Modal Body */}
             <div className="p-6 space-y-5 overflow-y-auto flex-1 admin-scrollbar-light">
               {/* Store & Request general info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Comercio Solicitante</label>
                   <p className="font-bold text-gray-900 mt-0.5">{selectedPayout.store?.business_name}</p>
@@ -393,7 +607,7 @@ export default function AdminPayouts() {
                           {selectedPayout.payment_details?.bank_code} - {getBankName(selectedPayout.payment_details?.bank_code)}
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Teléfono Asociado</span>
                           <span className="text-sm font-bold text-gray-900 select-all font-mono">{selectedPayout.payment_details?.phone}</span>
@@ -408,7 +622,7 @@ export default function AdminPayouts() {
 
                   {selectedPayout.method === "transferencia" && (
                     <>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Banco Receptor</span>
                           <span className="text-sm font-bold text-gray-800">{selectedPayout.payment_details?.bank_name}</span>

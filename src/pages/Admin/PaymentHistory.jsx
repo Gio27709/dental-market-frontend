@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { getPaymentHistoryAPI, getStoresListAPI } from "../../services/api";
 import { formatCurrencyUSD, formatCurrencyVES, formatOrderDateTime } from "../../utils/formatters";
+import PaymentReviewSlideOver from "../../components/admin/PaymentReviewSlideOver";
+import Pagination from "../../components/admin/Pagination";
 import toast from "react-hot-toast";
 import PropTypes from "prop-types";
 
@@ -60,85 +63,6 @@ KpiCard.propTypes = {
   icon: PropTypes.node.isRequired,
 };
 
-// ── Pagination Component ──
-function Pagination({ page, totalPages, total, limit, onPageChange }) {
-  if (totalPages <= 1) return null;
-
-  const pages = [];
-  const showEllipsis = totalPages > 7;
-
-  if (showEllipsis) {
-    if (page <= 4) {
-      for (let i = 1; i <= Math.min(5, totalPages); i++) pages.push(i);
-      if (totalPages > 5) pages.push("...", totalPages);
-    } else if (page >= totalPages - 3) {
-      pages.push(1, "...");
-      for (let i = Math.max(totalPages - 4, 2); i <= totalPages; i++) pages.push(i);
-    } else {
-      pages.push(1, "...", page - 1, page, page + 1, "...", totalPages);
-    }
-  } else {
-    for (let i = 1; i <= totalPages; i++) pages.push(i);
-  }
-
-  const from = (page - 1) * limit + 1;
-  const to = Math.min(page * limit, total);
-
-  return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6">
-      <p className="text-xs text-gray-500">
-        Mostrando <span className="font-semibold text-gray-700">{from}–{to}</span> de{" "}
-        <span className="font-semibold text-gray-700">{total}</span> registros
-      </p>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => onPageChange(page - 1)}
-          disabled={page === 1}
-          className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-          </svg>
-        </button>
-        {pages.map((p, idx) =>
-          p === "..." ? (
-            <span key={`dots-${idx}`} className="px-2 text-gray-400 text-sm">…</span>
-          ) : (
-            <button
-              key={p}
-              onClick={() => onPageChange(p)}
-              className="min-w-[36px] h-9 rounded-lg text-sm font-medium transition-all duration-200"
-              style={{
-                background: p === page ? 'linear-gradient(135deg, #531575 0%, #6b1e96 100%)' : 'transparent',
-                color: p === page ? '#ffffff' : '#6b7280',
-              }}
-            >
-              {p}
-            </button>
-          )
-        )}
-        <button
-          onClick={() => onPageChange(page + 1)}
-          disabled={page === totalPages}
-          className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-          </svg>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-Pagination.propTypes = {
-  page: PropTypes.number.isRequired,
-  totalPages: PropTypes.number.isRequired,
-  total: PropTypes.number.isRequired,
-  limit: PropTypes.number.isRequired,
-  onPageChange: PropTypes.func.isRequired,
-};
-
 // ── Helper: Extract unique store names from an order ──
 function getOrderStores(order) {
   if (!order.order_items || !order.order_items.length) return ["—"];
@@ -148,6 +72,20 @@ function getOrderStores(order) {
     if (name) names.add(name);
   }
   return names.size > 0 ? [...names] : ["—"];
+}
+
+function StoreChip({ name }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium"
+      style={{ background: 'rgba(83,21,117,0.08)', color: '#531575' }}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3 shrink-0">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" />
+      </svg>
+      {name}
+    </span>
+  );
 }
 
 // ── CSV Export Helper ──
@@ -214,6 +152,7 @@ export default function PaymentHistory() {
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [reviewOrder, setReviewOrder] = useState(null);
 
   // Filter state
   const [filters, setFilters] = useState({
@@ -370,7 +309,7 @@ export default function PaymentHistory() {
         <KpiCard
           title="Total Recaudado"
           value={formatCurrencyUSD(summary.totalUsd)}
-          subtitle={`Bs ${formatCurrencyVES(summary.totalVes)}`}
+          subtitle={formatCurrencyVES(summary.totalVes)}
           gradient="linear-gradient(135deg, #531575 0%, #6b1e96 100%)"
           icon={
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-[#c3ff00]">
@@ -535,9 +474,63 @@ export default function PaymentHistory() {
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="md:bg-white md:rounded-2xl md:border md:border-gray-100 md:shadow-sm md:overflow-hidden">
+          {/* Vista de tarjetas (móvil): sin contenedor, cada pago es una tarjeta suelta */}
+          <div className="md:hidden space-y-3">
+            {orders.map((order) => (
+              <div key={order.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Link
+                      to={`/admin/orders/${order.id}`}
+                      className="text-sm font-bold font-mono tracking-wide underline decoration-dotted underline-offset-2"
+                      style={{ color: '#531575' }}
+                    >
+                      {order.id.split("-")[0].toUpperCase()}
+                    </Link>
+                    <div className="text-xs text-gray-500 mt-0.5">{formatOrderDateTime(order.created_at)}</div>
+                  </div>
+                  <StatusBadge status={order.payment_status} />
+                </div>
+
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-gray-900 truncate">{order.users?.full_name || "—"}</div>
+                  <div className="text-xs text-gray-400 truncate">{order.users?.email || ""}</div>
+                </div>
+
+                <div className="flex flex-wrap gap-1">
+                  {getOrderStores(order).map((name, i) => (
+                    <StoreChip key={i} name={name} />
+                  ))}
+                </div>
+
+                <div className="flex items-end justify-between gap-3 pt-3 border-t border-gray-100">
+                  <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 font-medium uppercase">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                    {order.payment_method?.replace("_", " ") || "—"}
+                  </span>
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-gray-900">{formatCurrencyUSD(order.total_usd)}</div>
+                    <div className="text-xs text-gray-400">{formatCurrencyVES(order.total_ves)}</div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setReviewOrder(order)}
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-semibold text-[#531575] bg-[#531575]/8 active:bg-[#531575]/15 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                  Ver comprobante y detalle
+                </button>
+              </div>
+            ))}
+          </div>
+
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100">
+            <table className="min-w-full divide-y divide-gray-100 hidden md:table">
               <thead>
                 <tr style={{ background: 'linear-gradient(135deg, #f8f5fc 0%, #f5f3ff 100%)' }}>
                   <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Orden</th>
@@ -547,6 +540,7 @@ export default function PaymentHistory() {
                   <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Método</th>
                   <th className="px-5 py-3.5 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider">Monto</th>
                   <th className="px-5 py-3.5 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+                  <th className="px-5 py-3.5 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider">Detalle</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -560,9 +554,13 @@ export default function PaymentHistory() {
                     >
                       {/* Order ID */}
                       <td className="px-5 py-4 whitespace-nowrap">
-                        <span className="text-sm font-bold text-gray-900 font-mono tracking-wide" style={{ color: '#531575' }}>
+                        <Link
+                          to={`/admin/orders/${order.id}`}
+                          className="text-sm font-bold font-mono tracking-wide hover:underline"
+                          style={{ color: '#531575' }}
+                        >
                           {order.id.split("-")[0].toUpperCase()}
-                        </span>
+                        </Link>
                       </td>
 
                       {/* Date */}
@@ -580,16 +578,7 @@ export default function PaymentHistory() {
                       <td className="px-5 py-4">
                         <div className="flex flex-wrap gap-1">
                           {storeNames.map((name, i) => (
-                            <span
-                              key={i}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium"
-                              style={{ background: 'rgba(83,21,117,0.08)', color: '#531575' }}
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" />
-                              </svg>
-                              {name}
-                            </span>
+                            <StoreChip key={i} name={name} />
                           ))}
                         </div>
                       </td>
@@ -605,12 +594,26 @@ export default function PaymentHistory() {
                       {/* Amount */}
                       <td className="px-5 py-4 whitespace-nowrap text-right">
                         <div className="text-sm font-bold text-gray-900">{formatCurrencyUSD(order.total_usd)}</div>
-                        <div className="text-xs text-gray-400">Bs {formatCurrencyVES(order.total_ves)}</div>
+                        <div className="text-xs text-gray-400">{formatCurrencyVES(order.total_ves)}</div>
                       </td>
 
                       {/* Status */}
                       <td className="px-5 py-4 whitespace-nowrap text-center">
                         <StatusBadge status={order.payment_status} />
+                      </td>
+
+                      {/* Detail */}
+                      <td className="px-5 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => setReviewOrder(order)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#531575] bg-[#531575]/8 hover:bg-[#531575]/15 transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-3.5 h-3.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                          </svg>
+                          Ver
+                        </button>
                       </td>
                     </tr>
                   );
@@ -620,7 +623,7 @@ export default function PaymentHistory() {
           </div>
 
           {/* Pagination */}
-          <div className="px-5 pb-5">
+          <div className="mt-3 px-5 py-4 bg-white rounded-2xl border border-gray-200 shadow-sm md:mt-0 md:py-0 md:pb-5 md:bg-transparent md:border-0 md:shadow-none md:rounded-none">
             <Pagination
               page={pagination.page}
               totalPages={pagination.totalPages}
@@ -630,6 +633,16 @@ export default function PaymentHistory() {
             />
           </div>
         </div>
+      )}
+
+      {/* Detalle del pago (solo lectura: aprobar/rechazar vive en /admin/payment-approvals) */}
+      {reviewOrder && (
+        <PaymentReviewSlideOver
+          order={reviewOrder}
+          readOnly
+          statusBadge={<StatusBadge status={reviewOrder.payment_status} />}
+          onClose={() => setReviewOrder(null)}
+        />
       )}
     </div>
   );
