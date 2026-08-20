@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   getAdminRiderApplicationsAPI,
@@ -58,9 +59,31 @@ export default function AdminRiderApplications() {
   // Clipboard copy state
   const [copiedKey, setCopiedKey] = useState(null);
 
+  // Deep link desde notificaciones: `?id=<solicitud>`. Se resuelve una sola vez
+  // cuando termina la primera carga (aquí viene todo el listado, sin paginar en
+  // servidor) y luego se limpia el param para que un refetch no reabra la ficha.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkHandled = useRef(false);
+
   useEffect(() => {
     fetchApplications();
   }, []);
+
+  useEffect(() => {
+    if (deepLinkHandled.current || loading) return;
+    const id = searchParams.get("id");
+    if (!id) return;
+    deepLinkHandled.current = true;
+
+    const app = allApplications.find((a) => a.id === id);
+    if (app) {
+      setActiveTab(["pending", "approved", "rejected"].includes(app.status) ? app.status : "all");
+      setDetailModal({ open: true, data: app });
+    } else {
+      toast.error("No se encontró el elemento indicado");
+    }
+    setSearchParams({}, { replace: true });
+  }, [loading, allApplications, searchParams, setSearchParams]);
 
   const fetchApplications = async () => {
     try {

@@ -1,5 +1,6 @@
 import { Outlet, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import PanelNotificationBell from "../notifications/PanelNotificationBell";
 
 export default function RiderLayout() {
   const { user } = useAuth();
@@ -8,6 +9,8 @@ export default function RiderLayout() {
     <div className="flex flex-col min-h-screen bg-gray-100">
       {/* Main Content Area */}
       <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-8">
+        {/* Este layout no tiene cabecera: la campana va sobre el contenido */}
+        <PanelNotificationBell className="mb-4" />
         {user?.role === "owner" ? (
           <div className="flex flex-col items-center justify-center h-[70vh] text-center px-4 animate-in fade-in zoom-in duration-300">
             <div className="w-24 h-24 bg-[#c3ff00]/10 rounded-full flex items-center justify-center mb-6 border-8 border-white shadow-sm">

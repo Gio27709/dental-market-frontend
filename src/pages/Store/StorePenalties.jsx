@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { getStorePenaltiesAPI, appealPenaltyAPI, acknowledgePenaltyAPI } from "../../services/api";
 import { useStore } from "../../context/StoreContext";
 import toast from "react-hot-toast";
@@ -24,6 +24,11 @@ export default function StorePenalties() {
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState("");
   const [activeTab, setActiveTab] = useState("pending"); // pending | all
+
+  // Deep link desde notificaciones: ?penalty=<uuid>
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkHandled = useRef(false);
+  const [highlightId, setHighlightId] = useState(null);
 
   // Info guide expand
   const [showGuide, setShowGuide] = useState(true);
@@ -53,6 +58,29 @@ export default function StorePenalties() {
   useEffect(() => {
     fetchPenalties();
   }, [fetchPenalties]);
+
+  // Aplica el deep link una sola vez, cuando termina la primera carga.
+  useEffect(() => {
+    if (deepLinkHandled.current || loading) return;
+    const penaltyId = searchParams.get("penalty");
+    if (!penaltyId) return;
+    deepLinkHandled.current = true;
+
+    const target = penalties.find((p) => p.id === penaltyId);
+    if (target) {
+      const hasAppeal = target.reason?.includes("📝 Apelación");
+      const isPendingAction = !target.is_acknowledged && target.status !== "dismissed" && !hasAppeal && !target.resolved_by;
+      if (!isPendingAction) setActiveTab("all");
+      setHighlightId(target.id);
+      setTimeout(() => {
+        document.getElementById(`row-${target.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+      setTimeout(() => setHighlightId(null), 3000);
+    } else {
+      toast.error("No se encontró el elemento indicado");
+    }
+    setSearchParams({}, { replace: true });
+  }, [loading, penalties, searchParams, setSearchParams]);
 
   const handleAppealOpen = (id) => {
     setAppealModal({ open: true, penaltyId: id });
@@ -302,9 +330,10 @@ export default function StorePenalties() {
             return (
               <div
                 key={p.id}
+                id={`row-${p.id}`}
                 className={`bg-white rounded-2xl border overflow-hidden transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${
                   p.is_acknowledged ? "border-gray-200 opacity-70" : isPendingAction ? "border-amber-200 bg-amber-50/[0.08]" : "border-gray-200"
-                }`}
+                } ${highlightId === p.id ? "ring-2 ring-[#6b1e96] ring-offset-2" : ""}`}
               >
                 <div className="p-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">

@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { getRefundRequestsAPI, processRefundAPI } from "../../services/api";
 import { formatOrderNumber, formatOrderDateTime, formatCurrencyUSD } from "../../utils/formatters";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import LoadingSkeleton from "../../components/LoadingSkeleton";
 import { useAdminStats } from "../../context/AdminStatsContext";
@@ -36,6 +36,14 @@ export default function AdminRefunds() {
   const [referenceNumber, setReferenceNumber] = useState("");
   const [processing, setProcessing] = useState(false);
 
+  // Deep link desde notificaciones: /admin/refunds?order=<uuid>. Se resalta la(s)
+  // fila(s) de ese pedido una sola vez. phase: 0 = primera carga, 1 = ya se saltó
+  // de pestaña, 2 = resuelto. awaitingLoad evita evaluar la lista vieja justo
+  // después de cambiar de pestaña, antes de que `loading` pase a true.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLink = useRef({ orderId: searchParams.get("order"), phase: 0, awaitingLoad: false });
+  const [highlightedOrderId, setHighlightedOrderId] = useState(null);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -56,6 +64,54 @@ export default function AdminRefunds() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { setPage(1); }, [activeTab]);
+
+  useEffect(() => {
+    const dl = deepLink.current;
+    if (!dl.orderId || dl.phase === 2) return;
+    if (loading) {
+      dl.awaitingLoad = false;
+      return;
+    }
+    if (dl.awaitingLoad) return;
+
+    const finish = () => {
+      dl.phase = 2;
+      setSearchParams({}, { replace: true });
+    };
+
+    const match = refunds.find((r) => r.order_id === dl.orderId);
+    if (match) {
+      finish();
+      setHighlightedOrderId(dl.orderId);
+      document.getElementById(`row-${match.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => setHighlightedOrderId(null), 3000);
+      return;
+    }
+    if (dl.phase === 1) {
+      finish();
+      toast.error("No se encontró el reembolso indicado");
+      return;
+    }
+
+    // No está en la pestaña actual: el endpoint no filtra por pedido, así que se
+    // busca su estado entre los últimos 50 reembolsos y se salta a esa pestaña.
+    dl.phase = 1;
+    (async () => {
+      try {
+        const res = await getRefundRequestsAPI({ limit: 50 });
+        const found = (res.data?.data || []).find((r) => r.order_id === dl.orderId);
+        if (found && found.status !== activeTab) {
+          dl.awaitingLoad = true;
+          setActiveTab(found.status);
+          return;
+        }
+      } catch {
+        // Sin datos: se avisa abajo.
+      }
+      finish();
+      toast.error("No se encontró el reembolso indicado");
+    })();
+  }, [loading, refunds, activeTab, setSearchParams]);
 
   const handleProcess = async (action) => {
     if (!processModal) return;
@@ -165,7 +221,12 @@ export default function AdminRefunds() {
               return (
                 <div
                   key={r.id}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+                  id={`row-${r.id}`}
+                  className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow overflow-hidden ${
+                    r.order_id === highlightedOrderId
+                      ? "border-[#6b1e96] ring-2 ring-[#6b1e96]/30"
+                      : "border-gray-100"
+                  }`}
                 >
                   <div className="p-5 flex flex-col md:flex-row md:items-center gap-4">
                     {/* Product thumbnail */}

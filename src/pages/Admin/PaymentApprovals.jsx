@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import PropTypes from "prop-types";
 import { useOrder } from "../../context/OrderContext";
 import PaymentApprovalQueue from "../../components/admin/PaymentApprovalQueue";
@@ -59,6 +59,12 @@ export default function PaymentApprovals() {
 
   const [counts, setCounts] = useState({});
 
+  // Deep link desde notificaciones: /admin/payment-approvals?order=<uuid>.
+  // Se resuelve una sola vez, cuando la cola termina su primera carga.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkHandled = useRef(false);
+  const queueRequested = useRef(false);
+
   const refreshQueue = useCallback(() => {
     fetchOrders({ payment_status: "under_review", admin_view: "true" });
   }, [fetchOrders]);
@@ -109,6 +115,50 @@ export default function PaymentApprovals() {
   useEffect(() => {
     fetchResolved();
   }, [fetchResolved]);
+
+  useEffect(() => {
+    // `loading` arranca en false: hay que ver pasar la carga de la cola antes de buscar.
+    if (loading) {
+      queueRequested.current = true;
+      return;
+    }
+    if (!queueRequested.current || deepLinkHandled.current) return;
+    const targetId = searchParams.get("order");
+    if (!targetId) return;
+    deepLinkHandled.current = true;
+    setSearchParams({}, { replace: true });
+
+    const queued = orders.find(
+      (o) => o.id === targetId && o.payment_status === "under_review",
+    );
+    if (queued) {
+      setActiveOrder(queued);
+      return;
+    }
+
+    // No está en la cola: el historial no filtra por id, así que se revisan los
+    // últimos 100 pagos de cualquier estado y se salta a la pestaña que corresponda.
+    (async () => {
+      try {
+        const res = await getPaymentHistoryAPI({ limit: 100 });
+        const found = (res.data?.data || []).find((o) => o.id === targetId);
+        if (!found) {
+          toast.error("No se encontró el pago indicado");
+          return;
+        }
+        if (found.payment_status === "under_review") {
+          setActiveOrder(found);
+          return;
+        }
+        if (TABS.some((t) => t.id === found.payment_status)) {
+          setActiveTab(found.payment_status);
+        }
+        setReviewOrder(found);
+      } catch {
+        toast.error("No se encontró el pago indicado");
+      }
+    })();
+  }, [loading, orders, searchParams, setSearchParams]);
 
   const confirmApprove = async (orderId) => {
     const res = await approvePayment(orderId);

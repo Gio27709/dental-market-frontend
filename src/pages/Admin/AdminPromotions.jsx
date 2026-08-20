@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import PropTypes from "prop-types";
 import {
   getAdminPromotionsAPI,
@@ -41,6 +42,14 @@ export default function AdminPromotions() {
   const [discountLoading, setDiscountLoading] = useState(false);
   const [discountFilter, setDiscountFilter] = useState("all"); // 'all' | 'pending' | 'approved' | 'rejected'
   const [moderatingId, setModeratingId] = useState(null);
+  // discountLoading arranca en false, así que hace falta una marca de "ya cargó"
+  // para que el deep link no se evalúe contra la lista vacía inicial.
+  const [discountsLoaded, setDiscountsLoaded] = useState(false);
+
+  // Deep link desde notificaciones: ?discount=<uuid>
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkHandled = useRef(false);
+  const [highlightId, setHighlightId] = useState(null);
 
   // Form states
   const [modalOpen, setModalOpen] = useState(false);
@@ -68,6 +77,7 @@ export default function AdminPromotions() {
       setDiscountLoading(true);
       const res = await getAdminDiscountsAPI();
       setDiscounts(res.data.data || []);
+      setDiscountsLoaded(true);
     } catch (err) {
       toast.error("Error al cargar los descuentos de tiendas");
       console.error(err);
@@ -80,6 +90,28 @@ export default function AdminPromotions() {
     loadPromotions();
     loadDiscounts();
   }, [loadPromotions, loadDiscounts]);
+
+  // Aplica el deep link una sola vez, cuando los descuentos terminan de cargar.
+  useEffect(() => {
+    if (deepLinkHandled.current || !discountsLoaded || discountLoading) return;
+    const discountId = searchParams.get("discount");
+    if (!discountId) return;
+    deepLinkHandled.current = true;
+
+    const target = discounts.find((d) => d.id === discountId);
+    if (target) {
+      setActiveTab("discounts");
+      if (discountFilter !== "all" && target.approval_status !== discountFilter) setDiscountFilter("all");
+      setHighlightId(target.id);
+      setTimeout(() => {
+        document.getElementById(`row-${target.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+      setTimeout(() => setHighlightId(null), 3000);
+    } else {
+      toast.error("No se encontró el elemento indicado");
+    }
+    setSearchParams({}, { replace: true });
+  }, [discountsLoaded, discountLoading, discounts, discountFilter, searchParams, setSearchParams]);
 
   const openCreateModal = () => {
     setEditingPromo(null);
@@ -564,7 +596,13 @@ export default function AdminPromotions() {
                     {filteredDiscounts.map((d) => {
                       const isActive = d.is_active && d.is_started && !d.is_expired;
                       return (
-                        <tr key={d.id} className="hover:bg-purple-50/20 transition-colors group">
+                        <tr
+                          key={d.id}
+                          id={`row-${d.id}`}
+                          className={`hover:bg-purple-50/20 transition-colors group ${
+                            highlightId === d.id ? "bg-purple-50/60 ring-2 ring-inset ring-[#531575]" : ""
+                          }`}
+                        >
                           {/* Discount Name & Store */}
                           <td className="py-3.5 pl-6 pr-4">
                             <div>

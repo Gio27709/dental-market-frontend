@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useEffect, useCallback, useMemo } from "react";
+import { createContext, useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import { useAuth } from "./AuthContext";
 import { socket, connectSocket, disconnectSocket } from "../lib/socket";
@@ -72,9 +73,15 @@ export function NotificationProvider({ children }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
+  // Ref para no resuscribir el socket cada vez que cambia la ubicación.
+  const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
 
-  // Notification type → navigation URL
+  // Respaldo para filas sin `link`. El destino real lo calcula el backend
+  // (backend/src/services/notificationLinks.js) y llega en `notification.link`.
   const getNotificationUrl = useCallback((notification) => {
+    if (notification?.link) return notification.link;
     const data = notification.data || {};
     const isAdmin = user && ["admin", "owner"].includes(user.role);
     const isStore = user && user.role === "store";
@@ -93,8 +100,9 @@ export function NotificationProvider({ children }) {
       case "delivery_confirmed_store":
         return "/store/orders";
       case "product_moderated":
+        return data.product_id ? `/store/products/edit/${data.product_id}` : "/store/products";
       case "new_product_to_moderate":
-        return data.product_id ? `/product/${data.product_id}` : "/store/products";
+        return "/admin/product-moderation";
       case "new_question":
       case "new_review_on_product":
       case "question_answered":
@@ -109,9 +117,11 @@ export function NotificationProvider({ children }) {
         return isAdmin ? "/admin/payouts" : (isStore ? "/store/wallet" : "/account/notifications");
 
       case "store_application_approved":
+        return "/store";
       case "store_application_rejected":
-      case "new_store_application":
         return "/account";
+      case "new_store_application":
+        return "/admin/store-applications";
       case "new_delivery_assigned":
         return "/delivery";
       case "new_payment_to_review":
@@ -128,7 +138,7 @@ export function NotificationProvider({ children }) {
         return "/delivery";
       // Return events
       case "new_return_request":
-        return "/admin/returns";
+        return "/admin/refunds";
       case "new_return_request_store":
       case "return_resolved_store":
         return "/store/orders";
@@ -268,12 +278,25 @@ export function NotificationProvider({ children }) {
       });
       setUnreadCount((prev) => prev + 1);
       
-      // Show toast
+      // Toast clicable: lleva al mismo destino que la notificación
       const icon = NOTIFICATION_ICONS[newNotif.type] || "🔔";
+      const link = getNotificationUrl(newNotif);
       toast(
-        `${icon} ${newNotif.title}`,
+        (t) => (
+          <span
+            role="link"
+            onClick={() => {
+              toast.dismiss(t.id);
+              markAsRead(newNotif.id);
+              navigateRef.current(link);
+            }}
+            style={{ cursor: "pointer", display: "block" }}
+          >
+            {icon} {newNotif.title}
+          </span>
+        ),
         {
-          duration: 4000,
+          duration: 5000,
           style: {
             background: "#1a1a2e",
             color: "#ffffff",
@@ -289,7 +312,7 @@ export function NotificationProvider({ children }) {
     return () => {
       socket.off("notification", handleNotification);
     };
-  }, [user, fetchUnreadCount]);
+  }, [user, fetchUnreadCount, getNotificationUrl, markAsRead]);
 
   const value = useMemo(() => ({
     unreadCount,

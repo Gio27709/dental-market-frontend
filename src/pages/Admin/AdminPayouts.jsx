@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { getAdminPayoutsAPI, processAdminPayoutAPI } from "../../services/api";
 import Pagination from "../../components/admin/Pagination";
 import toast from "react-hot-toast";
@@ -78,6 +79,11 @@ export default function AdminPayouts() {
   const [submitting, setSubmitting] = useState(false);
   const [receiptFile, setReceiptFile] = useState(null); // Payout screenshot file
 
+  // Deep link desde notificaciones: /admin/payouts?payout=<uuid>. Se resuelve una
+  // sola vez, cuando termina la primera carga.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkHandled = useRef(false);
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 350);
     return () => clearTimeout(t);
@@ -116,6 +122,38 @@ export default function AdminPayouts() {
   useEffect(() => {
     fetchPayouts();
   }, [fetchPayouts]);
+
+  useEffect(() => {
+    if (loading || deepLinkHandled.current) return;
+    const targetId = searchParams.get("payout");
+    if (!targetId) return;
+    deepLinkHandled.current = true;
+    setSearchParams({}, { replace: true });
+
+    const visible = payouts.find((p) => p.id === targetId);
+    if (visible) {
+      setSelectedPayout(visible);
+      return;
+    }
+
+    // No está en la primera página: el endpoint no filtra por id, así que se revisan
+    // los últimos 100 retiros (pestaña "Todos", sin filtros) y se salta a su página.
+    (async () => {
+      try {
+        const { data } = await getAdminPayoutsAPI({ status: "all", limit: 100, offset: 0 });
+        const list = data?.data || [];
+        const idx = list.findIndex((p) => p.id === targetId);
+        if (idx === -1) {
+          toast.error("No se encontró el retiro indicado");
+          return;
+        }
+        setPage(Math.floor(idx / PER_PAGE) + 1);
+        setSelectedPayout(list[idx]);
+      } catch {
+        toast.error("No se encontró el retiro indicado");
+      }
+    })();
+  }, [loading, payouts, searchParams, setSearchParams]);
 
   // Cualquier cambio de filtro invalida la página en la que estabas.
   useEffect(() => {

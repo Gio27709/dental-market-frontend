@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   getStoreDiscountsAPI,
@@ -59,6 +60,11 @@ export default function StoreDiscounts() {
   const [categories, setCategories] = useState([]);
   const [productSearch, setProductSearch] = useState("");
 
+  // Deep link desde notificaciones: ?discount=<uuid>
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkHandled = useRef(false);
+  const [highlightId, setHighlightId] = useState(null);
+
   const fetchDiscounts = useCallback(async () => {
     try {
       setLoading(true);
@@ -74,6 +80,29 @@ export default function StoreDiscounts() {
   useEffect(() => {
     fetchDiscounts();
   }, [fetchDiscounts]);
+
+  // Aplica el deep link una sola vez, cuando termina la primera carga.
+  // Se resalta en vez de abrir el editor: guardar un descuento ya aprobado
+  // lo devolvería a moderación.
+  useEffect(() => {
+    if (deepLinkHandled.current || loading) return;
+    const discountId = searchParams.get("discount");
+    if (!discountId) return;
+    deepLinkHandled.current = true;
+
+    const target = discounts.find((d) => d.id === discountId);
+    if (target) {
+      setFilter("all");
+      setHighlightId(target.id);
+      setTimeout(() => {
+        document.getElementById(`row-${target.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+      setTimeout(() => setHighlightId(null), 3000);
+    } else {
+      toast.error("No se encontró el elemento indicado");
+    }
+    setSearchParams({}, { replace: true });
+  }, [loading, discounts, searchParams, setSearchParams]);
 
   // Lazy-load products and categories when form opens
   useEffect(() => {
@@ -293,9 +322,10 @@ export default function StoreDiscounts() {
             return (
               <div
                 key={d.id}
+                id={`row-${d.id}`}
                 className={`bg-white rounded-2xl border p-5 transition-all hover:shadow-md ${
                   isActive ? "border-emerald-200 bg-white" : d.is_expired ? "border-amber-200 bg-slate-50/50" : "border-slate-200 bg-slate-50/20"
-                }`}
+                } ${highlightId === d.id ? "ring-2 ring-[#6b1e96] ring-offset-2" : ""}`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className={`flex-1 min-w-0 ${!isActive ? "opacity-75" : ""}`}>

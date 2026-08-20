@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from "react";
+import { useSearchParams } from "react-router-dom";
 import { getPenaltiesAPI, resolvePenaltyAPI, getPenaltyStatsAPI, reactivateStoreAPI } from "../../services/api";
 import toast from "react-hot-toast";
 import SearchableSelect from "../../components/ui/SearchableSelect";
@@ -155,13 +156,20 @@ const KPI_CARDS = [
 ];
 
 export default function AdminPenalties() {
+  // Deep link desde notificaciones: ?penalty=<uuid> o ?order=<uuid>. El servidor
+  // no filtra por id, así que se busca en la página cargada (ampliada a 100).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const hasDeepLink = searchParams.has("penalty") || searchParams.has("order");
+  const deepLinkHandled = useRef(false);
+  const [highlightId, setHighlightId] = useState(null);
+
   const [penalties, setPenalties] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [searchInput, setSearchInput] = useState("");
   const [offset, setOffset] = useState(0);
-  const [limit, setLimit] = useState(25);
+  const [limit, setLimit] = useState(hasDeepLink ? 100 : 25);
   const [actionLoading, setActionLoading] = useState(null);
   const [knownStores, setKnownStores] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
@@ -230,6 +238,28 @@ export default function AdminPenalties() {
 
   useEffect(() => { fetchPenalties(); }, [fetchPenalties]);
   useEffect(() => { fetchKPIs(); }, [fetchKPIs]);
+
+  // Aplica el deep link una sola vez, cuando termina la primera carga.
+  useEffect(() => {
+    if (deepLinkHandled.current || loading) return;
+    const penaltyId = searchParams.get("penalty");
+    const orderId = searchParams.get("order");
+    if (!penaltyId && !orderId) return;
+    deepLinkHandled.current = true;
+
+    const target = penalties.find((p) => (penaltyId ? p.id === penaltyId : p.order_id === orderId));
+    if (target) {
+      setExpandedId(target.id);
+      setHighlightId(target.id);
+      setTimeout(() => {
+        document.getElementById(`row-${target.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+      setTimeout(() => setHighlightId(null), 3000);
+    } else {
+      toast.error("No se encontró el elemento indicado");
+    }
+    setSearchParams({}, { replace: true });
+  }, [loading, penalties, searchParams, setSearchParams]);
 
   const refreshAll = () => { fetchPenalties(); fetchKPIs(); };
 
@@ -524,7 +554,12 @@ export default function AdminPenalties() {
 
                     return (
                       <Fragment key={p.id}>
-                        <tr className="group border-l-2 border-l-transparent hover:bg-purple-50/20 hover:border-l-[#6b1e96] transition-colors">
+                        <tr
+                          id={`row-${p.id}`}
+                          className={`group border-l-2 hover:bg-purple-50/20 hover:border-l-[#6b1e96] transition-colors ${
+                            highlightId === p.id ? "bg-purple-50/60 border-l-[#6b1e96]" : "border-l-transparent"
+                          }`}
+                        >
                           <td className="pl-2.5 pr-0 py-2.5 align-middle">
                             <button
                               onClick={() => setExpandedId(isExpanded ? null : p.id)}

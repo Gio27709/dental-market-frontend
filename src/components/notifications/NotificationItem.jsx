@@ -22,7 +22,9 @@ export default function NotificationItem({ notification, onClick, compact = fals
   const { markAsRead, getNotificationUrl, NOTIFICATION_ICONS } = useNotifications();
 
   const icon = NOTIFICATION_ICONS[notification.type] || "🔔";
-  const url = getNotificationUrl(notification);
+  // El destino lo resuelve el backend (notifications.link, services/notificationLinks.js).
+  // El switch del contexto queda solo como respaldo para filas sin link.
+  const url = notification.link || getNotificationUrl(notification);
 
   const handleClick = async () => {
     if (!notification.is_read) {
@@ -141,6 +143,7 @@ NotificationItem.propTypes = {
     type: PropTypes.string.isRequired,
     title: PropTypes.string.isRequired,
     message: PropTypes.string,
+    link: PropTypes.string,
     is_read: PropTypes.bool.isRequired,
     created_at: PropTypes.string.isRequired,
   }).isRequired,

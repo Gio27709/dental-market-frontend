@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import LoadingSkeleton from "../../components/LoadingSkeleton";
 import { getAllAdminProductsAPI, moderateProductAPI } from "../../services/api";
 import { formatCurrencyUSD } from "../../utils/formatters";
@@ -33,12 +34,19 @@ export default function ProductModeration() {
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
+  // Deep link desde notificaciones: `?product=<uuid>` de un producto pendiente.
+  // El backend no filtra por id, así que se arranca en "Pendientes" (donde está
+  // el producto que motivó el aviso) y se busca en la primera carga.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkProduct = searchParams.get("product");
+  const deepLinkHandled = useRef(false);
+
   // Phase 2: Pagination and Filtering States
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState("");
   const [storeFilter, setStoreFilter] = useState(""); // Selected store name from dropdown
-  const [status, setStatus] = useState("all");
+  const [status, setStatus] = useState(() => (deepLinkProduct ? "pending" : "all"));
   const [totalCount, setTotalCount] = useState(0);
   const [knownStores, setKnownStores] = useState([]); // Cache of all store names
 
@@ -138,6 +146,19 @@ export default function ProductModeration() {
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
+  // Se aplica una sola vez al terminar la primera carga; después se limpia el
+  // param para que un refetch (tras moderar, paginar…) no vuelva a abrirlo.
+  useEffect(() => {
+    if (deepLinkHandled.current || loading || !deepLinkProduct) return;
+    deepLinkHandled.current = true;
+
+    const product = products.find((p) => p.id === deepLinkProduct);
+    if (product) setSelectedProduct(product);
+    else toast.error("No se encontró el elemento indicado");
+
+    setSearchParams({}, { replace: true });
+  }, [loading, products, deepLinkProduct, setSearchParams]);
 
   const handleModerate = async (id, action, name) => {
     const actionLabelMap = {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import PropTypes from "prop-types";
 import toast from "react-hot-toast";
 import {
@@ -94,6 +95,14 @@ Avatar.propTypes = {
 export default function StoreApplications() {
   const { refreshStats } = useAdminStats();
 
+  // Deep link desde notificaciones: `?id=<solicitud>` o `?store=<user_id de la tienda>`.
+  // El backend no filtra por id, así que se busca en lo que devuelve la primera carga
+  // de "Todas" (ya es la pestaña inicial) y se amplía a 100 filas para no quedarse corto.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkId = searchParams.get("id");
+  const deepLinkStore = searchParams.get("store");
+  const deepLinkHandled = useRef(false);
+
   const latestRequest = useRef(0);
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
@@ -106,7 +115,7 @@ export default function StoreApplications() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
+  const [perPage, setPerPage] = useState(() => (deepLinkId || deepLinkStore ? 100 : 10));
 
   const [approveModal, setApproveModal] = useState({ open: false, id: null, name: "" });
   const [rejectModal, setRejectModal] = useState({ open: false, id: null, name: "" });
@@ -183,6 +192,26 @@ export default function StoreApplications() {
   useEffect(() => {
     setSelectedIds(new Set());
   }, [activeTab]);
+
+  // Se aplica una sola vez, cuando termina la primera carga; después se limpia el
+  // param para que un refetch o un F5 no vuelvan a abrir el detalle.
+  useEffect(() => {
+    if (deepLinkHandled.current || loading) return;
+    if (!deepLinkId && !deepLinkStore) return;
+    deepLinkHandled.current = true;
+
+    // Las tiendas operativas no tienen `id` (su clave es `user_id`), y las
+    // solicitudes aprobadas ya no aparecen como solicitud sino como tienda.
+    const row = deepLinkId
+      ? rows.find((r) => r.id === deepLinkId)
+      : rows.find((r) => r.row_status === "approved" && r.user_id === deepLinkStore);
+
+    if (!row) toast.error("No se encontró el elemento indicado");
+    else if (row.row_status === "approved") setSlideOverStore(row);
+    else setReviewApp(row);
+
+    setSearchParams({}, { replace: true });
+  }, [loading, rows, deepLinkId, deepLinkStore, setSearchParams]);
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 

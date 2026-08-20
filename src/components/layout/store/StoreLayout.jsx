@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, Navigate } from "react-router-dom";
 import StoreSidebar from "./StoreSidebar";
+import NotificationBell from "../../notifications/NotificationBell";
+import PanelNotificationBell from "../../notifications/PanelNotificationBell";
 import toast from "react-hot-toast";
 import { useStore } from "../../../context/StoreContext";
 import { useAuth } from "../../../context/AuthContext";
@@ -217,11 +219,14 @@ export default function StoreLayout() {
             )}
           </span>
         </div>
+        <div className="flex items-center gap-3">
+        <NotificationBell />
         <Link to="/" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
           </svg>
         </Link>
+        </div>
       </div>
 
       {/* Mobile Drawer */}
@@ -382,6 +387,8 @@ export default function StoreLayout() {
           ancho (tablas) estire la página entera y anula los `overflow-x-auto`. */}
       <div className="flex-1 min-w-0 pt-14 md:pt-6 p-4 md:p-8" style={{ background: '#f1ecf6' }}>
         <div className="max-w-6xl mx-auto">
+          {/* En escritorio no hay barra superior: la campana va sobre el contenido */}
+          <PanelNotificationBell className="hidden md:flex mb-4" />
           {renderContent()}
         </div>
       </div>
