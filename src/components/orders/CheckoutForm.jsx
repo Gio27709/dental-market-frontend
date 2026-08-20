@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import { VENEZUELA_STATES } from "../../utils/venezuelaStates";
 import { useAuth } from "../../context/AuthContext";
 import MapAddressPicker from "../common/MapAddressPicker";
-import { getMyAddressesAPI, createAddressAPI, reverseGeocodeAPI } from "../../services/api";
+import { getMyAddressesAPI, createAddressAPI, reverseGeocodeAPI, getShippingOfficesAPI } from "../../services/api";
 
 export default function CheckoutForm({
   cartItems,
@@ -275,10 +275,58 @@ export default function CheckoutForm({
     }, 700);
   };
 
+  // ── Oficinas Zoom (envío nacional) ──
+  const [offices, setOffices] = useState([]);
+  const [officesLoading, setOfficesLoading] = useState(false);
+  const [selectedOfficeId, setSelectedOfficeId] = useState(null);
+  const [officeFilter, setOfficeFilter] = useState("");
+
+  const showOffices =
+    formData.preferred_shipping_carrier === "zoom" && Boolean(formData.destination_state);
+
+  useEffect(() => {
+    if (!showOffices) {
+      setOffices([]);
+      setSelectedOfficeId(null);
+      return;
+    }
+    let alive = true;
+    setOfficesLoading(true);
+    const params = { carrier: "zoom", state: formData.destination_state };
+    if (formData.delivery_lat != null && formData.delivery_lng != null) {
+      params.lat = formData.delivery_lat;
+      params.lng = formData.delivery_lng;
+    }
+    getShippingOfficesAPI(params)
+      .then((res) => {
+        if (!alive) return;
+        setOffices(res.data?.data || []);
+        setOfficeFilter("");
+      })
+      .catch(() => { /* sin listado el campo manual sigue funcionando */ })
+      .finally(() => alive && setOfficesLoading(false));
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showOffices, formData.destination_state]);
+
+  const applyOffice = (office) => {
+    setSelectedOfficeId(office.id);
+    setSelectedAddressId(null);
+    setFormData((prev) => ({
+      ...prev,
+      address: `Oficina ${office.name} — ${office.address}${office.city ? `, ${office.city}` : ""}`,
+      destination_city: office.city || prev.destination_city,
+    }));
+    setFormErrors((prev) => ({ ...prev, address: null }));
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    if (name === "address") setSelectedAddressId(null);
+    if (name === "address") {
+      setSelectedAddressId(null);
+      setSelectedOfficeId(null);
+    }
     if (formErrors[name]) {
       setFormErrors((prev) => ({ ...prev, [name]: null }));
     }
@@ -903,6 +951,87 @@ export default function CheckoutForm({
                   </p>
                 )}
               </div>
+
+              {showOffices && (
+                <div className="col-span-6">
+                  <label className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-2">
+                    Oficinas Zoom en {formData.destination_state}
+                    {offices.length > 0 && (
+                      <span className="ml-2 text-[10px] font-black bg-purple-50 text-[#6b1e96] px-2 py-0.5 rounded-full normal-case tracking-normal">
+                        {offices.length} disponibles
+                      </span>
+                    )}
+                  </label>
+                  {officesLoading ? (
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400 p-4 bg-slate-50/70 rounded-xl border border-slate-100">
+                      <span className="w-4 h-4 border-2 border-slate-200 border-t-[#6b1e96] rounded-full animate-spin" />
+                      Buscando oficinas...
+                    </div>
+                  ) : offices.length === 0 ? (
+                    <p className="text-xs font-semibold text-slate-400 p-4 bg-slate-50/70 rounded-xl border border-slate-100">
+                      No tenemos oficinas Zoom registradas en este estado. Escribe la sede de tu preferencia en la dirección.
+                    </p>
+                  ) : (
+                    <>
+                      {offices.length > 6 && (
+                        <input
+                          type="text"
+                          value={officeFilter}
+                          onChange={(e) => setOfficeFilter(e.target.value)}
+                          placeholder="Filtrar por ciudad, sector o nombre..."
+                          className="block w-full mb-2.5 sm:text-sm rounded-xl border-slate-200 bg-slate-50/50 p-2.5 border focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#6b1e96]/15 focus:border-[#6b1e96] transition-all"
+                        />
+                      )}
+                      <div className="max-h-64 overflow-y-auto rounded-xl border border-slate-100 divide-y divide-slate-100">
+                        {offices
+                          .filter((o) => {
+                            const q = officeFilter.trim().toLowerCase();
+                            if (!q) return true;
+                            return `${o.name} ${o.city || ""} ${o.address}`.toLowerCase().includes(q);
+                          })
+                          .map((office) => (
+                            <button
+                              key={office.id}
+                              type="button"
+                              disabled={loading}
+                              onClick={() => applyOffice(office)}
+                              className={`w-full text-left p-3.5 flex items-start gap-3 transition-colors cursor-pointer ${
+                                selectedOfficeId === office.id
+                                  ? "bg-purple-50/50 ring-1 ring-inset ring-[#6b1e96]"
+                                  : "bg-white hover:bg-slate-50"
+                              }`}
+                            >
+                              <span className={`material-symbols-outlined text-[20px] mt-0.5 ${
+                                selectedOfficeId === office.id ? "text-[#6b1e96]" : "text-slate-300"
+                              }`}>
+                                {selectedOfficeId === office.id ? "check_circle" : "package_2"}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-black text-slate-900">
+                                  {office.name}
+                                  {office.distance_km != null && (
+                                    <span className="ml-2 text-[10px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+                                      a {office.distance_km} km
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="block text-xs font-semibold text-slate-500 mt-0.5 leading-relaxed">
+                                  {office.address}{office.city ? ` · ${office.city}` : ""}
+                                </span>
+                                {office.phone && (
+                                  <span className="block text-[11px] font-bold text-slate-400 mt-0.5">📞 {office.phone}</span>
+                                )}
+                              </span>
+                            </button>
+                          ))}
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-2 font-medium">
+                        Elige tu oficina de retiro y la pondremos como dirección de envío. El cobro del flete es a destino, en la oficina.
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
             </>
           )}
 
