@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { 
   getPostsAPI, 
   createPostAPI,
@@ -73,7 +73,6 @@ export default function Blog() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All");
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   // Settings & Creation states
   const [postMode, setPostMode] = useState("disabled"); // disabled, moderated, open
