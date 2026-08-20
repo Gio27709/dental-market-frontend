@@ -9,6 +9,15 @@ import { useAuth } from "../../context/AuthContext";
 import MapAddressPicker from "../common/MapAddressPicker";
 import { getMyAddressesAPI, createAddressAPI, reverseGeocodeAPI, getShippingOfficesAPI } from "../../services/api";
 
+// Transportistas con listado de oficinas sembrado (tabla shipping_offices).
+// Si mañana se suma otro, basta añadirlo aquí y sembrar sus datos.
+const CARRIER_LABELS = { zoom: "Zoom", mrw: "MRW", tealca: "Tealca" };
+// Tealca no publica la dirección de sus oficinas: la que mostramos sale del
+// pin del mapa (geocodificación inversa), así que se avisa al comprador.
+const CARRIER_ADDRESS_NOTE = {
+  tealca: "Tealca no publica la dirección exacta de sus oficinas: la que ves es la referencia del pin de su mapa.",
+};
+
 export default function CheckoutForm({
   cartItems,
   onSubmit,
@@ -300,14 +309,15 @@ export default function CheckoutForm({
     }, 700);
   };
 
-  // ── Oficinas Zoom (envío nacional) ──
+  // ── Oficinas del transportista (envío nacional) ──
   const [offices, setOffices] = useState([]);
   const [officesLoading, setOfficesLoading] = useState(false);
   const [selectedOfficeId, setSelectedOfficeId] = useState(null);
   const [officeFilter, setOfficeFilter] = useState("");
 
-  const showOffices =
-    formData.preferred_shipping_carrier === "zoom" && Boolean(formData.destination_state);
+  const carrier = formData.preferred_shipping_carrier;
+  const carrierLabel = CARRIER_LABELS[carrier] || "";
+  const showOffices = Boolean(CARRIER_LABELS[carrier]) && Boolean(formData.destination_state);
 
   useEffect(() => {
     if (!showOffices) {
@@ -317,7 +327,8 @@ export default function CheckoutForm({
     }
     let alive = true;
     setOfficesLoading(true);
-    const params = { carrier: "zoom", state: formData.destination_state };
+    setSelectedOfficeId(null);
+    const params = { carrier, state: formData.destination_state };
     if (formData.delivery_lat != null && formData.delivery_lng != null) {
       params.lat = formData.delivery_lat;
       params.lng = formData.delivery_lng;
@@ -332,7 +343,7 @@ export default function CheckoutForm({
       .finally(() => alive && setOfficesLoading(false));
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showOffices, formData.destination_state]);
+  }, [showOffices, carrier, formData.destination_state]);
 
   const applyOffice = (office) => {
     setSelectedOfficeId(office.id);
@@ -1100,7 +1111,7 @@ export default function CheckoutForm({
               {showOffices && (
                 <div className="col-span-6">
                   <label className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-2">
-                    Oficinas Zoom en {formData.destination_state}
+                    Oficinas {carrierLabel} en {formData.destination_state}
                     {offices.length > 0 && (
                       <span className="ml-2 text-[10px] font-black bg-purple-50 text-[#6b1e96] px-2 py-0.5 rounded-full normal-case tracking-normal">
                         {offices.length} disponibles
@@ -1114,7 +1125,7 @@ export default function CheckoutForm({
                     </div>
                   ) : offices.length === 0 ? (
                     <p className="text-xs font-semibold text-slate-400 p-4 bg-slate-50/70 rounded-xl border border-slate-100">
-                      No tenemos oficinas Zoom registradas en este estado. Escribe la sede de tu preferencia en la dirección.
+                      No tenemos oficinas {carrierLabel} registradas en este estado. Escribe la sede de tu preferencia en la dirección.
                     </p>
                   ) : (
                     <>
@@ -1172,6 +1183,7 @@ export default function CheckoutForm({
                       </div>
                       <p className="text-[11px] text-slate-400 mt-2 font-medium">
                         Elige tu oficina de retiro y la pondremos como dirección de envío. El cobro del flete es a destino, en la oficina.
+                        {CARRIER_ADDRESS_NOTE[carrier] ? ` ${CARRIER_ADDRESS_NOTE[carrier]}` : ""}
                       </p>
                     </>
                   )}
