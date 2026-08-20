@@ -156,10 +156,9 @@ const KPI_CARDS = [
 ];
 
 export default function AdminPenalties() {
-  // Deep link desde notificaciones: ?penalty=<uuid> o ?order=<uuid>. El servidor
-  // no filtra por id, así que se busca en la página cargada (ampliada a 100).
+  // Deep link desde notificaciones: ?penalty=<uuid> o ?order=<uuid>. Si la sanción
+  // no está en la página cargada, se pide al endpoint (filtra por id / order_id).
   const [searchParams, setSearchParams] = useSearchParams();
-  const hasDeepLink = searchParams.has("penalty") || searchParams.has("order");
   const deepLinkHandled = useRef(false);
   const [highlightId, setHighlightId] = useState(null);
 
@@ -169,7 +168,7 @@ export default function AdminPenalties() {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [searchInput, setSearchInput] = useState("");
   const [offset, setOffset] = useState(0);
-  const [limit, setLimit] = useState(hasDeepLink ? 100 : 25);
+  const [limit, setLimit] = useState(25);
   const [actionLoading, setActionLoading] = useState(null);
   const [knownStores, setKnownStores] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
@@ -247,18 +246,38 @@ export default function AdminPenalties() {
     if (!penaltyId && !orderId) return;
     deepLinkHandled.current = true;
 
-    const target = penalties.find((p) => (penaltyId ? p.id === penaltyId : p.order_id === orderId));
-    if (target) {
+    setSearchParams({}, { replace: true });
+
+    const reveal = (target) => {
       setExpandedId(target.id);
       setHighlightId(target.id);
       setTimeout(() => {
         document.getElementById(`row-${target.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 100);
       setTimeout(() => setHighlightId(null), 3000);
-    } else {
-      toast.error("No se encontró el elemento indicado");
+    };
+
+    const inPage = penalties.find((p) => (penaltyId ? p.id === penaltyId : p.order_id === orderId));
+    if (inPage) {
+      reveal(inPage);
+      return;
     }
-    setSearchParams({}, { replace: true });
+
+    // No está en la página cargada: se pide al endpoint y se antepone a la lista.
+    (async () => {
+      try {
+        const { data } = await getPenaltiesAPI(penaltyId ? { id: penaltyId } : { order_id: orderId });
+        const found = data?.data?.[0];
+        if (!found) {
+          toast.error("No se encontró el elemento indicado");
+          return;
+        }
+        setPenalties((prev) => [found, ...prev.filter((p) => p.id !== found.id)]);
+        reveal(found);
+      } catch {
+        toast.error("No se encontró el elemento indicado");
+      }
+    })();
   }, [loading, penalties, searchParams, setSearchParams]);
 
   const refreshAll = () => { fetchPenalties(); fetchKPIs(); };

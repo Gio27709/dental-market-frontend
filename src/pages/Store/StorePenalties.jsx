@@ -66,8 +66,9 @@ export default function StorePenalties() {
     if (!penaltyId) return;
     deepLinkHandled.current = true;
 
-    const target = penalties.find((p) => p.id === penaltyId);
-    if (target) {
+    setSearchParams({}, { replace: true });
+
+    const reveal = (target) => {
       const hasAppeal = target.reason?.includes("📝 Apelación");
       const isPendingAction = !target.is_acknowledged && target.status !== "dismissed" && !hasAppeal && !target.resolved_by;
       if (!isPendingAction) setActiveTab("all");
@@ -76,10 +77,29 @@ export default function StorePenalties() {
         document.getElementById(`row-${target.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 100);
       setTimeout(() => setHighlightId(null), 3000);
-    } else {
-      toast.error("No se encontró el elemento indicado");
+    };
+
+    const inPage = penalties.find((p) => p.id === penaltyId);
+    if (inPage) {
+      reveal(inPage);
+      return;
     }
-    setSearchParams({}, { replace: true });
+
+    // No está en la página cargada: se pide al endpoint (filtra por id) y se antepone.
+    (async () => {
+      try {
+        const { data } = await getStorePenaltiesAPI({ id: penaltyId });
+        const found = data?.data?.[0];
+        if (!found) {
+          toast.error("No se encontró el elemento indicado");
+          return;
+        }
+        setPenalties((prev) => [found, ...prev.filter((p) => p.id !== found.id)]);
+        reveal(found);
+      } catch {
+        toast.error("No se encontró el elemento indicado");
+      }
+    })();
   }, [loading, penalties, searchParams, setSearchParams]);
 
   const handleAppealOpen = (id) => {

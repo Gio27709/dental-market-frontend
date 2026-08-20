@@ -136,19 +136,16 @@ export default function AdminPayouts() {
       return;
     }
 
-    // No está en la primera página: el endpoint no filtra por id, así que se revisan
-    // los últimos 100 retiros (pestaña "Todos", sin filtros) y se salta a su página.
+    // No está en la página cargada: el endpoint filtra por id.
     (async () => {
       try {
-        const { data } = await getAdminPayoutsAPI({ status: "all", limit: 100, offset: 0 });
-        const list = data?.data || [];
-        const idx = list.findIndex((p) => p.id === targetId);
-        if (idx === -1) {
+        const { data } = await getAdminPayoutsAPI({ id: targetId, status: "all", limit: 1, offset: 0 });
+        const found = (data?.data || [])[0];
+        if (!found) {
           toast.error("No se encontró el retiro indicado");
           return;
         }
-        setPage(Math.floor(idx / PER_PAGE) + 1);
-        setSelectedPayout(list[idx]);
+        setSelectedPayout(found);
       } catch {
         toast.error("No se encontró el retiro indicado");
       }

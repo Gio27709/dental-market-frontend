@@ -136,12 +136,12 @@ export default function PaymentApprovals() {
       return;
     }
 
-    // No está en la cola: el historial no filtra por id, así que se revisan los
-    // últimos 100 pagos de cualquier estado y se salta a la pestaña que corresponda.
+    // No está en la cola: se pide ese pedido al historial (filtra por order_id) y
+    // se salta a la pestaña que corresponda.
     (async () => {
       try {
-        const res = await getPaymentHistoryAPI({ limit: 100 });
-        const found = (res.data?.data || []).find((o) => o.id === targetId);
+        const res = await getPaymentHistoryAPI({ order_id: targetId, limit: 1 });
+        const found = (res.data?.data || [])[0];
         if (!found) {
           toast.error("No se encontró el pago indicado");
           return;

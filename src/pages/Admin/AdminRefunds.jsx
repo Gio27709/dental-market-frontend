@@ -93,13 +93,13 @@ export default function AdminRefunds() {
       return;
     }
 
-    // No está en la pestaña actual: el endpoint no filtra por pedido, así que se
-    // busca su estado entre los últimos 50 reembolsos y se salta a esa pestaña.
+    // No está en la pestaña actual: se pide el reembolso de ese pedido (el endpoint
+    // filtra por order_id) para saber su estado y saltar a esa pestaña.
     dl.phase = 1;
     (async () => {
       try {
-        const res = await getRefundRequestsAPI({ limit: 50 });
-        const found = (res.data?.data || []).find((r) => r.order_id === dl.orderId);
+        const res = await getRefundRequestsAPI({ order_id: dl.orderId, limit: 1 });
+        const found = (res.data?.data || [])[0];
         if (found && found.status !== activeTab) {
           dl.awaitingLoad = true;
           setActiveTab(found.status);
