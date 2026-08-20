@@ -61,7 +61,11 @@ export default function CheckoutForm({
           store_id: sid,
           store_name: item.store_name || `Tienda ${sid?.substring(0, 6) || "?"}`,
           store_state: item.store_state || null,
+          store_business_address: item.store_business_address || null,
+          store_lat: item.store_lat ?? null,
+          store_lng: item.store_lng ?? null,
           offers_local_delivery: item.offers_local_delivery || false,
+          offers_pickup: item.offers_pickup || false,
           items: [],
         };
       }
@@ -69,6 +73,14 @@ export default function CheckoutForm({
       // If ANY item in this store offers delivery, the store does
       if (item.offers_local_delivery) {
         groups[sid].offers_local_delivery = true;
+      }
+      if (item.offers_pickup) {
+        groups[sid].offers_pickup = true;
+      }
+      if (!groups[sid].store_business_address && item.store_business_address) {
+        groups[sid].store_business_address = item.store_business_address;
+        groups[sid].store_lat = item.store_lat ?? null;
+        groups[sid].store_lng = item.store_lng ?? null;
       }
     });
     return Object.values(groups);
@@ -101,6 +113,10 @@ export default function CheckoutForm({
             updated[g.store_id] = "shipping";
             changed = true;
           }
+          if (!g.offers_pickup && updated[g.store_id] === "pickup") {
+            updated[g.store_id] = "shipping";
+            changed = true;
+          }
         });
         return changed ? updated : prev;
       });
@@ -114,6 +130,7 @@ export default function CheckoutForm({
 
   // Single-store delivery logic (backward compat)
   const canUseLocalDelivery = !isMultiStore && storeGroups.length === 1 && storeGroups[0].offers_local_delivery;
+  const canUsePickup = !isMultiStore && storeGroups.length === 1 && storeGroups[0].offers_pickup;
 
   // If user had local_delivery saved but the single store doesn't support it
   useEffect(() => {
@@ -121,7 +138,11 @@ export default function CheckoutForm({
       setFormData(prev => ({ ...prev, delivery_type: "shipping" }));
       toast('Tu carrito cambió y contiene tiendas sin Delivery Local. Hemos ajustado tu método a Encomienda Nacional.', { icon: '📦' });
     }
-  }, [canUseLocalDelivery, formData.delivery_type, isMultiStore]);
+    if (!isMultiStore && formData.delivery_type === "pickup" && !canUsePickup) {
+      setFormData(prev => ({ ...prev, delivery_type: "shipping" }));
+      toast('Tu carrito cambió y contiene tiendas sin Retiro en Tienda. Hemos ajustado tu método a Encomienda Nacional.', { icon: '📦' });
+    }
+  }, [canUseLocalDelivery, canUsePickup, formData.delivery_type, isMultiStore]);
 
   // Persist form data to survive tab switching or HMR
   useEffect(() => {
@@ -200,11 +221,15 @@ export default function CheckoutForm({
   useEffect(() => {
     if (onDeliveryTypeChange) {
       if (isMultiStore) {
-        // For multi-store, determine if ANY store uses local_delivery
-        const anyLocalDelivery = Object.values(perStoreDelivery).some(t => t === "local_delivery");
-        onDeliveryTypeChange(anyLocalDelivery ? "mixed" : "shipping");
+        // For multi-store, determine if ANY store uses local_delivery.
+        // Se pasa también el mapa por tienda para que el resumen cobre la
+        // tarifa solo a las tiendas que van por delivery local.
+        const vals = Object.values(perStoreDelivery);
+        const anyLocalDelivery = vals.some(t => t === "local_delivery");
+        const everyPickup = vals.length > 0 && vals.every(t => t === "pickup");
+        onDeliveryTypeChange(anyLocalDelivery ? "mixed" : everyPickup ? "pickup" : "shipping", perStoreDelivery);
       } else {
-        onDeliveryTypeChange(formData.delivery_type);
+        onDeliveryTypeChange(formData.delivery_type, null);
       }
     }
   }, [formData.delivery_type, perStoreDelivery, onDeliveryTypeChange, isMultiStore]);
@@ -349,6 +374,17 @@ export default function CheckoutForm({
     ? Object.values(perStoreDelivery).some(t => t === "local_delivery")
     : formData.delivery_type === "local_delivery";
 
+  // Retiro en tienda: la dirección que importa es la de la tienda
+  const anyPickup = isMultiStore
+    ? storeGroups.some(g => perStoreDelivery[g.store_id] === "pickup")
+    : formData.delivery_type === "pickup";
+  const allPickup = isMultiStore
+    ? storeGroups.length > 0 && storeGroups.every(g => perStoreDelivery[g.store_id] === "pickup")
+    : formData.delivery_type === "pickup";
+  const pickupGroups = anyPickup
+    ? storeGroups.filter(g => (isMultiStore ? perStoreDelivery[g.store_id] === "pickup" : true))
+    : [];
+
   const validate = () => {
     const errors = {};
     if (hasAnyLocalDelivery) {
@@ -358,7 +394,7 @@ export default function CheckoutForm({
       if (!formData.delivery_lat || !formData.delivery_lng) {
         errors.location = "Para usar Delivery Local necesitamos tu ubicación: coloca el pin en el mapa.";
       }
-    } else {
+    } else if (!allPickup) {
       if (!validateAddress(formData.address)) {
         errors.address =
           "La dirección debe ser clara y tener más de 10 caracteres.";
@@ -400,7 +436,7 @@ export default function CheckoutForm({
     e.preventDefault();
     if (validate()) {
       // Guardado en libreta: fire-and-forget, nunca bloquea el pedido
-      if (saveAddress && addressLabel.trim() && !selectedAddressId) {
+      if (!allPickup && saveAddress && addressLabel.trim() && !selectedAddressId) {
         if (!formData.destination_state || !formData.destination_city) {
           toast("No se guardó en tu libreta (faltó estado/ciudad); el pedido sigue normal.", { icon: "📒" });
         } else {
@@ -425,6 +461,11 @@ export default function CheckoutForm({
         payload.delivery_types = perStoreDelivery;
         // Set global delivery_type to "shipping" as fallback for backward compat
         payload.delivery_type = "shipping";
+      }
+      if (allPickup) {
+        // Todo se retira en tienda: la dirección que viaja es la de la(s)
+        // tienda(s) — el backend exige shipping_address de todos modos.
+        payload.address = `Retiro en tienda: ${pickupGroups.map(g => g.store_name).join(", ")}`;
       }
       onSubmit(payload, cartItems);
     } else {
@@ -530,6 +571,33 @@ export default function CheckoutForm({
                         )}
                       </div>
                     </label>
+
+                    {group.offers_pickup && (
+                      <label className={`flex items-center gap-3 flex-1 p-3.5 border rounded-xl cursor-pointer transition-all duration-200 text-sm ${
+                        selectedType === 'pickup'
+                          ? 'border-[#6b1e96] bg-purple-50/20 ring-1 ring-[#6b1e96]'
+                          : 'border-slate-200 bg-white hover:bg-slate-50'
+                      }`}>
+                        <input
+                          type="radio"
+                          name={`delivery_${group.store_id}`}
+                          value="pickup"
+                          checked={selectedType === "pickup"}
+                          onChange={() => handleStoreDeliveryChange(group.store_id, "pickup")}
+                          className="sr-only"
+                        />
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
+                          selectedType === "pickup" ? "border-[#6b1e96] bg-white" : "border-slate-300 bg-white"
+                        }`}>
+                          {selectedType === "pickup" && <div className="w-2.5 h-2.5 rounded-full bg-[#6b1e96]" />}
+                        </div>
+                        <span className="material-symbols-outlined text-[18px] text-slate-500">storefront</span>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-800">Retiro en Tienda</span>
+                          <span className="text-[10px] text-emerald-600 font-extrabold mt-0.5">Sin costo de envío</span>
+                        </div>
+                      </label>
+                    )}
                   </div>
                 </div>
               );
@@ -601,6 +669,40 @@ export default function CheckoutForm({
                 </span>
               </div>
             </label>
+
+            {canUsePickup && (
+              <label className={`flex items-start gap-4.5 p-4.5 border rounded-2xl cursor-pointer transition-all duration-200 ${
+                formData.delivery_type === 'pickup'
+                  ? 'border-[#6b1e96] bg-purple-50/20 ring-1 ring-[#6b1e96]'
+                  : 'border-slate-200 bg-white hover:bg-slate-50/80 shadow-xs'
+              }`}>
+                <input
+                  type="radio"
+                  name="delivery_type"
+                  value="pickup"
+                  checked={formData.delivery_type === 'pickup'}
+                  onChange={handleChange}
+                  className="sr-only"
+                />
+                <div className={`mt-1.5 w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                  formData.delivery_type === "pickup" ? "border-[#6b1e96] bg-white" : "border-slate-300 bg-white"
+                }`}>
+                  {formData.delivery_type === "pickup" && <div className="w-3 h-3 rounded-full bg-[#6b1e96]" />}
+                </div>
+                <div className="flex-1">
+                  <span className="font-black text-slate-900 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[20px] text-slate-500">storefront</span>
+                    Retiro en Tienda
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full border border-emerald-100">
+                      Sin costo de envío
+                    </span>
+                  </span>
+                  <span className="text-xs font-semibold text-slate-400 block mt-1 leading-relaxed">
+                    Retiras tu pedido directamente en el local de la tienda cuando esté listo.
+                  </span>
+                </div>
+              </label>
+            )}
           </div>
         )}
       </div>
@@ -618,7 +720,48 @@ export default function CheckoutForm({
         </div>
 
         <div className="grid grid-cols-6 gap-5">
-          {savedAddresses.length > 0 && (
+          {anyPickup && pickupGroups.length > 0 && (
+            <div className="col-span-6 bg-emerald-50/60 border border-emerald-100 rounded-2xl p-4.5">
+              <span className="flex items-center gap-2 text-xs font-extrabold text-emerald-700 uppercase tracking-wider mb-2.5">
+                <span className="material-symbols-outlined text-[18px]">storefront</span>
+                Retiras en
+              </span>
+              <div className="space-y-3">
+                {pickupGroups.map((g) => (
+                  <div key={g.store_id} className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-black text-slate-900">{g.store_name}</p>
+                      <p className="text-xs font-semibold text-slate-500 mt-0.5 leading-relaxed">
+                        {g.store_business_address
+                          ? `${g.store_business_address}${g.store_state ? `, ${g.store_state}` : ""}`
+                          : "La tienda te indicará la dirección al confirmar el pedido."}
+                      </p>
+                    </div>
+                    {(g.store_business_address || (g.store_lat && g.store_lng)) && (
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${
+                          g.store_lat && g.store_lng
+                            ? `${g.store_lat},${g.store_lng}`
+                            : encodeURIComponent(`${g.store_business_address}${g.store_state ? `, ${g.store_state}` : ""}, Venezuela`)
+                        }`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-white text-emerald-700 text-[11px] font-black uppercase tracking-wide rounded-xl border border-emerald-200 hover:bg-emerald-50 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">near_me</span>
+                        Cómo llegar
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] text-emerald-700/70 font-semibold mt-3">
+                Al retirar, presenta tu N° de orden y la cédula del destinatario.
+              </p>
+            </div>
+          )}
+
+          {!allPickup && savedAddresses.length > 0 && (
             <div className="col-span-6">
               <label className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-2">
                 Mis Direcciones Guardadas
@@ -775,6 +918,7 @@ export default function CheckoutForm({
             )}
           </div>
 
+          {!allPickup && (
           <div className="col-span-6">
             <label htmlFor="address" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
               Dirección Exacta de Entrega *
@@ -826,6 +970,7 @@ export default function CheckoutForm({
               </div>
             )}
           </div>
+          )}
 
           {hasAnyLocalDelivery && (
             <>

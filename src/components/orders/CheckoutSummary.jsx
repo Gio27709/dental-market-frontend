@@ -25,7 +25,7 @@ const getVariationDisplayName = (variation) => {
   }
 };
 
-export default function CheckoutSummary({ cartItems, total_usd, total_ves, deliveryType, buyerFeePercentage = 0, onCouponApply }) {
+export default function CheckoutSummary({ cartItems, total_usd, total_ves, deliveryType, deliveryTypes = null, buyerFeePercentage = 0, onCouponApply }) {
   const [couponCodeInput, setCouponCodeInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState("");
   const [couponPercentage, setCouponPercentage] = useState(0);
@@ -104,6 +104,10 @@ export default function CheckoutSummary({ cartItems, total_usd, total_ves, deliv
     const feeByStore = {};
     cartItems.forEach(item => {
       const storeId = item.store_id;
+      // Con el mapa por tienda (multi-tienda), solo cobran tarifa las tiendas
+      // que van por delivery local — el backend hace exactamente lo mismo.
+      // Antes un carrito mixto sumaba la tarifa de TODAS las tiendas.
+      if (deliveryTypes && deliveryTypes[storeId] !== "local_delivery") return;
       const fee = parseFloat(item.delivery_fee) || 0;
       if (feeByStore[storeId] === undefined || fee > feeByStore[storeId]) {
         feeByStore[storeId] = fee;

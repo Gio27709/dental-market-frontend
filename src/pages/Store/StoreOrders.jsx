@@ -10,7 +10,7 @@ import {
 import { ORDER_STATUS, CARRIER_ICONS } from "../../utils/constants";
 import toast from "react-hot-toast";
 import ShippingEvidenceUploader from "../../components/orders/ShippingEvidenceUploader";
-import { getStoreRidersAPI } from "../../services/api";
+import { getStoreRidersAPI, markPickupDeliveredAPI } from "../../services/api";
 
 const CARRIERS = [
   { value: "zoom", label: "Zoom" },
@@ -81,15 +81,16 @@ export default function StoreOrders() {
 
   const handleShip = async () => {
     const isLocalDelivery = shipModal?.order?.delivery_type === "local_delivery";
+    const isPickup = shipModal?.order?.delivery_type === "pickup";
 
-    if (!isLocalDelivery && !trackingForm.tracking_code.trim()) {
+    if (!isLocalDelivery && !isPickup && !trackingForm.tracking_code.trim()) {
       toast.error("Ingresa el código de tracking");
       return;
     }
     setShipping(true);
-    
+
     const itemsToShip = Array.isArray(shipModal.itemId) ? shipModal.itemId : [shipModal.itemId];
-    
+
     let allSuccess = true;
     for (const id of itemsToShip) {
       const payload = { ...trackingForm };
@@ -97,7 +98,11 @@ export default function StoreOrders() {
         payload.shipping_carrier = "local";
         payload.tracking_code = "";
       }
-      // Riders solo aplican para delivery local, nunca para encomiendas nacionales
+      if (isPickup) {
+        payload.shipping_carrier = "pickup";
+        payload.tracking_code = "";
+      }
+      // Riders solo aplican para delivery local, nunca para encomienda ni pickup
       if (!isLocalDelivery) {
         payload.assigned_rider_id = null;
       }
@@ -108,13 +113,40 @@ export default function StoreOrders() {
         break;
       }
     }
-    
+
     setShipping(false);
 
     if (allSuccess) {
-      toast.success(itemsToShip.length > 1 ? "Productos marcados como enviados" : "Producto marcado como enviado");
+      toast.success(
+        isPickup
+          ? "Pedido marcado como listo para retirar. El comprador puede pasar por la tienda."
+          : itemsToShip.length > 1 ? "Productos marcados como enviados" : "Producto marcado como enviado"
+      );
       setShipModal(null);
       setTrackingForm({ tracking_code: "", shipping_carrier: "zoom", shipping_evidence_urls: [], assigned_rider_id: null });
+    }
+  };
+
+  // Retiro en tienda: registrar la entrega en mostrador (tras verificar
+  // N° de orden + cédula del destinatario)
+  const [deliveringPickup, setDeliveringPickup] = useState(null);
+  const handlePickupDelivered = async (item, order) => {
+    const ok = window.confirm(
+      `Antes de confirmar, verifica en mostrador:\n\n` +
+      `• N° de orden: #${formatOrderNumber(order.order_id)}\n` +
+      `• Cédula del destinatario: ${order.receiver_cedula || "—"}\n\n` +
+      `¿Entregaste "${item.product_name || "el producto"}" a la persona correcta?`
+    );
+    if (!ok) return;
+    try {
+      setDeliveringPickup(item.id);
+      await markPickupDeliveredAPI(item.id);
+      toast.success("Entrega en tienda registrada. Los fondos se liberan al confirmar el comprador o a las 48h.");
+      fetchStoreOrders();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "No se pudo registrar la entrega.");
+    } finally {
+      setDeliveringPickup(null);
     }
   };
 
@@ -327,8 +359,8 @@ export default function StoreOrders() {
         {/* Order Header */}
         <div className="p-5 flex flex-col gap-4 border-b border-gray-100">
           <div>
-            <span className={`inline-flex mb-2 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider ${order.delivery_type === "local_delivery" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-blue-50 text-blue-700 border border-blue-100"}`}>
-              {order.delivery_type === "local_delivery" ? "🏍️ Delivery Local" : "🚚 Encomienda Nacional"}
+            <span className={`inline-flex mb-2 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider ${order.delivery_type === "local_delivery" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : order.delivery_type === "pickup" ? "bg-purple-50 text-[#6b1e96] border border-purple-100" : "bg-blue-50 text-blue-700 border border-blue-100"}`}>
+              {order.delivery_type === "local_delivery" ? "🏍️ Delivery Local" : order.delivery_type === "pickup" ? "🏪 Retiro en Tienda" : "🚚 Encomienda Nacional"}
             </span>
             <div className="flex justify-between items-center">
               <h3 className="text-xl font-black text-gray-900 m-0 tracking-tight leading-none">
@@ -519,7 +551,7 @@ export default function StoreOrders() {
                         : item.delivery_status === "delivered"
                           ? "Entregado"
                           : item.delivery_status === "shipped"
-                            ? "Enviado"
+                            ? (order.delivery_type === "pickup" ? "Listo para retirar" : "Enviado")
                             : item.delivery_status === "picked_up"
                               ? "Recogido por rider"
                               : item.delivery_status === "arrived"
@@ -530,6 +562,16 @@ export default function StoreOrders() {
                   </span>
 
                   <div className="flex gap-2">
+                    {order.delivery_type === "pickup" && item.delivery_status === "shipped" && (
+                      <button
+                        onClick={() => handlePickupDelivered({ id: item.id, product_name: product.name }, order)}
+                        disabled={deliveringPickup === item.id}
+                        className="text-[10px] px-3 py-1.5 bg-emerald-600 text-white font-bold uppercase tracking-wide rounded-lg hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-600/20 disabled:opacity-50"
+                      >
+                        {deliveringPickup === item.id ? "Registrando..." : "🏪 Entregado en Tienda"}
+                      </button>
+                    )}
+
                     {canShipThisItem && shippableItems.length > 1 && (
                       <button
                         onClick={() =>
@@ -1369,7 +1411,7 @@ export default function StoreOrders() {
                   <div style={{ gridColumn: "1 / -1" }}>
                     <span style={{ color: "#6b7280", fontWeight: 600 }}>Tipo entrega:</span>
                     <div style={{ fontWeight: 700, color: shipModal.order.delivery_type === "local_delivery" ? "#10b981" : "#3b82f6" }}>
-                      {shipModal.order.delivery_type === "local_delivery" ? "🏍️ Delivery Local" : "🚚 Encomienda"}
+                      {shipModal.order.delivery_type === "local_delivery" ? "🏍️ Delivery Local" : shipModal.order.delivery_type === "pickup" ? "🏪 Retiro en Tienda" : "🚚 Encomienda"}
                     </div>
                   </div>
                 </div>
@@ -1406,7 +1448,20 @@ export default function StoreOrders() {
             )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {shipModal.order?.delivery_type !== "local_delivery" ? (
+              {shipModal.order?.delivery_type === "pickup" ? (
+                <div style={{
+                  padding: "12px", background: "rgba(107,30,150,0.06)",
+                  borderRadius: "10px", border: "1px solid rgba(107,30,150,0.18)"
+                }}>
+                  <p style={{ margin: 0, fontSize: "13px", color: "#531575", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span>🏪</span> Retiro en Tienda
+                  </p>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "11px", color: "#6b1e96" }}>
+                    Sin guía ni rider: al confirmar, el pedido queda &quot;Listo para retirar&quot; y el comprador
+                    pasará por tu local. En mostrador verifica N° de orden y cédula antes de entregar.
+                  </p>
+                </div>
+              ) : shipModal.order?.delivery_type !== "local_delivery" ? (
                 <>
                   <div>
                     <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#374151", marginBottom: "6px" }}>
@@ -1513,10 +1568,10 @@ export default function StoreOrders() {
               </button>
               <button
                 onClick={handleShip}
-                disabled={shipping || (shipModal.order?.delivery_type !== "local_delivery" && !trackingForm.tracking_code.trim()) || trackingForm.shipping_evidence_urls.length < 1}
+                disabled={shipping || (!["local_delivery", "pickup"].includes(shipModal.order?.delivery_type) && !trackingForm.tracking_code.trim()) || trackingForm.shipping_evidence_urls.length < 1}
                 style={{
                   flex: 2, padding: "10px",
-                  background: shipping || (shipModal.order?.delivery_type !== "local_delivery" && !trackingForm.tracking_code.trim()) || trackingForm.shipping_evidence_urls.length < 1
+                  background: shipping || (!["local_delivery", "pickup"].includes(shipModal.order?.delivery_type) && !trackingForm.tracking_code.trim()) || trackingForm.shipping_evidence_urls.length < 1
                     ? "rgba(107,30,150,0.4)"
                     : "linear-gradient(135deg, #531575, #6b1e96)",
                   color: "#c3ff00", borderRadius: "10px", border: "none",

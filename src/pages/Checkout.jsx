@@ -26,6 +26,9 @@ export default function Checkout() {
   const [orderGroupId, setOrderGroupId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false); // Bug 5: double-click guard
   const [deliveryType, setDeliveryType] = useState("shipping");
+  // Mapa { store_id: tipo } en compras multi-tienda, para que el resumen
+  // cobre la tarifa de delivery solo a las tiendas que van por delivery local
+  const [deliveryTypesMap, setDeliveryTypesMap] = useState(null);
   const [buyerFeePercentage, setBuyerFeePercentage] = useState(0);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
   const [appliedCouponCode, setAppliedCouponCode] = useState("");
@@ -314,7 +317,10 @@ export default function Checkout() {
               cartItems={items}
               onSubmit={handleCreateOrder}
               loading={orderLoading || isSubmitting}
-              onDeliveryTypeChange={setDeliveryType}
+              onDeliveryTypeChange={(type, perStoreMap) => {
+                setDeliveryType(type);
+                setDeliveryTypesMap(perStoreMap || null);
+              }}
             />
           </div>
 
@@ -325,6 +331,7 @@ export default function Checkout() {
               total_usd={total_usd}
               total_ves={total_ves}
               deliveryType={deliveryType}
+              deliveryTypes={deliveryTypesMap}
               buyerFeePercentage={buyerFeePercentage}
               onCouponApply={(code) => setAppliedCouponCode(code)}
             />

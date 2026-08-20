@@ -399,6 +399,9 @@ export const reverseGeocodeAPI = (lat, lng) => api.get("/geo/reverse", { params:
 // Oficinas de transportistas nacionales (Zoom por ahora)
 export const getShippingOfficesAPI = (params) => api.get("/shipping-offices", { params });
 
+// Retiro en tienda: la tienda registra la entrega en mostrador
+export const markPickupDeliveredAPI = (itemId) => api.put(`/orders/${itemId}/pickup-delivered`);
+
 // Addresses API
 export const getMyAddressesAPI = (params) => api.get("/addresses", { params });
 export const createAddressAPI = (data) => api.post("/addresses", data);

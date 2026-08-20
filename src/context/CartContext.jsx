@@ -319,9 +319,13 @@ export const CartProvider = ({ children }) => {
         variation: variation || null,
         max_stock: maxStock,
         offers_local_delivery: product.store?.offers_local_delivery || false,
+        offers_pickup: product.store?.offers_pickup || false,
         delivery_fee: product.delivery_fee || product.store?.default_delivery_fee || 0,
         store_name: product.store?.business_name || product.store_name || null,
         store_state: product.store?.state || product.store_state || null,
+        store_business_address: product.store?.business_address || null,
+        store_lat: product.store?.lat ?? null,
+        store_lng: product.store?.lng ?? null,
       };
 
       if (user) {

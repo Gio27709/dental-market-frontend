@@ -21,6 +21,7 @@ export default function StoreRiders() {
   const { storeProfile, fetchProfile, updateProfile } = useStore();
   const [deliveryForm, setDeliveryForm] = useState({
     offers_local_delivery: false,
+    offers_pickup: false,
     default_delivery_fee: "",
     delivery_coverage_description: "",
   });
@@ -34,6 +35,7 @@ export default function StoreRiders() {
     if (storeProfile) {
       setDeliveryForm({
         offers_local_delivery: storeProfile.offers_local_delivery || false,
+        offers_pickup: storeProfile.offers_pickup || false,
         default_delivery_fee: storeProfile.default_delivery_fee || "",
         delivery_coverage_description: storeProfile.delivery_coverage_description || "",
       });
@@ -196,7 +198,27 @@ export default function StoreRiders() {
                 </div>
               </div>
             )}
-            
+
+            <label className="flex items-start gap-4 cursor-pointer p-4 rounded-xl border transition-all duration-200 bg-gray-50 border-gray-200">
+              <div className="mt-1">
+                <input
+                  type="checkbox"
+                  name="offers_pickup"
+                  checked={deliveryForm.offers_pickup}
+                  onChange={handleDeliveryChange}
+                  className="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer"
+                />
+              </div>
+              <div>
+                <span className="font-bold text-gray-900 text-sm block">Ofrezco Retiro en Tienda (Pickup)</span>
+                <span className="text-xs text-gray-500 block mt-1">
+                  Los compradores podrán retirar su pedido en tu local, sin costo de envío. En mostrador,
+                  verifica el N° de orden y la cédula del destinatario antes de entregar. Asegúrate de tener
+                  la dirección y el pin del mapa actualizados en tu Perfil de Tienda.
+                </span>
+              </div>
+            </label>
+
             <button
               type="submit"
               disabled={savingDelivery}

@@ -766,6 +766,42 @@ export default function OrderDetail() {
                         </div>
                       </div>
                     )}
+                    {item.delivery_type === "pickup" && item.delivery_status === "shipped" && (
+                      <div className="mt-2 bg-emerald-50 rounded-2xl px-5 py-3.5 border border-emerald-100" style={{ boxShadow: "0 4px 24px rgba(16,185,129,0.06)" }}>
+                        <div className="flex items-start gap-2.5">
+                          <span className="material-symbols-outlined text-[18px] flex-shrink-0 mt-0.5 text-emerald-600">storefront</span>
+                          <div className="text-xs flex-1 min-w-0">
+                            <span className="font-bold text-emerald-700 block">¡Listo para retirar en tienda!</span>
+                            <span className="text-gray-600 font-medium block mt-0.5">
+                              {item.store_profiles?.business_address
+                                ? `${item.store_profiles.business_name}: ${item.store_profiles.business_address}${item.store_profiles.state ? `, ${item.store_profiles.state}` : ""}`
+                                : `Coordina el retiro con ${item.store_profiles?.business_name || "la tienda"}.`}
+                            </span>
+                            {item.store_profiles?.business_hours && (
+                              <span className="text-gray-500 font-medium block mt-0.5">🕐 {item.store_profiles.business_hours}</span>
+                            )}
+                            <span className="text-emerald-700/80 font-semibold block mt-1">
+                              Presenta tu N° de orden y la cédula del destinatario al retirar.
+                            </span>
+                          </div>
+                          {(item.store_profiles?.business_address || (item.store_profiles?.lat && item.store_profiles?.lng)) && (
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${
+                                item.store_profiles?.lat && item.store_profiles?.lng
+                                  ? `${item.store_profiles.lat},${item.store_profiles.lng}`
+                                  : encodeURIComponent(`${item.store_profiles.business_address}${item.store_profiles.state ? `, ${item.store_profiles.state}` : ""}, Venezuela`)
+                              }`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 bg-white text-emerald-700 text-[10px] font-black uppercase tracking-wide rounded-lg border border-emerald-200 hover:bg-emerald-50 transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-[13px]">near_me</span>
+                              Cómo llegar
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ),
             )}
@@ -970,8 +1006,23 @@ export default function OrderDetail() {
               )}
             </ul>
             <div className="mt-4 pt-4" style={{ borderTop: "1px solid rgba(207,194,213,0.3)" }}>
-              <span className="block text-[10px] uppercase font-bold mb-1" style={{ color: "#727785" }}>Dirección de Envío</span>
-              <span className="text-xs leading-relaxed" style={{ color: "#191c23" }}>{order.shipping_address || "—"}</span>
+              {order.delivery_type === "pickup" ? (
+                <>
+                  <span className="block text-[10px] uppercase font-bold mb-1" style={{ color: "#727785" }}>Retiras en</span>
+                  <span className="text-xs leading-relaxed" style={{ color: "#191c23" }}>
+                    {(() => {
+                      const sp = order.order_items?.[0]?.store_profiles;
+                      if (!sp) return order.shipping_address || "—";
+                      return `${sp.business_name}${sp.business_address ? ` — ${sp.business_address}` : ""}${sp.state ? `, ${sp.state}` : ""}`;
+                    })()}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="block text-[10px] uppercase font-bold mb-1" style={{ color: "#727785" }}>Dirección de Envío</span>
+                  <span className="text-xs leading-relaxed" style={{ color: "#191c23" }}>{order.shipping_address || "—"}</span>
+                </>
+              )}
             </div>
           </div>
 
