@@ -1,50 +1,10 @@
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
-import {
-  ComposedChart, Area, Bar, Line,
-  XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer,
-} from "recharts";
+import StatTile from "./StatTile";
+import PeriodSwitch from "./PeriodSwitch";
+import { formatCount } from "./format";
+import PostsDailyChart from "./PostsDailyChart";
 
-const PERIODS = [
-  { id: "7d", label: "7 días" },
-  { id: "30d", label: "30 días" },
-  { id: "90d", label: "90 días" },
-];
-
-const fmt = (n) => new Intl.NumberFormat("es-VE").format(n || 0);
-
-/** Etiqueta corta "12 ago" para el eje: las fechas ISO no caben. */
-const shortDate = (iso) => {
-  const [y, m, d] = String(iso).split("-").map(Number);
-  if (!y) return iso;
-  return new Date(y, m - 1, d).toLocaleDateString("es-VE", { day: "numeric", month: "short" });
-};
-
-function Stat({ icon, label, value, hint, tone = "slate" }) {
-  const tones = {
-    slate: "text-gray-900",
-    violet: "text-[#531575]",
-    rose: "text-rose-600",
-    emerald: "text-emerald-600",
-  };
-  return (
-    <div className="bg-gray-50/70 border border-slate-200 rounded-2xl px-4 py-3">
-      <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-500">
-        <span className="material-symbols-outlined text-[15px]">{icon}</span>
-        {label}
-      </div>
-      <div className={`mt-1 text-2xl font-extrabold font-['Manrope'] ${tones[tone]}`}>{fmt(value)}</div>
-      {hint && <div className="text-[11px] text-gray-400 font-medium mt-0.5">{hint}</div>}
-    </div>
-  );
-}
-Stat.propTypes = {
-  icon: PropTypes.string.isRequired,
-  label: PropTypes.string.isRequired,
-  value: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-  hint: PropTypes.string,
-  tone: PropTypes.string,
-};
 
 /**
  * Historial simple de las publicaciones para /admin/posts: los números gordos
@@ -53,7 +13,6 @@ Stat.propTypes = {
  */
 export default function PostsHistoryPanel({ stats, loading, period, onPeriodChange }) {
   const kpis = stats?.kpis || {};
-  const daily = stats?.daily || [];
   const sinDatos = !loading && !kpis.impressions && !kpis.views && !kpis.likes && !kpis.comments;
 
   return (
@@ -70,21 +29,7 @@ export default function PostsHistoryPanel({ stats, loading, period, onPeriodChan
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="inline-flex bg-slate-100 rounded-xl p-1">
-            {PERIODS.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => onPeriodChange(p.id)}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  period === p.id
-                    ? "bg-white text-[#531575] shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+          <PeriodSwitch period={period} onPeriodChange={onPeriodChange} />
           <Link
             to={`/admin/analytics?tab=content&period=${period}`}
             className="inline-flex items-center gap-2 px-4 py-2 bg-[#531575] hover:bg-[#6b1e96] text-white font-semibold rounded-xl shadow-sm transition-all text-xs active:scale-95"
@@ -100,18 +45,18 @@ export default function PostsHistoryPanel({ stats, loading, period, onPeriodChan
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-            <Stat
+            <StatTile
               icon="visibility" label="Alcance" value={kpis.impressions} tone="violet"
-              hint={`${fmt(kpis.uniqueReach)} personas distintas`}
+              hint={`${formatCount(kpis.uniqueReach)} personas distintas`}
             />
-            <Stat
+            <StatTile
               icon="article" label="Vistas" value={kpis.views}
-              hint={`${fmt(kpis.uniqueReaders)} lectores distintos`}
+              hint={`${formatCount(kpis.uniqueReaders)} lectores distintos`}
             />
-            <Stat icon="favorite" label="Me gusta" value={kpis.likes} tone="rose" />
-            <Stat icon="forum" label="Comentarios" value={kpis.comments} />
-            <Stat icon="bookmark" label="Guardados" value={kpis.saves} />
-            <Stat
+            <StatTile icon="favorite" label="Me gusta" value={kpis.likes} tone="rose" />
+            <StatTile icon="forum" label="Comentarios" value={kpis.comments} />
+            <StatTile icon="bookmark" label="Guardados" value={kpis.saves} />
+            <StatTile
               icon="percent" label="Interacción" value={`${kpis.engagementRatePct || 0}%`} tone="emerald"
               hint="sobre las vistas"
             />
@@ -128,30 +73,7 @@ export default function PostsHistoryPanel({ stats, loading, period, onPeriodChan
               </p>
             </div>
           ) : (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={daily} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                  <XAxis
-                    dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 11, fill: "#94a3b8" }}
-                    axisLine={false} tickLine={false} minTickGap={24}
-                  />
-                  <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip
-                    labelFormatter={shortDate}
-                    contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12 }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Area
-                    type="monotone" dataKey="impressions" name="Alcance"
-                    stroke="#c4b5fd" fill="#ede9fe" strokeWidth={2}
-                  />
-                  <Bar dataKey="likes" name="Me gusta" fill="#fb7185" radius={[4, 4, 0, 0]} barSize={10} />
-                  <Bar dataKey="comments" name="Comentarios" fill="#94a3b8" radius={[4, 4, 0, 0]} barSize={10} />
-                  <Line type="monotone" dataKey="views" name="Vistas" stroke="#531575" strokeWidth={2.5} dot={false} />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
+            <PostsDailyChart data={stats?.daily || []} />
           )}
         </>
       )}

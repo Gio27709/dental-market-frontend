@@ -41,6 +41,7 @@ const StoreApplications = lazy(() => import("./pages/Admin/StoreApplications"));
 const AdminRiderApplications = lazy(() => import("./pages/Admin/AdminRiderApplications"));
 const AdminCourses = lazy(() => import("./pages/Admin/AdminCourses"));
 const AdminPosts = lazy(() => import("./pages/Admin/AdminPosts"));
+const AdminPostStats = lazy(() => import("./pages/Admin/AdminPostStats"));
 const CategoryManagement = lazy(() => import("./pages/Admin/CategoryManagement"));
 const PlatformSettings = lazy(() => import("./pages/Admin/PlatformSettings"));
 const AdminNewsletter = lazy(() => import("./pages/Admin/AdminNewsletter"));
@@ -186,6 +187,7 @@ export default function App() {
                         <Route path="categories" element={<CategoryManagement />} />
                         <Route path="courses" element={<AdminCourses />} />
                         <Route path="posts" element={<AdminPosts />} />
+                        <Route path="posts/:id/stats" element={<AdminPostStats />} />
                         <Route path="settings" element={<PlatformSettings />} />
                         <Route path="newsletter" element={<AdminNewsletter />} />
                         <Route path="notifications" element={<AdminNotifications />} />

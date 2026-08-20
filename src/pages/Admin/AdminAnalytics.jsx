@@ -63,7 +63,14 @@ export default function AdminAnalytics() {
 
   const handleTabChange = (newTab) => {
     setActiveTab(newTab);
-    setSearchParams({ tab: newTab });
+    // Se conservan los demás parámetros (p. ej. ?period, con el que llega el
+    // botón del historial de /admin/posts): pasarle un objeto nuevo a
+    // setSearchParams los borraba todos al cambiar de pestaña.
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("tab", newTab);
+      return next;
+    });
   };
 
   const meta = TAB_INDEX[activeTab];

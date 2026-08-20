@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import {
   getAdminPostsAPI,
@@ -11,10 +12,12 @@ import {
   getPostCommentsAPI,
   deletePostCommentAPI,
   getPostSavesAPI,
+  getAdminPostStatsAPI,
 } from "../../services/api";
 import api from "../../services/api";
 import toast from "react-hot-toast";
 import PostModal from "../../components/posts/PostModal";
+import PostsHistoryPanel from "../../components/admin/posts/PostsHistoryPanel";
 
 export default function AdminPosts() {
   const [posts, setPosts] = useState([]);
@@ -49,6 +52,11 @@ export default function AdminPosts() {
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [pendingCount, setPendingCount] = useState(0);
+
+  // Historial de lectura e interacción (Fase 2)
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsPeriod, setStatsPeriod] = useState("30d");
 
   const loadPosts = useCallback(async () => {
     try {
@@ -93,6 +101,28 @@ export default function AdminPosts() {
       setLoading(false);
     }
   }, [activeTab, page, limit, categoryFilter, authorTypeFilter, debouncedSearch, sortBy]);
+
+  // ── Historial (Fase 2) ──
+  // Los KPIs y la serie diaria son globales; `ids` solo acota el mapa por
+  // publicación a las filas visibles, para no traer el catálogo entero.
+  const loadStats = useCallback(async () => {
+    try {
+      setStatsLoading(true);
+      const params = { period: statsPeriod };
+      const ids = posts.map((p) => p.id).filter(Boolean);
+      if (ids.length) params.ids = ids.join(",");
+      const res = await getAdminPostStatsAPI(params);
+      setStats(res.data?.data || null);
+    } catch (err) {
+      console.error("Error al cargar el historial de publicaciones:", err);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [statsPeriod, posts]);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
 
   const loadPendingCount = useCallback(async () => {
     try {
@@ -403,6 +433,13 @@ export default function AdminPosts() {
       </div>
 
 
+      <PostsHistoryPanel
+        stats={stats}
+        loading={statsLoading}
+        period={statsPeriod}
+        onPeriodChange={setStatsPeriod}
+      />
+
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-6 overflow-x-auto hide-scrollbar" aria-label="Tabs">
@@ -542,6 +579,7 @@ export default function AdminPosts() {
                   <th className="px-6 py-4 text-center">Autor</th>
                   <th className="px-6 py-4 text-center">Fecha</th>
                   <th className="px-6 py-4 text-center">Estado</th>
+                  <th className="px-6 py-4 text-center">Alcance / Vistas</th>
                   <th className="px-6 py-4 text-center">Interacciones</th>
                   <th className="px-6 py-4 text-right">Acciones</th>
                 </tr>
@@ -611,6 +649,38 @@ export default function AdminPosts() {
                         </span>
                       )}
                     </td>
+                    {/* Alcance / Vistas del período elegido en el Historial */}
+                    <td className="px-6 py-4 text-center">
+                      {(() => {
+                        const s = stats?.byPost?.[post.id];
+                        if (statsLoading && !stats) {
+                          return <span className="inline-block w-16 h-4 bg-slate-100 rounded animate-pulse" />;
+                        }
+                        if (!s || (!s.impressions && !s.views)) {
+                          return <span className="text-xs text-gray-300 font-semibold">—</span>;
+                        }
+                        return (
+                          <Link
+                            to={`/admin/posts/${post.id}/stats`}
+                            className="inline-flex flex-col items-center leading-tight hover:opacity-70 transition-opacity"
+                            title="Ver la ficha completa de esta publicación"
+                          >
+                            <span
+                              className="font-mono text-sm font-bold text-[#531575]"
+                              title={`${s.unique_reach} personas distintas la vieron pasar`}
+                            >
+                              {s.impressions}
+                            </span>
+                            <span
+                              className="text-[11px] font-semibold text-gray-500"
+                              title={`${s.unique_readers} lectores distintos · ${s.engagement_rate_pct}% de interacción`}
+                            >
+                              {s.views} {s.views === 1 ? "vista" : "vistas"}
+                            </span>
+                          </Link>
+                        );
+                      })()}
+                    </td>
                     {/* Interacciones */}
                     <td className="px-6 py-4 text-center">
                       <button
@@ -654,6 +724,13 @@ export default function AdminPosts() {
                             </button>
                           </>
                         )}
+                        <Link
+                          to={`/admin/posts/${post.id}/stats`}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-[#531575] hover:bg-[#531575]/10 transition-colors"
+                          title="Ver estadísticas de esta publicación"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">bar_chart</span>
+                        </Link>
                         <button
                           onClick={() => openEditModal(post)}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-[#531575] hover:bg-[#531575]/10 transition-colors"

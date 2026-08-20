@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { ExternalLink } from "lucide-react";
 import { getContentAnalyticsAPI } from "../../../services/api";
 import useAnalyticsTabData from "../../../hooks/useAnalyticsTabData";
 import KpiCard from "./KpiCard";
@@ -214,18 +215,29 @@ export default function ContentTab() {
           {
             header: "Título",
             accessor: "title",
+            // El título abre el drilldown de eventos; el icono lleva a la ficha
+            // completa de la publicación, fuera de las analíticas.
             render: (r) => (
-              <button
-                onClick={() =>
-                  drilldown.open("analytics_events", {
-                    title: `Lecturas de "${r.title}"`,
-                    filters: { event_name: "post_view", post_id: r.id }
-                  })
-                }
-                className="font-bold text-fx-accent hover:underline text-left"
-              >
-                {r.title}
-              </button>
+              <span className="flex items-center gap-2">
+                <button
+                  onClick={() =>
+                    drilldown.open("analytics_events", {
+                      title: `Lecturas de "${r.title}"`,
+                      filters: { event_name: "post_view", post_id: r.id }
+                    })
+                  }
+                  className="font-bold text-fx-accent hover:underline text-left"
+                >
+                  {r.title}
+                </button>
+                <Link
+                  to={`/admin/posts/${r.id}/stats`}
+                  title="Ficha completa de la publicación"
+                  className="text-fx-faint hover:text-fx-accent shrink-0"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              </span>
             ),
           },
           { header: "Autor", accessor: "author_name", render: (r) => <span className="text-fx-faint">{r.author_name || "—"}</span> },
