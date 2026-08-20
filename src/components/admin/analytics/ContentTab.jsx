@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { getContentAnalyticsAPI } from "../../../services/api";
 import useAnalyticsTabData from "../../../hooks/useAnalyticsTabData";
 import KpiCard from "./KpiCard";
@@ -17,8 +18,16 @@ import {
 
 const TOOLTIP_STYLE = { backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" };
 
+const VALID_PERIODS = ["7d", "15d", "30d", "90d", "365d"];
+
 export default function ContentTab() {
-  const [period, setPeriod] = useState("30d");
+  // El botón "Ver estadísticas completas" de /admin/posts llega con ?period,
+  // para que la pestaña abra en el mismo rango que traía el historial.
+  const [searchParams] = useSearchParams();
+  const [period, setPeriod] = useState(() => {
+    const fromUrl = searchParams.get("period");
+    return VALID_PERIODS.includes(fromUrl) ? fromUrl : "30d";
+  });
   const [chartMode, setChartMode] = useState("area");
   const { data, loading, error, reload } = useAnalyticsTabData(getContentAnalyticsAPI, period);
   const drilldown = useDrilldown();
@@ -42,13 +51,17 @@ export default function ContentTab() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
         <KpiCard
-          title="Publicaciones Nuevas"
-          value={kpis.newPosts || 0}
+          title="Alcance"
+          value={kpis.impressions || 0}
           format="number"
-          suffix=" posts"
-          tooltip="Publicaciones creadas dentro del período seleccionado."
+          suffix=" impresiones"
+          tooltip="Veces que una publicación apareció en pantalla en el feed al menos un segundo. Es distinto de las lecturas: mide a quién le pasó por delante."
           onDrilldown={() =>
-            drilldown.open("posts", { title: "Publicaciones creadas en el período" })
+            drilldown.open("analytics_events", {
+              title: "Alcance de publicaciones",
+              subtitle: "Apariciones en pantalla en el feed",
+              filters: { event_name: "post_impression" }
+            })
           }
         />
         <KpiCard
@@ -91,7 +104,17 @@ export default function ContentTab() {
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 relative z-10">
+        <KpiCard
+          title="Publicaciones Nuevas"
+          value={kpis.newPosts || 0}
+          format="number"
+          suffix=" posts"
+          tooltip="Publicaciones creadas dentro del período seleccionado."
+          onDrilldown={() =>
+            drilldown.open("posts", { title: "Publicaciones creadas en el período" })
+          }
+        />
         <KpiCard
           title="Publicaciones Activas"
           value={kpis.publishedPosts || 0}
@@ -136,7 +159,7 @@ export default function ContentTab() {
 
       <ChartCard
         title="Interacción Diaria con el Contenido"
-        subtitle="Lecturas, me gusta y comentarios por día"
+        subtitle="Alcance, lecturas, me gusta y comentarios por día"
         onTypeChange={setChartMode}
       >
         <ResponsiveContainer width="100%" height={280}>
@@ -147,6 +170,7 @@ export default function ContentTab() {
               <YAxis stroke="#7b6c99" fontSize={11} />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="impressions" name="Alcance" fill="#7b6c99" radius={[4, 4, 0, 0]} />
               <Bar dataKey="views" name="Lecturas" fill="#c3ff00" radius={[4, 4, 0, 0]} />
               <Bar dataKey="likes" name="Me gusta" fill="#a855f7" radius={[4, 4, 0, 0]} />
               <Bar dataKey="comments" name="Comentarios" fill="#38bdf8" radius={[4, 4, 0, 0]} />
@@ -158,6 +182,7 @@ export default function ContentTab() {
               <YAxis stroke="#7b6c99" fontSize={11} />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Line type="monotone" dataKey="impressions" name="Alcance" stroke="#7b6c99" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="views" name="Lecturas" stroke="#c3ff00" strokeWidth={3} dot={false} />
               <Line type="monotone" dataKey="likes" name="Me gusta" stroke="#a855f7" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="comments" name="Comentarios" stroke="#38bdf8" strokeWidth={2} dot={false} />
@@ -175,6 +200,7 @@ export default function ContentTab() {
               <YAxis stroke="#7b6c99" fontSize={11} />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Area type="monotone" dataKey="impressions" name="Alcance" stroke="#7b6c99" strokeWidth={2} fillOpacity={0.15} fill="#7b6c99" />
               <Area type="monotone" dataKey="views" name="Lecturas" stroke="#c3ff00" strokeWidth={3} fillOpacity={1} fill="url(#contentViews)" />
               <Area type="monotone" dataKey="likes" name="Me gusta" stroke="#a855f7" strokeWidth={2} fillOpacity={0.2} fill="#a855f7" />
             </AreaChart>
@@ -204,6 +230,7 @@ export default function ContentTab() {
           },
           { header: "Autor", accessor: "author_name", render: (r) => <span className="text-fx-faint">{r.author_name || "—"}</span> },
           { header: "Categoría", accessor: "category", render: (r) => r.category || "—" },
+          { header: "Alcance", accessor: "impressions", render: (r) => <span className="text-fx-faint">{parseInt(r.impressions || 0).toLocaleString()}</span> },
           { header: "Lecturas", accessor: "views", render: (r) => <span className="font-semibold text-fx-accent">{parseInt(r.views || 0).toLocaleString()}</span> },
           { header: "Likes", accessor: "likes" },
           { header: "Comentarios", accessor: "comments" },

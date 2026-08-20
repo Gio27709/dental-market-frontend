@@ -367,6 +367,9 @@ export const deleteCourseAPI = (id) => api.delete(`/courses/${id}`);
 export const getPostsAPI = () => api.get("/posts");
 export const getMyPostsAPI = () => api.get("/posts/me");
 export const getAdminPostsAPI = (params) => api.get("/posts/admin/all", { params });
+// Historial de /admin/posts. `ids` acota el mapa por publicación a la página
+// visible; los KPIs y la serie diaria siempre son de todas las publicaciones.
+export const getAdminPostStatsAPI = (params) => api.get("/posts/admin/stats", { params });
 export const getPostByIdAPI = (id) => api.get(`/posts/${id}`);
 export const createPostAPI = (data) => api.post("/posts", data);
 export const updatePostAPI = (id, data) => api.put(`/posts/${id}`, data);
