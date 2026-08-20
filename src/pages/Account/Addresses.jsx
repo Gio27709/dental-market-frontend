@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   getMyAddressesAPI,
   createAddressAPI,
   updateAddressAPI,
   deleteAddressAPI,
   setDefaultAddressAPI,
+  reverseGeocodeAPI,
 } from "../../services/api";
 import { VENEZUELA_STATES } from "../../utils/venezuelaStates";
 import toast from "react-hot-toast";
+import MapAddressPicker from "../../components/common/MapAddressPicker";
 
 export default function Addresses() {
   const [addresses, setAddresses] = useState([]);
@@ -22,6 +24,25 @@ export default function Addresses() {
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
   const [reference, setReference] = useState("");
+  const [lat, setLat] = useState(null);
+  const [lng, setLng] = useState(null);
+  const reverseTimer = useRef(null);
+
+  // Pin del mapa: guarda coordenadas y autocompleta estado/ciudad si están vacíos
+  const handleMapChange = (newLat, newLng) => {
+    setLat(newLat);
+    setLng(newLng);
+    if (reverseTimer.current) clearTimeout(reverseTimer.current);
+    reverseTimer.current = setTimeout(async () => {
+      try {
+        const res = await reverseGeocodeAPI(newLat, newLng);
+        const d = res.data?.data;
+        if (!d) return;
+        setState((prev) => prev || d.state || "");
+        setCity((prev) => prev || d.city || "");
+      } catch { /* el autocompletado es un extra */ }
+    }, 700);
+  };
 
   const fetchAddresses = async () => {
     try {
@@ -49,6 +70,8 @@ export default function Addresses() {
     setState("");
     setCity("");
     setReference("");
+    setLat(null);
+    setLng(null);
     setIsModalOpen(true);
   };
 
@@ -59,6 +82,8 @@ export default function Addresses() {
     setState(addr.state);
     setCity(addr.city);
     setReference(addr.reference || "");
+    setLat(addr.lat ?? null);
+    setLng(addr.lng ?? null);
     setIsModalOpen(true);
   };
 
@@ -75,6 +100,8 @@ export default function Addresses() {
       state,
       city: city.trim(),
       reference: reference.trim() || null,
+      lat,
+      lng,
     };
 
     try {
@@ -254,8 +281,13 @@ export default function Addresses() {
                   {/* Card Body */}
                   <div className="space-y-2 text-sm leading-relaxed" style={{ color: "#4b5563" }}>
                     <p className="font-medium">{addr.full_address}</p>
-                    <p className="text-xs font-semibold" style={{ color: "#727785" }}>
-                      📍 {addr.city}, {addr.state}
+                    <p className="text-xs font-semibold flex items-center gap-2 flex-wrap" style={{ color: "#727785" }}>
+                      <span>📍 {addr.city}, {addr.state}</span>
+                      {addr.lat != null && addr.lng != null && (
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
+                          Pin GPS
+                        </span>
+                      )}
                     </p>
                     {addr.reference && (
                       <p className="text-xs mt-1.5 italic bg-slate-50 p-2 rounded-lg border border-slate-100 flex items-start gap-1">
@@ -402,6 +434,34 @@ export default function Addresses() {
                     onChange={(e) => setReference(e.target.value)}
                     className="w-full pl-4 pr-4 py-3 rounded-xl text-sm font-medium outline-none transition-all duration-200 focus:ring-2 focus:ring-[#6b1e96]/30 bg-slate-50 border border-slate-100 focus:border-[#6b1e96]"
                   />
+                </div>
+
+                {/* Map pin */}
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#727785" }}>
+                    Ubicación Exacta en el Mapa (Recomendado)
+                  </label>
+                  <MapAddressPicker
+                    value={lat != null && lng != null ? { lat, lng } : null}
+                    onChange={handleMapChange}
+                    height="240px"
+                  />
+                  {lat != null && lng != null ? (
+                    <p className="text-[11px] font-bold mt-2 flex items-center gap-1.5 text-emerald-600">
+                      ✓ Pin fijado ({Number(lat).toFixed(5)}, {Number(lng).toFixed(5)})
+                      <button
+                        type="button"
+                        onClick={() => { setLat(null); setLng(null); }}
+                        className="text-red-500 underline font-bold cursor-pointer"
+                      >
+                        Quitar
+                      </button>
+                    </p>
+                  ) : (
+                    <p className="text-[11px] font-medium mt-2" style={{ color: "#727785" }}>
+                      Con el pin, el repartidor llega directo a tu puerta en los delivery locales.
+                    </p>
+                  )}
                 </div>
               </div>
 

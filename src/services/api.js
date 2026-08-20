@@ -393,6 +393,9 @@ export const resolveReturnRequestAPI = (id, data) => api.put(`/returns/${id}/res
 export const submitRefundDetailsAPI = (refundId, refundDetails) =>
   api.put(`/orders/refunds/${refundId}/details`, { refund_details: refundDetails });
 
+// Geo API (pin del mapa -> dirección aproximada, vía backend/Nominatim)
+export const reverseGeocodeAPI = (lat, lng) => api.get("/geo/reverse", { params: { lat, lng } });
+
 // Addresses API
 export const getMyAddressesAPI = (params) => api.get("/addresses", { params });
 export const createAddressAPI = (data) => api.post("/addresses", data);

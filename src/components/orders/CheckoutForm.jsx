@@ -6,6 +6,8 @@ import PaymentInstructions from "./PaymentInstructions";
 import toast from "react-hot-toast";
 import { VENEZUELA_STATES } from "../../utils/venezuelaStates";
 import { useAuth } from "../../context/AuthContext";
+import MapAddressPicker from "../common/MapAddressPicker";
+import { getMyAddressesAPI, createAddressAPI, reverseGeocodeAPI } from "../../services/api";
 
 export default function CheckoutForm({
   cartItems,
@@ -209,9 +211,74 @@ export default function CheckoutForm({
 
   const [formErrors, setFormErrors] = useState({});
 
+  // ── Libreta de direcciones ──
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [saveAddress, setSaveAddress] = useState(false);
+  const [addressLabel, setAddressLabel] = useState("");
+  const reverseTimer = useRef(null);
+
+  const applyAddress = (addr) => {
+    setSelectedAddressId(addr.id);
+    setFormData((prev) => ({
+      ...prev,
+      address: addr.full_address,
+      destination_state: addr.state || prev.destination_state,
+      destination_city: addr.city || prev.destination_city,
+      delivery_reference: addr.reference || "",
+      delivery_lat: addr.lat ?? null,
+      delivery_lng: addr.lng ?? null,
+    }));
+    setFormErrors((prev) => ({ ...prev, address: null, location: null, destination_state: null }));
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    getMyAddressesAPI()
+      .then((res) => {
+        if (!alive) return;
+        const list = res.data?.data || [];
+        setSavedAddresses(list);
+        // El borrador de sessionStorage gana sobre la predeterminada:
+        // no pisar una dirección que el usuario ya venía escribiendo.
+        let draftHasAddress = false;
+        try {
+          draftHasAddress = Boolean(JSON.parse(sessionStorage.getItem("checkout_form_data") || "{}").address);
+        } catch { /* borrador corrupto = no hay borrador */ }
+        const def = list.find((a) => a.is_default) || list[0];
+        if (def && !draftHasAddress) applyAddress(def);
+      })
+      .catch(() => { /* sin libreta el formulario manual sigue funcionando */ });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Pin del mapa: fija coordenadas y autocompleta estado/ciudad (best effort)
+  const handleMapChange = (lat, lng) => {
+    setFormData((prev) => ({ ...prev, delivery_lat: lat, delivery_lng: lng }));
+    setSelectedAddressId(null);
+    if (formErrors.location) setFormErrors((prev) => ({ ...prev, location: null }));
+    if (reverseTimer.current) clearTimeout(reverseTimer.current);
+    reverseTimer.current = setTimeout(async () => {
+      try {
+        const res = await reverseGeocodeAPI(lat, lng);
+        const d = res.data?.data;
+        if (!d) return;
+        setFormData((prev) => ({
+          ...prev,
+          destination_state: d.state || prev.destination_state,
+          destination_city: prev.destination_city || d.city || "",
+          address: prev.address || [d.road, d.suburb, d.city].filter(Boolean).join(", "),
+        }));
+      } catch { /* el autocompletado es un extra, nunca bloquea */ }
+    }, 700);
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "address") setSelectedAddressId(null);
     if (formErrors[name]) {
       setFormErrors((prev) => ({ ...prev, [name]: null }));
     }
@@ -241,7 +308,7 @@ export default function CheckoutForm({
         errors.address = "Para delivery local, bríndenos la zona y avenida exacta (min 15 chars).";
       }
       if (!formData.delivery_lat || !formData.delivery_lng) {
-        errors.location = "Para usar Delivery Local necesitamos sus coordenadas. Presione 'Usar ubicación GPS'.";
+        errors.location = "Para usar Delivery Local necesitamos tu ubicación: coloca el pin en el mapa.";
       }
     } else {
       if (!validateAddress(formData.address)) {
@@ -281,32 +348,29 @@ export default function CheckoutForm({
     return Object.keys(errors).length === 0;
   };
 
-  const handleGetLocation = (e) => {
-    e.preventDefault();
-    if ("geolocation" in navigator) {
-      toast("Solicitando GPS...", { icon: '📡' });
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setFormData((prev) => ({
-            ...prev,
-            delivery_lat: position.coords.latitude,
-            delivery_lng: position.coords.longitude,
-          }));
-          toast.success("Ubicación fijada con exactitud.");
-          if (formErrors.location) setFormErrors(prev => ({...prev, location: null}));
-        },
-        () => {
-          toast.error("Error al obtener ubicación. Por favor, revisa tus permisos.");
-        }
-      );
-    } else {
-      toast.error("Tu navegador no soporta geolocalización.");
-    }
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
+      // Guardado en libreta: fire-and-forget, nunca bloquea el pedido
+      if (saveAddress && addressLabel.trim() && !selectedAddressId) {
+        if (!formData.destination_state || !formData.destination_city) {
+          toast("No se guardó en tu libreta (faltó estado/ciudad); el pedido sigue normal.", { icon: "📒" });
+        } else {
+          createAddressAPI({
+            label: addressLabel.trim(),
+            full_address: formData.address,
+            state: formData.destination_state,
+            city: formData.destination_city,
+            reference: formData.delivery_reference || null,
+            lat: formData.delivery_lat,
+            lng: formData.delivery_lng,
+          })
+            .then(() => toast.success("Dirección guardada en tu libreta."))
+            .catch((err) => {
+              toast(err.response?.data?.error || "No se pudo guardar la dirección en tu libreta.", { icon: "⚠️" });
+            });
+        }
+      }
       // Build submit payload
       const payload = { ...formData };
       if (isMultiStore) {
@@ -506,6 +570,45 @@ export default function CheckoutForm({
         </div>
 
         <div className="grid grid-cols-6 gap-5">
+          {savedAddresses.length > 0 && (
+            <div className="col-span-6">
+              <label className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-2">
+                Mis Direcciones Guardadas
+              </label>
+              <div className="flex flex-wrap gap-2.5">
+                {savedAddresses.map((addr) => (
+                  <button
+                    key={addr.id}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => applyAddress(addr)}
+                    title={addr.full_address}
+                    className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs transition-all cursor-pointer ${
+                      selectedAddressId === addr.id
+                        ? "border-[#6b1e96] bg-purple-50/40 ring-1 ring-[#6b1e96] text-[#6b1e96]"
+                        : "border-slate-200 bg-slate-50/50 hover:bg-white text-slate-700"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">
+                      {selectedAddressId === addr.id ? "check_circle" : "location_on"}
+                    </span>
+                    <span className="font-black">{addr.label}</span>
+                    <span className="font-semibold text-slate-400">· {addr.city}</span>
+                    {addr.lat != null && <span title="Con ubicación GPS">📍</span>}
+                    {addr.is_default && (
+                      <span className="text-[9px] font-black uppercase tracking-wider bg-[#6b1e96] text-white px-1.5 py-0.5 rounded-full">
+                        Def
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-2 font-medium">
+                Toca una para rellenar los campos, o escribe otra dirección abajo.
+              </p>
+            </div>
+          )}
+
           <div className="col-span-6 sm:col-span-3">
             <label htmlFor="receiver_name" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
               Nombre Completo del Destinatario *
@@ -648,39 +751,64 @@ export default function CheckoutForm({
                 {formErrors.address}
               </p>
             )}
+            {user && !selectedAddressId && savedAddresses.length < 10 && (
+              <div className="mt-3 bg-slate-50/70 border border-slate-100 rounded-xl p-3.5">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={saveAddress}
+                    onChange={(e) => setSaveAddress(e.target.checked)}
+                    disabled={loading}
+                    className="w-4 h-4 accent-[#6b1e96] cursor-pointer"
+                  />
+                  <span className="text-xs font-bold text-slate-700">
+                    Guardar esta dirección en mi libreta para futuras compras
+                  </span>
+                </label>
+                {saveAddress && (
+                  <input
+                    type="text"
+                    value={addressLabel}
+                    onChange={(e) => setAddressLabel(e.target.value)}
+                    disabled={loading}
+                    placeholder="Etiqueta: Casa, Consultorio, Oficina..."
+                    className="mt-2.5 block w-full sm:text-sm rounded-xl border-slate-200 bg-white p-2.5 border focus:outline-none focus:ring-2 focus:ring-[#6b1e96]/15 focus:border-[#6b1e96] transition-all"
+                  />
+                )}
+              </div>
+            )}
           </div>
 
           {hasAnyLocalDelivery && (
             <>
               <div className="col-span-6">
                 <label className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-2">
-                  Ubicación Satelital (GPS) *
+                  Ubicación Exacta en el Mapa *
                 </label>
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleGetLocation}
-                    className="flex items-center gap-2 px-4 py-3 bg-slate-100 hover:bg-slate-200/80 text-slate-800 rounded-xl text-xs font-black transition-all border border-slate-200 active:scale-98 shadow-xs cursor-pointer"
-                  >
-                    <span className={`material-symbols-outlined text-[18px] ${formData.delivery_lat ? "text-emerald-600 animate-pulse" : "text-slate-500"}`}>
-                      my_location
-                    </span>
-                    {formData.delivery_lat ? "Actualizar Coordenadas" : "Usar mi ubicación"}
-                  </button>
-                  {formData.delivery_lat && (
-                    <span className="text-xs text-emerald-600 font-extrabold flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
-                      <span className="material-symbols-outlined text-[15px] text-emerald-600">check_circle</span>
-                      ¡Ubicación fijada! ({formData.delivery_lat.toFixed(4)}, {formData.delivery_lng.toFixed(4)})
-                    </span>
-                  )}
-                </div>
+                <MapAddressPicker
+                  value={
+                    formData.delivery_lat != null && formData.delivery_lng != null
+                      ? { lat: formData.delivery_lat, lng: formData.delivery_lng }
+                      : null
+                  }
+                  onChange={handleMapChange}
+                  height="300px"
+                />
+                {formData.delivery_lat && (
+                  <span className="inline-flex mt-2.5 text-xs text-emerald-600 font-extrabold items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
+                    <span className="material-symbols-outlined text-[15px] text-emerald-600">check_circle</span>
+                    ¡Ubicación fijada! ({formData.delivery_lat.toFixed(4)}, {formData.delivery_lng.toFixed(4)})
+                  </span>
+                )}
                 {formErrors.location && (
                   <p className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1">
                     <span className="material-symbols-outlined text-sm">error</span>
                     {formErrors.location}
                   </p>
                 )}
-                <p className="text-[11px] text-slate-400 mt-2.5 font-medium italic">Permítele acceso al GPS al navegador. Cerraremos la distancia exacta entre tú y el Rider.</p>
+                <p className="text-[11px] text-slate-400 mt-2.5 font-medium italic">
+                  Mueve el pin hasta tu puerta: el repartidor llegará exactamente a ese punto.
+                </p>
               </div>
 
               <div className="col-span-6">
