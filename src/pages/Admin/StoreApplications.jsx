@@ -23,6 +23,7 @@ const PAGE_SIZES = [10, 25, 50, 100];
 const MAX_BULK = 100;
 
 const TABS = [
+  { key: "all", label: "Todas" },
   { key: "pending", label: "Pendientes" },
   { key: "approved", label: "Operativas" },
   { key: "rejected", label: "Rechazadas" },
@@ -96,10 +97,10 @@ export default function StoreApplications() {
   const latestRequest = useRef(0);
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
-  const [counts, setCounts] = useState({ pending: 0, approved: 0, rejected: 0 });
+  const [counts, setCounts] = useState({ all: 0, pending: 0, approved: 0, rejected: 0 });
   const [loading, setLoading] = useState(true);
 
-  const [activeTab, setActiveTab] = useState("pending");
+  const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -114,6 +115,9 @@ export default function StoreApplications() {
   const [bulkDeleteModal, setBulkDeleteModal] = useState(false);
 
   const [openDropdown, setOpenDropdown] = useState(null);
+  // Posición del menú ⋯ en coordenadas de viewport: la tarjeta de la tabla tiene
+  // overflow-hidden y un menú `absolute` se recorta cuando hay pocas filas.
+  const [dropdownPos, setDropdownPos] = useState(null);
   const [slideOverStore, setSlideOverStore] = useState(null);
   const [reviewApp, setReviewApp] = useState(null);
   const [suspendModal, setSuspendModal] = useState({ open: false, store: null });
@@ -150,7 +154,7 @@ export default function StoreApplications() {
       if (requestId !== latestRequest.current) return;
       setRows(res.data?.data || []);
       setTotal(res.data?.count || 0);
-      setCounts(res.data?.counts || { pending: 0, approved: 0, rejected: 0 });
+      setCounts(res.data?.counts || { all: 0, pending: 0, approved: 0, rejected: 0 });
     } catch (err) {
       if (requestId !== latestRequest.current) return;
       toast.error("Error cargando tiendas y solicitudes: " + (err.message || ""));
@@ -169,8 +173,8 @@ export default function StoreApplications() {
   }, [activeTab, debouncedSearch, startDate, endDate, perPage]);
 
   // Las filas de la pestaña anterior no pueden seguir en pantalla mientras carga la
-  // nueva: la pastilla de estado y las acciones se pintan según `activeTab`, que
-  // cambia al instante, así que se verían tiendas operativas etiquetadas "Pendiente".
+  // nueva: aunque la pastilla ya se pinta por fila (`row_status`), dejarlas visibles
+  // mientras llega la pestaña nueva confunde sobre qué se está mirando.
   useEffect(() => {
     setRows([]);
     setTotal(0);
@@ -329,7 +333,7 @@ export default function StoreApplications() {
   };
 
   const rowActions = (app) => {
-    if (activeTab === "pending") {
+    if (app.row_status === "pending") {
       return (
         <div className="flex justify-end gap-1.5">
           <button
@@ -358,7 +362,20 @@ export default function StoreApplications() {
       <div className="flex justify-end">
         <div className="relative">
           <button
-            onClick={() => setOpenDropdown(openDropdown === rowKey(app) ? null : rowKey(app))}
+            onClick={(e) => {
+              if (openDropdown === rowKey(app)) {
+                setOpenDropdown(null);
+                return;
+              }
+              const r = e.currentTarget.getBoundingClientRect();
+              const spaceBelow = window.innerHeight - r.bottom;
+              setDropdownPos(
+                spaceBelow < 260
+                  ? { bottom: window.innerHeight - r.top + 4, right: window.innerWidth - r.right }
+                  : { top: r.bottom + 4, right: window.innerWidth - r.right },
+              );
+              setOpenDropdown(rowKey(app));
+            }}
             aria-label="Acciones"
             className={`p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-all [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100 ${
               openDropdown === rowKey(app) ? "[@media(hover:hover)]:opacity-100 bg-slate-100 text-slate-900" : ""
@@ -374,9 +391,16 @@ export default function StoreApplications() {
           </button>
           {openDropdown === rowKey(app) && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
-              <div className="absolute right-0 top-8 z-50 w-52 bg-white rounded-xl shadow-lg shadow-slate-900/10 ring-1 ring-slate-900/5 py-1.5">
-                {activeTab === "approved" ? (
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setOpenDropdown(null)}
+                onWheel={() => setOpenDropdown(null)}
+              />
+              <div
+                className="fixed z-50 w-52 bg-white rounded-xl shadow-lg shadow-slate-900/10 ring-1 ring-slate-900/5 py-1.5"
+                style={dropdownPos || undefined}
+              >
+                {app.row_status === "approved" ? (
                   <>
                     <button
                       onClick={() => {
@@ -462,9 +486,11 @@ export default function StoreApplications() {
     );
   };
 
+  // El estado sale de la propia fila (`row_status`, que pone el backend) y no de la
+  // pestaña: en "Todas" conviven solicitudes y tiendas operativas en la misma tabla.
   const statusPill = (app) => {
-    if (activeTab === "pending") return <Pill tone={TONES.pending}>Pendiente</Pill>;
-    if (activeTab === "rejected") return <Pill tone={TONES.rejected}>Rechazada</Pill>;
+    if (app.row_status === "pending") return <Pill tone={TONES.pending}>Pendiente</Pill>;
+    if (app.row_status === "rejected") return <Pill tone={TONES.rejected}>Rechazada</Pill>;
     return app.is_suspended ? (
       <Pill tone={TONES.suspended}>Suspendida</Pill>
     ) : (
@@ -579,7 +605,9 @@ export default function StoreApplications() {
             <p className="text-slate-500 text-sm">
               {hasFilters
                 ? "Ninguna tienda coincide con los filtros aplicados."
-                : `No hay registros en "${TABS.find((t) => t.key === activeTab)?.label}".`}
+                : activeTab === "all"
+                  ? "Todavía no hay tiendas ni solicitudes registradas."
+                  : `No hay registros en "${TABS.find((t) => t.key === activeTab)?.label}".`}
             </p>
           </div>
         ) : (
@@ -709,7 +737,7 @@ export default function StoreApplications() {
                     </div>
 
                     <div className="mt-3 border-t border-slate-100 pt-3 flex items-center gap-2">
-                      {activeTab === "pending" && (
+                      {app.row_status === "pending" && (
                         <>
                           <button
                             onClick={() => setReviewApp(app)}
@@ -731,7 +759,7 @@ export default function StoreApplications() {
                           </button>
                         </>
                       )}
-                      {activeTab === "approved" && (
+                      {app.row_status === "approved" && (
                         <>
                           <button
                             onClick={() => setSlideOverStore(app)}
@@ -762,7 +790,7 @@ export default function StoreApplications() {
                           </button>
                         </>
                       )}
-                      {activeTab === "rejected" && (
+                      {app.row_status === "rejected" && (
                         <>
                           <button
                             onClick={() => setReviewApp(app)}
