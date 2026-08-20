@@ -10,6 +10,8 @@ import {
 } from "../../services/api";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { track, trackPostOnce } from "../../services/tracking";
+import { usePostImpressions } from "../../hooks/usePostImpressions";
 import toast from "react-hot-toast";
 import PostModal from "../../components/posts/PostModal";
 import AuthPromptModal from "../../components/auth/AuthPromptModal";
@@ -95,6 +97,10 @@ export default function Blog() {
   const [activeCommentsDrawer, setActiveCommentsDrawer] = useState({});
   const [newCommentTexts, setNewCommentTexts] = useState({});
   const [expandedPosts, setExpandedPosts] = useState({});
+
+  // Alcance del feed: una impresión por publicación y sesión, cuando estuvo
+  // de verdad en pantalla. Las aperturas (post_view) las emiten los handlers.
+  const impressionRef = usePostImpressions("feed");
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -219,6 +225,8 @@ export default function Blog() {
 
     try {
       await togglePostLikeAPI(postId);
+      // Solo el "me gusta", no el quitarlo: el evento mide el acto, no el estado.
+      if (!currentlyLiked) track("post_like", { post_id: postId, surface: "feed" });
     } catch {
       toast.error("Error al registrar reacción");
       // Revert/Reload
@@ -260,6 +268,7 @@ export default function Blog() {
     try {
       await togglePostSaveAPI(postId);
       if (!currentlySaved) {
+        track("post_save", { post_id: postId, surface: "feed" });
         toast.success("Publicación guardada");
       } else {
         toast.success("Publicación eliminada de guardados");
@@ -283,8 +292,11 @@ export default function Blog() {
 
   const toggleCommentsDrawer = async (postId) => {
     const nextOpenState = !activeCommentsDrawer[postId];
+    if (nextOpenState) {
+      trackPostOnce("post_view", postId, { surface: "feed", trigger: "comentarios" });
+    }
     setActiveCommentsDrawer(prev => ({ ...prev, [postId]: nextOpenState }));
-    
+
     if (nextOpenState && !comments[postId]) {
       try {
         setLoadingComments(prev => ({ ...prev, [postId]: true }));
@@ -334,6 +346,7 @@ export default function Blog() {
         );
         
         setNewCommentTexts(prev => ({ ...prev, [postId]: "" }));
+        track("post_comment", { post_id: postId, surface: "feed" });
         toast.success("Comentario publicado");
       }
     } catch (err) {
@@ -356,6 +369,10 @@ export default function Blog() {
   };
 
   const toggleExpandText = (postId) => {
+    // Solo al abrir: cerrar el texto no es una vista nueva.
+    if (!expandedPosts[postId]) {
+      trackPostOnce("post_view", postId, { surface: "feed", trigger: "expandir" });
+    }
     setExpandedPosts(prev => ({ ...prev, [postId]: !prev[postId] }));
   };
 
@@ -581,7 +598,12 @@ export default function Blog() {
                 : cleanContent;
 
               return (
-                <article key={post.id} className="bg-white border border-slate-200 rounded-2xl shadow-md overflow-hidden hover:border-slate-300 transition-colors">
+                <article
+                  key={post.id}
+                  ref={impressionRef}
+                  data-post-id={post.id}
+                  className="bg-white border border-slate-200 rounded-2xl shadow-md overflow-hidden hover:border-slate-300 transition-colors"
+                >
                   
                   {/* Card Header */}
                   <div className="p-4 flex items-center justify-between">

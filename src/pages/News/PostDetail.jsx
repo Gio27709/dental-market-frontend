@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { getPostByIdAPI, togglePostSaveAPI } from "../../services/api";
-import { track } from "../../services/tracking";
+import { track, trackPostOnce } from "../../services/tracking";
 import { 
   ArrowLeft, 
   Calendar, 
@@ -34,7 +34,9 @@ export default function PostDetail() {
           setIsSaved(postData.saves?.some(s => s.user_id === user?.id) || false);
           if (viewTrackedFor.current !== postData.id) {
             viewTrackedFor.current = postData.id;
-            track("post_view", { post_id: postData.id });
+            // Mismo antiduplicado por sesión que el feed: si la misma persona
+            // llega por el feed y luego por el enlace directo, es UNA vista.
+            trackPostOnce("post_view", postData.id, { surface: "detalle" });
           }
         }
       } catch (err) {
@@ -56,7 +58,7 @@ export default function PostDetail() {
     try {
       await togglePostSaveAPI(post.id);
       if (nextSavedState) {
-        track("post_save", { post_id: post.id });
+        track("post_save", { post_id: post.id, surface: "detalle" });
         toast.success("Publicación guardada");
       } else {
         toast.success("Publicación eliminada de guardados");

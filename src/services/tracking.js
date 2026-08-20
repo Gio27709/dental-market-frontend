@@ -135,6 +135,33 @@ export function track(name, payload = {}) {
 
 export const trackPageView = (path) => track("page_view", { path });
 
+/**
+ * Eventos que solo deben contar UNA VEZ por publicación y sesión.
+ *
+ * Sin esto una impresión se dispararía en cada pasada de scroll y una vista en
+ * cada vez que se despliega el texto, así que "alcance" acabaría midiendo
+ * scroll en vez de personas. La marca vive en sessionStorage y no en memoria
+ * para que recargar la pestaña tampoco vuelva a contar.
+ */
+const ONCE_KEY = "dm_tracked_once";
+
+function alreadyTracked(mark) {
+  try {
+    const seen = JSON.parse(sessionStorage.getItem(ONCE_KEY) || "[]");
+    if (seen.includes(mark)) return true;
+    seen.push(mark);
+    sessionStorage.setItem(ONCE_KEY, JSON.stringify(seen.slice(-300)));
+    return false;
+  } catch {
+    return false; // sin almacenamiento se cuenta de más, nunca de menos
+  }
+}
+
+export function trackPostOnce(name, postId, payload = {}) {
+  if (!postId || alreadyTracked(`${name}:${postId}`)) return;
+  track(name, { post_id: postId, ...payload });
+}
+
 /** Se instala una sola vez desde App. Asegura el envío del último lote al salir. */
 export function initTracking() {
   if (typeof window === "undefined" || window.__dmTrackingReady) return;
