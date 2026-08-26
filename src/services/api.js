@@ -104,6 +104,11 @@ export const processRefundAPI = (id, action, admin_notes) =>
 
 // Admin Payouts Management API
 export const getAdminPayoutsAPI = (params) => api.get("/admin/payouts", { params });
+// Dinero en custodia por tienda, para la pantalla de Gestión de Retiros.
+export const getEscrowByStoreAPI = () => api.get("/admin/payouts/escrow");
+// Revierte una venta ya pagada a la tienda cuando el comprador no recibió el pedido.
+export const reverseEscrowItemAPI = (itemId, reason) =>
+  api.post(`/admin/payouts/escrow/${itemId}/reverse`, { reason });
 export const processAdminPayoutAPI = (id, formData) =>
   api.post(`/admin/payouts/${id}/process`, formData, {
     headers: {
@@ -127,6 +132,9 @@ export const revokeRiderApplicationAPI = (id, reason) => api.post(`/admin/rider-
 
 // Admin Store Moderation API
 export const getStoreDetailsAPI = (userId) => api.get(`/admin/store-applications/stores/${userId}/details`);
+export const getStoreActivityAPI = (userId, days = 30) =>
+  api.get(`/admin/store-applications/stores/${userId}/activity`, { params: { days } });
+export const getAdminStoreStatsAPI = (params) => api.get("/admin/store-applications/stats", { params });
 export const suspendStoreAPI = (userId, reason) => api.post(`/admin/store-applications/stores/${userId}/suspend`, { reason });
 export const reactivateStoreAPI = (userId) => api.post(`/admin/store-applications/stores/${userId}/reactivate`);
 export const revokeStoreAPI = (userId, reason) => api.post(`/admin/store-applications/stores/${userId}/revoke`, { reason });
@@ -250,6 +258,8 @@ export const getReputationAnalyticsAPI = (params) => api.get("/admin/analytics/r
 export const getDemandAnalyticsAPI = (params) => api.get("/admin/analytics/demand", { params });
 export const getCatalogAnalyticsAPI = (params) => api.get("/admin/analytics/catalog", { params });
 export const getTreasuryAnalyticsAPI = (params) => api.get("/admin/analytics/treasury", { params });
+// Escrow de una tienda concreta, para su ficha en el panel de admin.
+export const getStoreEscrowAPI = (storeId) => api.get(`/admin/analytics/store-escrow/${storeId}`);
 export const getOnboardingAnalyticsAPI = (params) => api.get("/admin/analytics/onboarding", { params });
 export const getPromotionsAnalyticsAPI = (params) => api.get("/admin/analytics/promotions", { params });
 export const getLogisticsDeepAnalyticsAPI = (params) => api.get("/admin/analytics/logistics-deep", { params });
@@ -279,8 +289,12 @@ export const getRiderStatsAPI = () => api.get("/delivery/stats");
 // Admin Product Moderation API
 export const getAllAdminProductsAPI = (params) => api.get("/products/admin/all", { params });
 export const getPendingProductsAPI = () => api.get("/products/pending");
-export const moderateProductAPI = (id, action) =>
-  api.put(`/products/${id}/moderate`, { action });
+export const bulkModerateProductsAPI = (ids, action, reason, note) =>
+  api.put("/products/admin/bulk-moderate", { ids, action, reason, note });
+export const getAdminCatalogAPI = (params) => api.get("/products/admin/catalog", { params });
+export const getProductModerationLogAPI = (id) => api.get(`/products/admin/${id}/moderation-log`);
+export const moderateProductAPI = (id, action, reason, note) =>
+  api.put(`/products/${id}/moderate`, { action, reason, note });
 
 // Categories API
 export const getCategoriesAPI = () => api.get("/categories");
