@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import PropTypes from "prop-types";
 import toast from "react-hot-toast";
+import SearchableSelect from "../../components/ui/SearchableSelect";
+import "../../components/ui/SearchableSelect.css";
+import { ListBulletIcon, CalendarIcon, SearchIcon } from "../../components/ui/FilterIcons";
 import {
   getAdminStoreApplicationsAPI,
   approveStoreApplicationAPI,
@@ -14,10 +17,16 @@ import {
   revokeStoreAPI,
 } from "../../services/api";
 import StoreDetailSlideOver from "../../components/admin/StoreDetailSlideOver";
+import StoreStatsTab from "../../components/admin/StoreStatsTab";
 import ApplicationReviewSlideOver from "../../components/admin/ApplicationReviewSlideOver";
 import { useAdminStats } from "../../context/AdminStatsContext";
 
-const PAGE_SIZES = [10, 25, 50, 100];
+const PAGE_OPTIONS = [
+  { value: 10, label: "10 por página" },
+  { value: 25, label: "25 por página" },
+  { value: 50, label: "50 por página" },
+  { value: 100, label: "100 por página" },
+];
 
 // El backend rechaza los lotes de más de 100 (bulkDeleteApplications). Se avisa
 // aquí antes de enviar, en vez de dejar que devuelva un 400.
@@ -28,6 +37,8 @@ const TABS = [
   { key: "pending", label: "Pendientes" },
   { key: "approved", label: "Operativas" },
   { key: "rejected", label: "Rechazadas" },
+  // Estadísticas no lista filas: no tiene contador ni usa el listado paginado.
+  { key: "stats", label: "Estadísticas" },
 ];
 
 // `store_profiles` no tiene columna `id`: su clave primaria es `user_id`. Sin esto,
@@ -37,6 +48,49 @@ const rowKey = (row) => row.id || row.user_id;
 
 const fmtDate = (iso) =>
   new Date(iso).toLocaleDateString("es-VE", { day: "2-digit", month: "short", year: "numeric" });
+
+const fmtDateTime = (iso) =>
+  iso
+    ? new Date(iso).toLocaleString("es-VE", {
+        day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+      })
+    : "Sin señal registrada";
+
+// Colores del nivel de sueño. El backend manda `activity.level`; los umbrales viven
+// allí para que el listado y el panel de detalle no se contradigan.
+const DORMANCY_TONES = {
+  active: "text-emerald-600",
+  cooling: "text-amber-600",
+  dormant: "text-orange-600",
+  abandoned: "text-red-600",
+  unknown: "text-slate-300",
+};
+
+/**
+ * Columna "Inactiva desde": los días se leen de un vistazo, la fecha exacta va en el
+ * title. Solo las tiendas operativas la tienen; una solicitud no tiene nada que dormir.
+ */
+const InactiveCell = ({ activity }) => {
+  if (!activity) return <span className="text-slate-300">—</span>;
+  const { days, level, label, lastAt } = activity;
+  return (
+    <span
+      className={`whitespace-nowrap tabular-nums ${DORMANCY_TONES[level] || DORMANCY_TONES.unknown}`}
+      title={`${label} · Última señal: ${fmtDateTime(lastAt)}`}
+    >
+      {days === null ? "Sin señal" : days === 0 ? "Hoy" : `${days} d`}
+    </span>
+  );
+};
+
+InactiveCell.propTypes = {
+  activity: PropTypes.shape({
+    days: PropTypes.number,
+    level: PropTypes.string,
+    label: PropTypes.string,
+    lastAt: PropTypes.string,
+  }),
+};
 
 const Pill = ({ tone, children }) => (
   <span
@@ -149,6 +203,12 @@ export default function StoreApplications() {
     // Cada pestaña tarda distinto (Operativas ~1.2s, Pendientes ~0.8s). Sin este
     // contador, cambiar de pestaña rápido deja que la respuesta lenta pise a la
     // buena y acabas viendo las tiendas operativas bajo la pestaña de pendientes.
+    // Estadísticas trae sus propios datos: pedir aquí mandaría `tab=stats`, que el
+    // backend no conoce y resolvería como "pending".
+    if (activeTab === "stats") {
+      setLoading(false);
+      return;
+    }
     const requestId = ++latestRequest.current;
     try {
       setLoading(true);
@@ -553,70 +613,103 @@ export default function StoreApplications() {
               }`}
             >
               {t.label}
-              <span
-                className={`ml-1.5 tabular-nums text-xs ${
-                  activeTab === t.key ? "text-[#6b1e96]" : "text-slate-400"
-                }`}
-              >
-                {counts[t.key]}
-              </span>
+              {counts[t.key] !== undefined && (
+                <span
+                  className={`ml-1.5 tabular-nums text-xs ${
+                    activeTab === t.key ? "text-[#6b1e96]" : "text-slate-400"
+                  }`}
+                >
+                  {counts[t.key]}
+                </span>
+              )}
             </button>
           ))}
         </div>
       </div>
 
+      {activeTab === "stats" ? (
+        <StoreStatsTab
+          onOpenStore={(s) =>
+            setSlideOverStore({ user_id: s.storeId, business_name: s.businessName, logo_url: s.logoUrl })
+          }
+        />
+      ) : (
+        <>
       {/* ── Tabla, con su barra de filtros integrada en la misma tarjeta ── */}
       <div className="bg-white rounded-xl ring-1 ring-slate-900/[0.07] shadow-sm shadow-slate-900/[0.03] overflow-hidden relative">
-        <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-          <div className="relative flex-1 min-w-[220px]">
-            <svg
-              className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-              />
-            </svg>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
+          {/* Buscador */}
+          <div style={{ position: "relative", marginBottom: "16px" }}>
+            <SearchIcon style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#9ca3af" }} />
             <input
               type="text"
-              placeholder="Buscar por nombre, RIF o código…"
+              placeholder="Buscar por nombre comercial, RIF o código de la tienda..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-slate-50 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 ring-1 ring-transparent focus:outline-none focus:bg-white focus:ring-slate-900/10 transition-colors"
+              style={{
+                width: "100%",
+                padding: "12px 14px 12px 42px",
+                borderRadius: "10px",
+                border: "1.5px solid #e5e7eb",
+                fontSize: "13px",
+                outline: "none",
+                transition: "border-color 0.2s, box-shadow 0.2s",
+                background: "#fafafa",
+                color: "#1f2937",
+                boxSizing: "border-box",
+              }}
+              onFocus={(e) => { e.target.style.borderColor = "#6b1e96"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(107,30,150,0.08)"; }}
+              onBlur={(e) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none"; }}
             />
           </div>
 
-          {[
-            ["Desde", startDate, setStartDate],
-            ["Hasta", endDate, setEndDate],
-          ].map(([label, value, setter]) => (
-            <div
-              key={label}
-              className="flex items-center gap-1.5 bg-slate-50 rounded-lg pl-2.5 pr-1 ring-1 ring-transparent focus-within:bg-white focus-within:ring-slate-900/10 transition-colors"
-            >
-              <span className="text-xs text-slate-400">{label}</span>
+          {/* Fila de filtros */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
+            {/* Rango de fechas */}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1 1 260px", minWidth: 0, background: "#f9fafb", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e5e7eb", transition: "all 0.2s" }} className="date-filter-container">
+              <CalendarIcon className="h-4 w-4" style={{ color: "#6b1e96", flexShrink: 0 }} />
               <input
                 type="date"
-                value={value}
-                onChange={(e) => setter(e.target.value)}
-                className="text-sm py-1.5 pr-1 text-slate-700 bg-transparent border-0 focus:outline-none"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                style={{ background: "transparent", border: "none", fontSize: "12px", color: startDate ? "#1f2937" : "#9ca3af", outline: "none", cursor: "pointer", fontWeight: 500, flex: "1 1 0", minWidth: 0 }}
+                title="Fecha desde"
+              />
+              <span style={{ fontSize: "12px", color: "#d1d5db", fontWeight: "bold", flexShrink: 0 }}>→</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                style={{ background: "transparent", border: "none", fontSize: "12px", color: endDate ? "#1f2937" : "#9ca3af", outline: "none", cursor: "pointer", fontWeight: 500, flex: "1 1 0", minWidth: 0 }}
+                title="Fecha hasta"
               />
             </div>
-          ))}
 
-          {hasFilters && (
-            <button
-              onClick={clearFilters}
-              className="px-2.5 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              Limpiar
-            </button>
-          )}
+            {/* Resultados por página */}
+            <div style={{ flex: "0 0 155px" }}>
+              <SearchableSelect
+                options={PAGE_OPTIONS}
+                value={perPage}
+                onChange={(val) => setPerPage(Number(val))}
+                placeholder="10 por página"
+                searchPlaceholder="Buscar..."
+                icon={<ListBulletIcon className="h-4 w-4" />}
+              />
+            </div>
+
+            {/* Limpiar filtros */}
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                style={{ flex: "0 0 auto", display: "flex", alignItems: "center", gap: "6px", padding: "10px 16px", borderRadius: "8px", border: "1.5px solid rgba(107,30,150,0.15)", background: "rgba(107,30,150,0.04)", color: "#6b1e96", fontSize: "12px", fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}
+              >
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Limpiar
+              </button>
+            )}
+          </div>
         </div>
 
         {loading && (
@@ -659,10 +752,15 @@ export default function StoreApplications() {
                         />
                       </th>
                     )}
-                    {["Tienda", "Titular", "Registro", "Estado"].map((h) => (
+                    {["Tienda", "Titular", "Registro", "Inactiva desde", "Estado"].map((h) => (
                       <th
                         key={h}
                         className="px-4 py-2 text-[11px] font-medium text-slate-400 uppercase tracking-wider"
+                        title={
+                          h === "Inactiva desde"
+                            ? "Días desde la última señal del titular: entró, navegó, publicó un producto o tocó el inventario. No cuenta los pedidos recibidos, que los genera el comprador."
+                            : undefined
+                        }
                       >
                         {h}
                       </th>
@@ -719,6 +817,9 @@ export default function StoreApplications() {
                       <td className="px-4 py-3 align-middle text-[13.5px] text-slate-500 whitespace-nowrap tabular-nums">
                         {fmtDate(app.created_at)}
                       </td>
+                      <td className="px-4 py-3 align-middle text-[13.5px] font-medium">
+                        <InactiveCell activity={app.activity} />
+                      </td>
                       <td className="px-4 py-3 align-middle">{statusPill(app)}</td>
                       <td className="px-4 py-3 align-middle">{rowActions(app)}</td>
                     </tr>
@@ -760,6 +861,8 @@ export default function StoreApplications() {
                         ["Titular", app.users?.full_name || "N/A"],
                         ["Email", app.users?.email || "—"],
                         ["Registro", fmtDate(app.created_at)],
+                        // Solo las tiendas operativas traen actividad.
+                        ...(app.activity ? [["Inactiva", <InactiveCell key="inactiva" activity={app.activity} />]] : []),
                       ].map(([label, val]) => (
                         <div key={label} className="flex gap-2">
                           <span className="text-slate-400 min-w-[70px] shrink-0">{label}</span>
@@ -853,20 +956,7 @@ export default function StoreApplications() {
             {/* ── Paginación ── */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-2.5 border-t border-slate-100">
               <div className="flex items-center gap-4">
-                <label className="flex items-center gap-1.5 text-xs text-slate-400">
-                  Mostrar
-                  <select
-                    value={perPage}
-                    onChange={(e) => setPerPage(Number(e.target.value))}
-                    className="bg-slate-50 rounded-md px-1.5 py-1 text-xs text-slate-700 ring-1 ring-transparent focus:outline-none focus:ring-slate-900/10 cursor-pointer"
-                  >
-                    {PAGE_SIZES.map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                {/* El selector de "N por página" vive arriba, en la fila de filtros */}
                 <span className="text-xs text-slate-400 tabular-nums">
                   {(page - 1) * perPage + 1}–{Math.min(page * perPage, total)} de{" "}
                   <span className="font-medium text-slate-600">{total}</span>
@@ -922,6 +1012,8 @@ export default function StoreApplications() {
           </>
         )}
       </div>
+        </>
+      )}
 
       {/* ── Modales de confirmación ── */}
       {approveModal.open && (
