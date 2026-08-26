@@ -6,25 +6,26 @@
   --color-secondary-500: #10b981;
 
   /* ── Analíticas: superficies ── */
-  --color-fx-base: #12071f;
-  --color-fx-panel: #1b0d31;
-  --color-fx-raised: #24123f;
-  --color-fx-inset: #0d0418;
-  --color-fx-line: #ffffff14;
-  --color-fx-line-strong: #ffffff29;
+  --color-fx-base: #f9f6fd;
+  --color-fx-panel: #ffffff;
+  --color-fx-raised: #f1ebf9;
+  --color-fx-inset: #f7f4fc;
+  --color-fx-line: #ece5f7;
+  --color-fx-line-strong: #dcd2ec;
+  --color-fx-line-outer: #cebfe6;
 
   /* ── Analíticas: texto ── */
-  --color-fx-text: #f4f1f8;
-  --color-fx-muted: #a99bc4;
-  --color-fx-faint: #7b6c99;
+  --color-fx-text: #33243d;
+  --color-fx-muted: #5c5268;
+  --color-fx-faint: #877f92;
 
   /* ── Analíticas: acento y series ── */
-  --color-fx-accent: #c3ff00;
-  --color-fx-violet: #a855f7;
-  --color-fx-pos: #34d399;
-  --color-fx-neg: #fb7185;
-  --color-fx-warn: #fbbf24;
-  --color-fx-info: #38bdf8;
+  --color-fx-accent: #6b1e96;
+  --color-fx-violet: #7c4f9e;
+  --color-fx-pos: #4f7d33;
+  --color-fx-neg: #b8482f;
+  --color-fx-warn: #9a6a10;
+  --color-fx-info: #3f7794;
 }
 
 html, body {
@@ -35,6 +36,44 @@ html, body {
 body {
   background-color: #f8fafc;
   color: #0f172a;
+}
+
+/* Sombra de tarjeta de marca: la misma que usan los paneles de /account. Sobre el lila
+   del fondo, una sombra neutra se ve sucia; teñirla de morado la integra. */
+.shadow-brand {
+  box-shadow: 0 4px 24px rgba(107, 30, 150, 0.06);
+}
+
+.shadow-brand-lg {
+  box-shadow: 0 12px 32px rgba(107, 30, 150, 0.12);
+}
+
+/* ── Aparición al hacer scroll (componente Reveal) ──
+   Solo opacity y transform: el navegador las resuelve en el compositor, sin recalcular
+   layout, así que el scroll no pierde fluidez ni en móvil. */
+.reveal {
+  opacity: 0;
+  /* 32px y un punto de escala: suficiente para que el movimiento se lea como
+     intencionado, lejos todavía de un efecto de plantilla. */
+  transform: translate3d(0, 32px, 0) scale(0.985);
+  transition:
+    opacity 620ms cubic-bezier(0.16, 0.84, 0.44, 1),
+    transform 680ms cubic-bezier(0.16, 0.84, 0.44, 1);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Quien pide menos movimiento en su sistema ve la página quieta y completa. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 /* Store Profile — Panel entry animation */
@@ -202,11 +241,11 @@ body {
   background: transparent;
 }
 .fx-rail::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(51, 36, 61, 0.16);
   border-radius: 10px;
 }
 .fx-rail::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.22);
+  background-color: rgba(51, 36, 61, 0.3);
 }
 
 /* Entrada de contenido al cambiar de área. Sin librería de animación. */

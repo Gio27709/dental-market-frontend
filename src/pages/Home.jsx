@@ -15,6 +15,7 @@ import TopSelling from "../components/home/TopSelling";
 import DualBanners from "../components/home/DualBanners";
 import CatalogSection from "../components/home/CatalogSection";
 import BlogSection from "../components/home/BlogSection";
+import Reveal from "../components/Reveal";
 
 export default function Home() {
   const { products, loading, error, applyFilters } = useProducts();
@@ -52,34 +53,47 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Hero Banner Integrado */}
+    // Mismo lila de marca que usa /account (#f1ecf6). El layout público pinta
+    // `bg-gray-50` para todas sus rutas, así que el home lo cubre con su propio fondo,
+    // arrancando casi blanco bajo el hero para que la transición no se vea como un corte.
+    <div
+      className="min-h-screen"
+      style={{ background: "linear-gradient(180deg, #faf9fc 0px, #f1ecf6 420px)" }}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* El hero no se anima: es lo primero que se pinta y retrasarlo penalizaría la
+          sensación de carga. Todo lo que hay debajo aparece al llegar a ello. */}
       <HeroBanner />
 
       {/* --- SECCIÓN: FEATURES, MARCAS Y TENDENCIAS --- */}
-      <FeaturesBar />
-      <BrandsTicker />
+      <Reveal><FeaturesBar /></Reveal>
+      <Reveal><BrandsTicker /></Reveal>
       {/* --- ZONA VIP TENDENCIAS (Fase 1) --- */}
-      <div className="bg-gradient-to-b from-white via-slate-50/50 to-[#f8f9fc] rounded-[32px] p-6 sm:p-10 mb-12 border border-slate-100 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] relative overflow-hidden">
-        {/* Detalles decorativos */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#6b1e96] via-[#c3ff00] to-transparent opacity-70"></div>
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#6b1e96]/5 rounded-full blur-3xl pointer-events-none"></div>
+      <Reveal>
+        <div className="bg-gradient-to-b from-white via-slate-50/50 to-[#f8f9fc] rounded-[32px] p-6 sm:p-10 mb-12 border border-slate-100 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)] relative overflow-hidden">
+          {/* Detalles decorativos */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#6b1e96] via-[#c3ff00] to-transparent opacity-70"></div>
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#6b1e96]/5 rounded-full blur-3xl pointer-events-none"></div>
 
-        <TopCategoriesRow />
-        <TrendingProducts />
-      </div>
-      <PromoBanners />
-      <FeaturedDealsGrid products={products} />
-      <DealOfTheDay products={products} />
-      <TopSelling products={products} />
-      <DualBanners />
-      <CatalogSection
-        products={products}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-      />
-      <BlogSection />
+          <TopCategoriesRow />
+          <TrendingProducts />
+        </div>
+      </Reveal>
+      <Reveal><PromoBanners /></Reveal>
+      <Reveal><FeaturedDealsGrid products={products} /></Reveal>
+      <Reveal><DealOfTheDay products={products} /></Reveal>
+      <Reveal><TopSelling products={products} /></Reveal>
+      <Reveal><DualBanners /></Reveal>
+      <Reveal>
+        <CatalogSection
+          products={products}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+        />
+      </Reveal>
+      <Reveal><BlogSection /></Reveal>
       {/* -------------------------------------- */}
+      </div>
     </div>
   );
 }

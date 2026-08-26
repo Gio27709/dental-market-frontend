@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { getPromotionsAPI, getPromotionByIdAPI } from "../services/api";
 import ProductCard from "../components/ProductCard";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import useCountdown from "../hooks/useCountdown";
 
 export default function Promotions() {
   const [promotions, setPromotions] = useState([]);
@@ -10,7 +11,8 @@ export default function Promotions() {
   const [promoProducts, setPromoProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(false);
-  const [timeLeft, setTimeLeft] = useState("");
+  const [searchParams] = useSearchParams();
+  const requestedPromoId = searchParams.get("promo");
 
   // Fetch all promotions
   useEffect(() => {
@@ -20,10 +22,11 @@ export default function Promotions() {
         const { data } = await getPromotionsAPI();
         const promos = data.data || [];
         setPromotions(promos);
-        // Auto-select first promotion
-        if (promos.length > 0) {
-          loadPromotionProducts(promos[0].id);
-          setActivePromo(promos[0]);
+        // El deep link del home manda; si esa promo ya no existe, cae en la primera.
+        const initial = promos.find((p) => p.id === requestedPromoId) || promos[0];
+        if (initial) {
+          loadPromotionProducts(initial.id);
+          setActivePromo(initial);
         }
       } catch (err) {
         console.error("Error loading promotions:", err);
@@ -32,7 +35,7 @@ export default function Promotions() {
       }
     };
     fetchPromotions();
-  }, []);
+  }, [requestedPromoId]);
 
   const loadPromotionProducts = async (promoId) => {
     try {
@@ -52,36 +55,7 @@ export default function Promotions() {
     loadPromotionProducts(promo.id);
   };
 
-  // Ticking Countdown Effect
-  useEffect(() => {
-    if (!activePromo?.ends_at) {
-      setTimeLeft("");
-      return;
-    }
-
-    const updateTimer = () => {
-      const diff = new Date(activePromo.ends_at) - new Date();
-      if (diff <= 0) {
-        setTimeLeft("Finalizado");
-        return;
-      }
-      const days = Math.floor(diff / 86400000);
-      const hours = Math.floor((diff % 86400000) / 3600000);
-      const minutes = Math.floor((diff % 3600000) / 60000);
-      const seconds = Math.floor((diff % 60000) / 1000);
-
-      if (days > 0) {
-        setTimeLeft(`${days}d ${hours}h ${minutes}m`);
-      } else {
-        const pad = (n) => String(n).padStart(2, "0");
-        setTimeLeft(`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`);
-      }
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  }, [activePromo]);
+  const { label: timeLeft } = useCountdown(activePromo?.ends_at);
 
   if (loading) {
     return (

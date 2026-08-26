@@ -312,7 +312,7 @@ export default function HomeContentManager() {
         <div className="p-4 overflow-y-auto flex-1 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-sm font-bold text-gray-700">Features ({features.length})</h3>
-            <AddButton onClick={() => update({...d, features: [...features, {icon:'star', title:'', description:''}]})} text="Añadir Feature" />
+            <AddButton onClick={() => update({...d, features: [...features, {icon:'star', title:'', description:'', link:''}]})} text="Añadir Feature" />
           </div>
           <div className="space-y-3">
             {features.map((f, i) => (
@@ -325,6 +325,12 @@ export default function HomeContentManager() {
                   <Field label="Ícono (Material)" value={f.icon} onChange={v => { const arr = [...features]; arr[i] = {...arr[i], icon: v}; update({...d, features: arr}); }} placeholder="support_agent" />
                   <Field label="Título" value={f.title} onChange={v => { const arr = [...features]; arr[i] = {...arr[i], title: v}; update({...d, features: arr}); }} />
                   <Field label="Descripción" value={f.description} onChange={v => { const arr = [...features]; arr[i] = {...arr[i], description: v}; update({...d, features: arr}); }} />
+                </div>
+                <div className="mt-2">
+                  <Field label="Enlace al hacer click (opcional)" value={f.link} onChange={v => { const arr = [...features]; arr[i] = {...arr[i], link: v}; update({...d, features: arr}); }} placeholder="/terminos#pago-escrow" />
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Ruta interna (<code>/devoluciones</code>, <code>/terminos#envios</code>, <code>/account/support</code>) o URL completa (se abre en otra pestaña). Si lo dejas vacío o escribes <code>#</code>, se usa el destino por defecto de esa tarjeta.
+                  </p>
                 </div>
               </div>
             ))}
@@ -437,8 +443,18 @@ export default function HomeContentManager() {
         <div className="p-4 overflow-y-auto flex-1 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-sm font-bold text-gray-700">Banners Promocionales ({banners.length})</h3>
-            <AddButton onClick={() => update({...d, banners: [...banners, {position:'left',heading:'',description:'',button_text:'',button_link:'#',button_color:'primary',image_url:'',bg_color:'gray-100'}]})} text="Añadir Banner" />
+            <AddButton onClick={() => update({...d, banners: [...banners, {position:'left',heading:'',description:'',button_text:'',button_link:'',button_color:'primary',image_url:'',bg_color:'gray-100'}]})} text="Añadir Banner" />
           </div>
+          <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-gray-700 leading-relaxed space-y-1">
+            <div className="flex items-center gap-2 font-bold text-blue-700">
+              <span className="material-symbols-outlined text-base">info</span>
+              Cómo funcionan estos banners
+            </div>
+            <p>El banner <strong>central</strong> se reemplaza automáticamente por la promoción destacada activa: título, subtítulo, imagen, badge y cuenta atrás salen de Promociones. Lo que escribas aquí se usa solo cuando no hay ninguna promoción viva.</p>
+            <p>Los <strong>laterales</strong> siempre usan este contenido. Si guardas menos de 3 banners, los que falten se completan con los valores por defecto.</p>
+            <p>En <strong>Link Botón</strong>, un valor vacío o <code>#</code> significa &quot;usar el destino por defecto&quot;: <code>#</code> no navega a ninguna parte, así que se ignora.</p>
+          </div>
+
           {banners.map((b, i) => (
             <div key={i} className="bg-gray-50 p-4 border border-gray-200 rounded-lg space-y-3">
               <div className="flex justify-between items-center">
@@ -451,15 +467,13 @@ export default function HomeContentManager() {
                 <Field label="Título" value={b.heading} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], heading: v}; update({...d, banners: arr}); }} />
                 <Field label="Descripción" value={b.description} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], description: v}; update({...d, banners: arr}); }} />
                 <Field label="Texto Botón" value={b.button_text} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], button_text: v}; update({...d, banners: arr}); }} />
-                <Field label="Link Botón" value={b.button_link} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], button_link: v}; update({...d, banners: arr}); }} />
+                <Field label="Link Botón" value={b.button_link} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], button_link: v}; update({...d, banners: arr}); }} placeholder="/store-catalog?category=<id>" />
                 <Field label="Color Botón" value={b.button_color} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], button_color: v}; update({...d, banners: arr}); }} placeholder="sky, primary" />
               </div>
-              {b.discount_text !== undefined && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <Field label="Texto Descuento" value={b.discount_text} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], discount_text: v}; update({...d, banners: arr}); }} />
-                  <Field label="Sub-texto Descuento" value={b.discount_subtext} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], discount_subtext: v}; update({...d, banners: arr}); }} />
-                </div>
-              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Field label="Texto Descuento" value={b.discount_text} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], discount_text: v}; update({...d, banners: arr}); }} />
+                <Field label="Sub-texto Descuento" value={b.discount_subtext} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], discount_subtext: v}; update({...d, banners: arr}); }} />
+              </div>
               <ImageField label="Imagen" value={b.image_url} onChange={v => { const arr = [...banners]; arr[i] = {...arr[i], image_url: v}; update({...d, banners: arr}); }} />
             </div>
           ))}

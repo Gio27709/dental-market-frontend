@@ -1,8 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { FileText, Scale, CreditCard, Truck, AlertTriangle, Gavel, Users, Info } from "lucide-react";
 
 export default function TermsConditions() {
   const [activeTab, setActiveTab] = useState("buyers");
+  const { hash } = useLocation();
+  const targetAnchor = hash ? hash.slice(1) : "";
+  const [highlighted, setHighlighted] = useState("");
+  const highlightTimer = useRef(null);
 
   const buyerTerms = [
     {
@@ -29,6 +34,7 @@ export default function TermsConditions() {
     },
     {
       title: "2. Flujo de Pago Escrow (Custodia Segura)",
+      anchor: "pago-escrow",
       icon: CreditCard,
       content: (
         <div className="space-y-3">
@@ -51,6 +57,7 @@ export default function TermsConditions() {
     },
     {
       title: "3. Envíos y Tarifas",
+      anchor: "envios",
       icon: Truck,
       content: (
         <div className="space-y-3">
@@ -154,6 +161,28 @@ export default function TermsConditions() {
     },
   ];
 
+  // Deep link tipo /terminos#pago-escrow: abre la pestaña correcta, baja al apartado y lo resalta.
+  useEffect(() => {
+    if (!targetAnchor) return;
+    const tab = sellerTerms.some((t) => t.anchor === targetAnchor) ? "sellers" : "buyers";
+    setActiveTab(tab);
+
+    const raf = requestAnimationFrame(() => {
+      const el = document.getElementById(targetAnchor);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlighted(targetAnchor);
+      clearTimeout(highlightTimer.current);
+      highlightTimer.current = setTimeout(() => setHighlighted(""), 2500);
+    });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(highlightTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetAnchor]);
+
   return (
     <div className="bg-[#f9f9ff] min-h-screen py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Decorative Header Banner */}
@@ -214,7 +243,13 @@ export default function TermsConditions() {
             {(activeTab === "buyers" ? buyerTerms : sellerTerms).map((term, index) => {
               const Icon = term.icon;
               return (
-                <div key={index} className="flex gap-4">
+                <div
+                  key={index}
+                  id={term.anchor}
+                  className={`flex gap-4 scroll-mt-28 rounded-2xl transition-colors duration-500 ${
+                    term.anchor && highlighted === term.anchor ? "bg-[#c3ff00]/20 ring-2 ring-[#c3ff00] -m-3 p-3" : ""
+                  }`}
+                >
                   <div className="flex-shrink-0 bg-[#6b1e96]/5 p-3 rounded-2xl h-12 w-12 flex items-center justify-center">
                     <Icon className="w-6 h-6 text-[#6b1e96]" />
                   </div>
