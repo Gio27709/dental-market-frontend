@@ -394,3 +394,51 @@
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Estado "filtro aplicado" (.ss-active)
+   Aditivo: solo se pinta si quien usa el componente pone la clase, así que las
+   pantallas que ya lo usaban no cambian. El morado es el del panel de admin y
+   avisa de que la lista está recortada aunque no estés mirando los chips.
+   ───────────────────────────────────────────────────────────────────────────── */
+.searchable-select.ss-active .searchable-select__trigger {
+  border-color: #6b1e96;
+  background-color: #faf5ff;
+  color: #6b1e96;
+  font-weight: 500;
+}
+
+.searchable-select.ss-active .searchable-select__trigger:hover {
+  border-color: #581c87;
+  box-shadow: 0 1px 3px rgba(107, 30, 150, 0.15);
+}
+
+.searchable-select.ss-active .searchable-select__chevron {
+  color: #6b1e96;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Variante en línea (.ss-inline)
+   El wrapper base mide 100% porque nació dentro de rejillas de formulario. En una
+   barra de filtros horizontal eso empuja a cada control a su propia fila. Esta
+   variante lo deja medir por su contenido, con tope para que un nombre de tienda
+   largo no se coma la barra.
+   ───────────────────────────────────────────────────────────────────────────── */
+.searchable-select.ss-inline {
+  width: auto;
+  min-width: 165px;
+  max-width: 230px;
+  flex: 0 1 auto;
+}
+
+.searchable-select.ss-inline .searchable-select__trigger {
+  padding: 0.375rem 0.625rem;
+  min-height: 34px;
+  font-size: 0.8125rem;
+}
+
+/* El desplegable no hereda el ancho recortado del trigger: las opciones se leen
+   enteras aunque el botón sea estrecho. */
+.searchable-select.ss-inline .searchable-select__dropdown {
+  min-width: 240px;
+}
