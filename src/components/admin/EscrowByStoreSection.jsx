@@ -64,7 +64,20 @@ const CLASE_ITEM = {
   legacy: { label: "Legado", cls: "bg-gray-100 text-gray-400" }
 };
 
-const descuadrada = (s) => Number(s.wallet_pending) !== Number(s.retained);
+// Descuadre contable: lo que dice el saldo de la tienda contra lo que suma su libro mayor.
+//
+// Antes esto comparaba `wallet_pending` con `retained`. Esa comparación no podía dar verde
+// nunca: `balance_pending` era una columna que nadie mantenía y valía 0.00 en todas las
+// billeteras, así que cualquier tienda con escrow vivo salía en rojo permanentemente y la
+// alarma no informaba de nada. Desde la migración 061 esa columna es un espejo de la misma
+// vista de la que sale `retained`, o sea que compararlas sería compararla consigo misma.
+//
+// El invariante que sí puede romperse — y que de hecho estaba roto en $777.10 — es que el
+// saldo disponible coincida con la suma de los asientos que lo produjeron. Es el mismo que
+// vigila la pestaña de Tesorería.
+const CENTIMO = 0.005;
+const desfase = (s) => Number(s.balance_available || 0) - Number(s.ledger_sum || 0);
+const descuadrada = (s) => Math.abs(desfase(s)) >= CENTIMO;
 
 export default function EscrowByStoreSection({ data, loading, error, onReload }) {
   const [busqueda, setBusqueda] = useState("");
@@ -438,12 +451,25 @@ export default function EscrowByStoreSection({ data, loading, error, onReload })
                             e.stopPropagation();
                             setBilletera(cuadra ? "all" : "mismatch");
                           }}
+                          title={
+                            cuadra
+                              ? "El saldo disponible coincide con la suma de su libro mayor."
+                              : `Su saldo disponible y su libro mayor difieren en ${money(desfase(s))}: hay dinero en la billetera sin asiento que lo explique (o al revés).`
+                          }
                           className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-colors ${
                             cuadra ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600 hover:bg-red-100"
                           }`}
                         >
-                          {money(s.wallet_pending)} {cuadra ? "· cuadra" : "· descuadre"}
+                          {money(s.balance_available)} {cuadra ? "· cuadra" : `· descuadre ${money(desfase(s))}`}
                         </button>
+                        {Number(s.wallet_debt) > 0 && (
+                          <span
+                            className="block mt-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-orange-50 text-orange-600"
+                            title="Reembolsos que no se pudieron cobrar de sus saldos. Se descuenta de lo próximo que libere."
+                          >
+                            debe {money(s.wallet_debt)}
+                          </span>
+                        )}
                       </td>
                     </tr>,
 

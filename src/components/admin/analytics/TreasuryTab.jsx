@@ -84,7 +84,7 @@ export default function TreasuryTab() {
       </div>
 
       {/* Alertas de integridad: lo primero que debe ver quien abre esta pestaña */}
-      {(kpis.mismatchedWallets > 0 || kpis.orphanPayouts > 0 || parseFloat(kpis.fxDaysStale) > 7) && (
+      {(kpis.mismatchedWallets > 0 || kpis.orphanPayouts > 0 || kpis.refundsUnreconciled > 0 || parseFloat(kpis.fxDaysStale) > 7) && (
         <div className="bg-fx-neg/10 border border-fx-neg/40 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2 h-2 rounded-full bg-fx-neg animate-pulse" />
@@ -106,6 +106,14 @@ export default function TreasuryTab() {
                 <span className="font-semibold text-fx-neg">{kpis.orphanPayouts} retiros</span> por{" "}
                 <span className="font-semibold text-fx-neg">{money(kpis.orphanPayoutUsd)}</span> salieron
                 de una billetera sin una solicitud registrada que los respalde.
+              </li>
+            )}
+            {kpis.refundsUnreconciled > 0 && (
+              <li>
+                <span className="font-semibold text-fx-neg">{kpis.refundsUnreconciled} reembolsos</span> por{" "}
+                <span className="font-semibold text-fx-neg">{money(kpis.refundsUnreconciledUsd)}</span> no
+                cuadran: o se dieron por completados sin constancia de pago, o el dinero salió hacia el
+                comprador sin que se decidiera quién lo pone.
               </li>
             )}
             {parseFloat(kpis.fxDaysStale) > 7 && (
@@ -162,6 +170,13 @@ export default function TreasuryTab() {
               filters: { orphan_payout: true, allTime: true }
             })
           }
+        />
+        <KpiCard
+          title="Reembolsos que No Cuadran"
+          value={kpis.refundsUnreconciled}
+          format="number"
+          suffix={` · ${money(kpis.refundsUnreconciledUsd)}`}
+          tooltip={`Devuelto a compradores: ${money(kpis.refundedToBuyersUsd)}. Recuperado de las tiendas: ${money(kpis.chargedToStoresUsd)}. Sin recuperar de las tiendas: ${money(kpis.refundNotRecoveredUsd)}. Un reembolso puede no cobrarse legítimamente (si el dinero nunca salió de custodia no hay nada que recuperar), pero un descuadre que crece sin explicación es dinero perdiéndose.`}
         />
         <KpiCard
           title="Antigüedad de la Tasa BCV"
@@ -410,6 +425,46 @@ export default function TreasuryTab() {
           )}
         </div>
       </div>
+
+      {/* Reembolsos descuadrados */}
+      {(data?.refundIssues?.length || 0) > 0 && (
+        <div className="fx-card-danger">
+          <h3 className="text-base font-bold text-fx-text mb-1">Reembolsos que No Cuadran</h3>
+          <p className="text-xs text-fx-muted mb-4">
+            Devuelto a compradores <span className="font-semibold text-fx-text">{money(kpis.refundedToBuyersUsd)}</span>,
+            recuperado de las tiendas <span className="font-semibold text-fx-text">{money(kpis.chargedToStoresUsd)}</span>.
+            Sin recuperar: <span className="font-semibold text-fx-neg">{money(kpis.refundNotRecoveredUsd)}</span>.
+            No es pérdida por sí sola — si el escrow de ese ítem nunca se liberó, ese dinero seguía
+            en custodia y no hay nada que cobrarle a nadie.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-fx-muted">
+              <thead>
+                <tr className="border-b border-fx-line text-fx-muted uppercase tracking-wider font-bold">
+                  <th className="py-3 px-4">Resuelto</th>
+                  <th className="py-3 px-4">Comprador</th>
+                  <th className="py-3 px-4">Tienda</th>
+                  <th className="py-3 px-4">Monto</th>
+                  <th className="py-3 px-4">Qué falta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.refundIssues.map((r) => (
+                  <tr key={r.id} className="border-b border-fx-line hover:bg-fx-violet/5 transition-colors">
+                    <td className="py-3 px-4">
+                      {r.processed_at ? new Date(r.processed_at).toLocaleDateString("es-VE") : "—"}
+                    </td>
+                    <td className="py-3 px-4">{r.buyer_name || "—"}</td>
+                    <td className="py-3 px-4">{r.store_name || "—"}</td>
+                    <td className="py-3 px-4 font-semibold text-fx-neg">{money(r.amount_usd)}</td>
+                    <td className="py-3 px-4 text-fx-muted">{r.issue}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Retiros huérfanos */}
       {(data?.orphanPayouts?.length || 0) > 0 && (

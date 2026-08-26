@@ -99,8 +99,21 @@ export const getAdminStatsAPI = () =>
 // Admin Refund Management API
 export const getRefundRequestsAPI = (params) =>
   api.get("/admin/orders/refunds", { params });
-export const processRefundAPI = (id, action, admin_notes) =>
-  api.put(`/admin/orders/refunds/${id}/process`, { action, admin_notes });
+// Completar un reembolso exige adjuntar la captura de la transferencia, así que va como
+// multipart. Denegar viaja por el mismo sitio sin archivo.
+export const processRefundAPI = (id, { action, admin_notes, payment_reference, receipt }) => {
+  const formData = new FormData();
+  formData.append("action", action);
+  if (admin_notes) formData.append("admin_notes", admin_notes);
+  if (payment_reference) formData.append("payment_reference", payment_reference);
+  if (receipt) formData.append("receipt", receipt);
+  return api.put(`/admin/orders/refunds/${id}/process`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+};
+// Vuelve a pedirle al comprador los datos de cobro de un reembolso atascado.
+export const remindRefundDetailsAPI = (id) =>
+  api.post(`/admin/orders/refunds/${id}/remind`);
 
 // Admin Payouts Management API
 export const getAdminPayoutsAPI = (params) => api.get("/admin/payouts", { params });
@@ -347,6 +360,9 @@ export const resolvePenaltyAPI = (id, status, reason) =>
   api.put(`/admin/penalties/${id}/resolve`, { status, reason });
 export const getPenaltyStatsAPI = () =>
   api.get("/admin/penalties/stats");
+// El CSV se pide con los MISMOS filtros del listado, para que coincida con lo que se ve.
+export const exportPenaltiesAPI = (params) =>
+  api.get("/admin/penalties/export", { params, responseType: "blob" });
 
 // Store Penalties API (Self-service)
 export const getStorePenaltiesAPI = (params) =>

@@ -36,6 +36,10 @@ function RefundRequestBox({ order, refundReq, onRefresh }) {
   const isZellePayment = order.payment_method === "zelle";
   const [method, setMethod] = useState(isZellePayment ? "zelle" : "pago_movil"); // pago_movil, transferencia, zelle
   const [loading, setLoading] = useState(false);
+  // Corregir los datos ya enviados. Sin esto, un dígito mal en los 20 de la cuenta dejaba
+  // al comprador sin forma de avisar: la solicitud pasaba a 'processing' y se congelaba,
+  // y el dinero se transfería a donde él ya no podía cambiar.
+  const [editando, setEditando] = useState(false);
   const [formData, setFormData] = useState({
     bank: "",
     ci: "",
@@ -99,7 +103,8 @@ function RefundRequestBox({ order, refundReq, onRefresh }) {
       }
 
       await submitRefundDetailsAPI(refundReq.id, details);
-      toast.success("¡Datos de reembolso registrados exitosamente!");
+      toast.success(editando ? "¡Datos actualizados!" : "¡Datos de reembolso registrados exitosamente!");
+      setEditando(false);
       if (onRefresh) onRefresh();
     } catch (err) {
       toast.error(err.response?.data?.error || "Error al enviar los datos.");
@@ -127,17 +132,19 @@ function RefundRequestBox({ order, refundReq, onRefresh }) {
 
   return (
     <div className="mt-3 rounded-2xl p-4 bg-white border border-purple-100 shadow-sm transition-all duration-200 hover:shadow-md">
-      {/* Estado: PENDIENTE (Formulario) */}
-      {status === "pending" && (
+      {/* Estado: PENDIENTE (Formulario), o corrección de unos datos ya enviados */}
+      {(status === "pending" || editando) && (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5" style={{ borderBottom: "1px solid rgba(107,30,150,0.08)" }}>
             <div>
               <h4 className="font-extrabold text-sm text-[#1a0a2e] flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[#6b1e96]">monetization_on</span>
-                Completar Datos de Reembolso
+                {editando ? "Corregir Datos de Reembolso" : "Completar Datos de Reembolso"}
               </h4>
               <p className="text-[11px] text-gray-500 mt-0.5">
-                Ingresa los datos para recibir tu transferencia manual por administración.
+                {editando
+                  ? "Revisa lo que esté mal y vuelve a enviarlo. Sustituye a los datos anteriores."
+                  : "Ingresa los datos para recibir tu transferencia manual por administración."}
               </p>
             </div>
             <div className="text-right self-start sm:self-auto">
@@ -326,13 +333,23 @@ function RefundRequestBox({ order, refundReq, onRefresh }) {
             ) : (
               <span className="material-symbols-outlined text-[14px]">send</span>
             )}
-            {loading ? "Enviando..." : "Enviar Datos de Reembolso"}
+            {loading ? "Enviando..." : editando ? "Guardar Correcciones" : "Enviar Datos de Reembolso"}
           </button>
+          {editando && (
+            <button
+              type="button"
+              onClick={() => setEditando(false)}
+              disabled={loading}
+              className="w-full text-[11px] font-bold text-gray-500 hover:text-gray-700 disabled:opacity-50"
+            >
+              Cancelar y dejar los datos como estaban
+            </button>
+          )}
         </form>
       )}
 
       {/* Estado: PROCESSING */}
-      {status === "processing" && (
+      {status === "processing" && !editando && (
         <div className="space-y-3">
           <div className="flex items-center justify-between pb-2" style={{ borderBottom: "1px dashed rgba(107,30,150,0.1)" }}>
             <span className="text-xs font-bold text-[#6b1e96] flex items-center gap-1.5">
@@ -343,7 +360,27 @@ function RefundRequestBox({ order, refundReq, onRefresh }) {
           </div>
           <p className="text-[11px] leading-relaxed text-gray-500">
             Hemos recibido tus datos. El equipo de administración procesará tu transferencia manual y te notificaremos cuando esté lista.
+            {" "}¿Te equivocaste en algo? Puedes corregirlo mientras no se haya transferido.
           </p>
+          <button
+            type="button"
+            onClick={() => {
+              // Se precargan los datos ya enviados para que solo tenga que tocar lo que falla.
+              setMethod(refund_details?.method || (isZellePayment ? "zelle" : "pago_movil"));
+              setFormData({
+                bank: refund_details?.bank || "",
+                ci: refund_details?.ci || "",
+                phone: refund_details?.phone || "",
+                accountNumber: refund_details?.accountNumber || "",
+                holder: refund_details?.holder || "",
+                email: refund_details?.email || "",
+              });
+              setEditando(true);
+            }}
+            className="text-[11px] font-bold text-[#6b1e96] hover:underline"
+          >
+            Corregir mis datos
+          </button>
           {refund_details && (
             <div className="bg-[#fcf8ff] p-3 rounded-xl border border-purple-50 text-[10px] text-gray-700 space-y-1">
               <div className="font-bold text-[#6b1e96] uppercase text-[9px] mb-1.5 pb-1" style={{ borderBottom: "1px dashed rgba(107,30,150,0.1)" }}>
@@ -850,6 +887,30 @@ export default function OrderDetail() {
                       </div>
                     </div>
                   )}
+
+                  {/* REEMBOLSO DE UN ÍTEM NO CANCELADO
+                      El formulario de datos de cobro vivía únicamente dentro del aviso de
+                      "producto cancelado", atado a delivery_status === "cancelled". Pero
+                      una reversión de pago (POST /admin/payouts/escrow/:itemId/reverse)
+                      abre el reembolso con el ítem todavía en 'delivered': ese caso se
+                      quedaba sin formulario para siempre, y el aviso que le pide los datos
+                      al comprador lo llevaba a una página donde no había nada que
+                      rellenar. Aquí se cubre por la existencia de la solicitud, no por el
+                      estado de la entrega. */}
+                  {order.payment_status === "approved" &&
+                    item.delivery_status !== "cancelled" &&
+                    order.refund_requests?.some((r) => r.item_id === item.id) && (
+                      <div className="ml-[68px] sm:ml-20">
+                        <RefundRequestBox
+                          order={order}
+                          refundReq={order.refund_requests.find((r) => r.item_id === item.id)}
+                          onRefresh={async () => {
+                            const refreshed = await fetchOrderById(id);
+                            if (refreshed.success) setOrder(refreshed.order);
+                          }}
+                        />
+                      </div>
+                    )}
 
                   {/* FAILED DELIVERY ITEM ALERT */}
                   {item.delivery_status === "failed" && (

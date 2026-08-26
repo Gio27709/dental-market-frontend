@@ -290,14 +290,22 @@ export default function FinancialsTab() {
               )
             },
             {
-              // La billetera solo se actualiza cuando un admin la reconcilia a mano: la
-              // diferencia contra lo retenido delata las que llevan tiempo sin cuadrar.
+              // Saldo disponible contra la suma de su libro mayor. Antes esto comparaba
+              // `wallet_pending` con `retained`, una columna abandonada que valía 0.00 en
+              // todas las billeteras: la alarma estaba encendida siempre y no decía nada.
+              // Ver la nota larga en EscrowByStoreSection.jsx.
               header: "Su billetera dice",
               render: (r) => {
-                const cuadra = Number(r.wallet_pending) === Number(r.retained);
+                const desfase = Number(r.balance_available || 0) - Number(r.ledger_sum || 0);
+                const cuadra = Math.abs(desfase) < 0.005;
                 return (
-                  <span className={cuadra ? "text-emerald-300" : "text-rose-300 font-semibold"}>
-                    {money(r.wallet_pending)}{cuadra ? " · cuadra" : " · descuadre"}
+                  <span
+                    className={cuadra ? "text-emerald-300" : "text-rose-300 font-semibold"}
+                    title={cuadra
+                      ? "El saldo disponible coincide con la suma de su libro mayor."
+                      : `Saldo y libro mayor difieren en ${money(desfase)}.`}
+                  >
+                    {money(r.balance_available)}{cuadra ? " · cuadra" : ` · descuadre ${money(desfase)}`}
                   </span>
                 );
               }

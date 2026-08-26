@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { getRefundRequestsAPI, processRefundAPI } from "../../services/api";
+import { getRefundRequestsAPI, processRefundAPI, remindRefundDetailsAPI } from "../../services/api";
 import { formatOrderNumber, formatOrderDateTime, formatCurrencyUSD } from "../../utils/formatters";
 import { Link, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -34,7 +34,10 @@ export default function AdminRefunds() {
   const [processModal, setProcessModal] = useState(null);
   const [adminNotes, setAdminNotes] = useState("");
   const [referenceNumber, setReferenceNumber] = useState("");
+  const [receiptFile, setReceiptFile] = useState(null);
   const [processing, setProcessing] = useState(false);
+  // Id del reembolso cuyo recordatorio se está enviando, para deshabilitar solo ese botón.
+  const [reminding, setReminding] = useState(null);
 
   // Deep link desde notificaciones: /admin/refunds?order=<uuid>. Se resalta la(s)
   // fila(s) de ese pedido una sola vez. phase: 0 = primera carga, 1 = ya se saltó
@@ -113,25 +116,73 @@ export default function AdminRefunds() {
     })();
   }, [loading, refunds, activeTab, setSearchParams]);
 
+  const closeModal = () => {
+    setProcessModal(null);
+    setAdminNotes("");
+    setReferenceNumber("");
+    setReceiptFile(null);
+  };
+
+  // Le vuelve a pedir al comprador sus datos de cobro. Es lo que sustituye a "procesar"
+  // mientras el reembolso no tenga destino: antes el botón de pagar salía igual y se
+  // podía dar por pagado a ciegas.
+  const handleRemind = async (refund) => {
+    setReminding(refund.id);
+    try {
+      await remindRefundDetailsAPI(refund.id);
+      toast.success("Se le pidió al comprador que cargue sus datos de cobro.");
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "No se pudo enviar el recordatorio");
+    } finally {
+      setReminding(null);
+    }
+  };
+
   const handleProcess = async (action) => {
     if (!processModal) return;
 
-    if (action === "complete" && !referenceNumber.trim()) {
-      toast.error("El número de referencia de la transferencia es obligatorio para completar el reembolso.");
-      return;
+    if (action === "complete") {
+      // Las tres condiciones se vuelven a comprobar en el backend y en la propia base
+      // (constraint refund_pagado_con_respaldo). Aquí solo para avisar antes de enviar.
+      if (!processModal.refund_details) {
+        toast.error("Este reembolso todavía no tiene los datos de cobro del comprador.");
+        return;
+      }
+      if (!referenceNumber.trim()) {
+        toast.error("Indica la referencia de la transferencia.");
+        return;
+      }
+      if (!receiptFile) {
+        toast.error("Adjunta la captura de la transferencia.");
+        return;
+      }
+    }
+
+    if (action === "deny") {
+      if (adminNotes.trim().length < 10) {
+        toast.error("Explica en al menos 10 caracteres por qué se deniega. El comprador recibe ese motivo.");
+        return;
+      }
+      // Denegar deja al comprador sin su dinero y no tiene vuelta atrás. Antes se hacía
+      // de un solo click desde la fila, sin confirmar y sin motivo.
+      const seguro = window.confirm(
+        `¿Denegar el reembolso de ${formatCurrencyUSD(processModal.amount_usd)}?\n\n` +
+        "El comprador no recibirá ese dinero y la decisión no se puede revertir."
+      );
+      if (!seguro) return;
     }
 
     setProcessing(true);
     try {
-      const notes = action === "complete"
-        ? `Ref: #${referenceNumber.trim()}${adminNotes.trim() ? ` - ${adminNotes.trim()}` : ""}`
-        : adminNotes.trim() || null;
-
-      await processRefundAPI(processModal.id, action, notes);
+      await processRefundAPI(processModal.id, {
+        action,
+        admin_notes: adminNotes.trim() || null,
+        payment_reference: action === "complete" ? referenceNumber.trim() : null,
+        receipt: action === "complete" ? receiptFile : null,
+      });
       toast.success(action === "complete" ? "Reembolso marcado como completado" : "Reembolso denegado");
-      setProcessModal(null);
-      setAdminNotes("");
-      setReferenceNumber("");
+      closeModal();
       fetchData();
       refreshStats();
     } catch (err) {
@@ -283,14 +334,28 @@ export default function AdminRefunds() {
                     {/* Actions */}
                     {(r.status === "pending" || r.status === "processing") && (
                       <div className="flex gap-2 flex-shrink-0">
+                        {/* Sin datos del comprador no hay a dónde transferir: el botón de
+                            pagar da paso al de reclamárselos. Antes "Procesar" salía igual
+                            en ambos estados y por ahí se completaron 3 reembolsos a ciegas. */}
+                        {r.refund_details ? (
+                          <button
+                            onClick={() => setProcessModal(r)}
+                            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-sm hover:shadow-md transition-shadow"
+                          >
+                            ✅ Procesar
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleRemind(r)}
+                            disabled={reminding === r.id}
+                            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-white border border-amber-300 text-amber-700 hover:bg-amber-50 transition-colors disabled:opacity-50"
+                            title="Le pide al comprador que indique a qué cuenta enviarle el dinero"
+                          >
+                            {reminding === r.id ? "Enviando..." : "🔔 Recordar al cliente"}
+                          </button>
+                        )}
                         <button
                           onClick={() => setProcessModal(r)}
-                          className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-sm hover:shadow-md transition-shadow"
-                        >
-                          ✅ Procesar
-                        </button>
-                        <button
-                          onClick={() => { setProcessModal(r); setTimeout(() => handleProcess("deny"), 0); }}
                           className="px-4 py-2.5 rounded-xl text-xs font-bold bg-white border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
                         >
                           Denegar
@@ -304,6 +369,45 @@ export default function AdminRefunds() {
                       </div>
                     )}
                   </div>
+
+                  {!r.refund_details && (r.status === "pending" || r.status === "processing") && (
+                    <div className="px-5 pb-4 -mt-1">
+                      <div className="bg-amber-50 rounded-xl border border-amber-200 p-3 text-xs text-amber-900 flex items-start gap-2">
+                        <span className="text-sm leading-none mt-0.5">⏳</span>
+                        <div>
+                          <span className="font-bold">Falta saber a dónde enviar el dinero.</span>{" "}
+                          El comprador todavía no ha cargado sus datos de cobro, así que este
+                          reembolso no se puede pagar.
+                          {Number(r.details_reminder_count || 0) > 0 && (
+                            <span className="block mt-0.5 opacity-80">
+                              Recordatorios enviados: {r.details_reminder_count}
+                              {r.details_reminded_at && ` · último ${formatOrderDateTime(r.details_reminded_at)}`}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {r.status === "completed" && (r.payment_reference || r.payment_receipt_url) && (
+                    <div className="px-5 pb-4 -mt-1">
+                      <div className="bg-emerald-50 rounded-xl border border-emerald-200 p-3 text-xs text-emerald-900 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                        {r.payment_reference && (
+                          <span><span className="font-bold">Referencia:</span> {r.payment_reference}</span>
+                        )}
+                        {r.payment_receipt_url && (
+                          <a
+                            href={r.payment_receipt_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-bold underline hover:no-underline"
+                          >
+                            Ver captura de la transferencia
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {r.refund_details && (
                     <div className="px-5 pb-4 -mt-1 flex flex-col gap-2">
@@ -411,7 +515,7 @@ export default function AdminRefunds() {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => !processing && (setProcessModal(null), setAdminNotes(""), setReferenceNumber(""))}
+            onClick={() => !processing && closeModal()}
           />
           <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-fade-in-up">
             <div
@@ -477,38 +581,73 @@ export default function AdminRefunds() {
                 </div>
               )}
 
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                    Número de Referencia de Transferencia *
-                  </label>
-                  <input
-                    type="text"
-                    value={referenceNumber}
-                    onChange={(e) => setReferenceNumber(e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#6b1e96] focus:ring-2 focus:ring-[#6b1e96]/10"
-                    placeholder="Ej: 123456 o Ref# 987654"
-                    required
-                  />
+              {/* Sin datos de cobro no hay nada que rellenar: lo único posible es
+                  reclamárselos al comprador o denegar el reembolso con un motivo. */}
+              {!processModal.refund_details && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-800">
+                  <strong className="block mb-1">No se puede pagar todavía.</strong>
+                  El comprador aún no ha indicado a qué cuenta enviarle el dinero. Cierra esta
+                  ventana y usa <strong>Recordar al cliente</strong>, o deniega el reembolso
+                  explicando el motivo.
                 </div>
+              )}
+
+              <div className="space-y-3">
+                {processModal.refund_details && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                        Referencia de la transferencia *
+                      </label>
+                      <input
+                        type="text"
+                        value={referenceNumber}
+                        onChange={(e) => setReferenceNumber(e.target.value)}
+                        className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#6b1e96] focus:ring-2 focus:ring-[#6b1e96]/10"
+                        placeholder="Ej: 123456 o Ref# 987654"
+                        required
+                      />
+                    </div>
+
+                    {/* La captura no existía en ninguna parte del sistema: la referencia se
+                        guardaba como texto suelto dentro de las notas y no quedaba imagen
+                        de nada. Los retiros la exigen desde siempre; los reembolsos no. */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                        Captura del comprobante *
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                        onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                        className="w-full text-xs text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#6b1e96]/10 file:text-[#6b1e96] hover:file:bg-[#6b1e96]/20 cursor-pointer"
+                      />
+                      {receiptFile && (
+                        <p className="text-[11px] text-emerald-600 font-semibold mt-1.5">
+                          ✓ {receiptFile.name}
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                    Notas del admin (opcional)
+                    Notas del admin {processModal.refund_details ? "(opcional)" : "— obligatorio para denegar"}
                   </label>
                   <textarea
                     value={adminNotes}
                     onChange={(e) => setAdminNotes(e.target.value)}
                     className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none resize-none focus:border-[#6b1e96] focus:ring-2 focus:ring-[#6b1e96]/10"
                     rows={3}
-                    placeholder="Detalles extras de la transferencia, banco, etc."
+                    placeholder="Si deniegas, explica por qué: el comprador recibe este texto."
                   />
                 </div>
               </div>
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => { setProcessModal(null); setAdminNotes(""); setReferenceNumber(""); }}
+                  onClick={closeModal}
                   disabled={processing}
                   className="flex-1 py-3 rounded-xl text-sm font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                 >
@@ -523,8 +662,9 @@ export default function AdminRefunds() {
                 </button>
                 <button
                   onClick={() => handleProcess("complete")}
-                  disabled={processing}
-                  className="flex-[2] py-3 rounded-xl text-sm font-bold text-white transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                  disabled={processing || !processModal.refund_details}
+                  title={!processModal.refund_details ? "Falta saber a qué cuenta enviar el dinero" : undefined}
+                  className="flex-[2] py-3 rounded-xl text-sm font-bold text-white transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   style={{ background: "linear-gradient(135deg, #059669, #10b981)" }}
                 >
                   {processing ? (
