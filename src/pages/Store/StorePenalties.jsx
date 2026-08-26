@@ -1,21 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { getStorePenaltiesAPI, appealPenaltyAPI, acknowledgePenaltyAPI } from "../../services/api";
+import api, { getStorePenaltiesAPI, appealPenaltyAPI, acknowledgePenaltyAPI } from "../../services/api";
+import {
+  typeOf, statusOf, parseReason, hasAppeal, needsStoreAction, canAppeal, formatDelay,
+  hasLostReason,
+} from "../../utils/penalties";
 import { useStore } from "../../context/StoreContext";
 import toast from "react-hot-toast";
 
-const TYPE_CONFIG = {
-  warning:      { label: "Advertencia",  bg: "bg-amber-50 border-amber-200 text-amber-800", icon: "⚠️" },
-  fine:         { label: "Multa",        bg: "bg-orange-50 border-orange-200 text-orange-800", icon: "💸" },
-  suspension:   { label: "Suspensión",   bg: "bg-rose-50 border-rose-200 text-rose-800",    icon: "🚨" },
-  cancellation: { label: "Cancelación",  bg: "bg-slate-50 border-slate-200 text-slate-800",   icon: "🚫" },
-};
-
-const STATUS_CONFIG = {
-  pending_review: { label: "En Revisión",   bg: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-  applied:        { label: "Aplicada",    bg: "bg-rose-50 text-rose-700 border-rose-200" },
-  dismissed:      { label: "Descartada",  bg: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-};
+const PAGE_SIZE = 20;
 
 export default function StorePenalties() {
   const { storeProfile, fetchStoreStats } = useStore();
@@ -23,6 +16,12 @@ export default function StorePenalties() {
   const [penalties, setPenalties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState("");
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
+  // Los totales los calcula el backend sobre TODAS las sanciones de la tienda. Antes se
+  // calculaban aquí sobre el array ya filtrado: al filtrar por "Amonestaciones", el
+  // "Total de multas cobradas" se ponía en $0.00.
+  const [summary, setSummary] = useState({ total: 0, pending: 0, applied: 0, finesTotal: 0 });
   const [activeTab, setActiveTab] = useState("pending"); // pending | all
 
   // Deep link desde notificaciones: ?penalty=<uuid>
@@ -32,6 +31,28 @@ export default function StorePenalties() {
 
   // Info guide expand
   const [showGuide, setShowGuide] = useState(true);
+
+  // Las reglas del SLA las fija el administrador en `global_settings`, y esta guía las
+  // tenía escritas a mano ("24 horas", "Multa ($3.00)"). Coincidían por casualidad: el día
+  // que cambie la multa, la tienda estaría leyendo una cifra falsa en la misma pantalla
+  // donde se le cobra. Ambas claves son públicas en `PUBLIC_SETTINGS_KEYS`.
+  const [slaRules, setSlaRules] = useState(null);
+
+  useEffect(() => {
+    api.get("/admin/settings")
+      .then(({ data }) => {
+        const hours = Number(data?.data?.shipping_sla_hours?.hours);
+        const fine = Number(data?.data?.shipping_fine_amount_usd?.amount);
+        if (Number.isFinite(hours) && hours > 0 && Number.isFinite(fine)) {
+          setSlaRules({ hours, fine });
+        }
+      })
+      .catch(() => { /* sin conexión la guía se muestra en genérico, nunca con cifras inventadas */ });
+  }, []);
+
+  // Con multiplicador: el nivel 2 se dispara al doble del SLA, el 3 al triple, el 4 al cuádruple.
+  const slaPlazo = (mult) => (slaRules ? `${slaRules.hours * mult} horas` : `${mult}× el SLA`);
+  const slaMulta = slaRules ? `$${slaRules.fine.toFixed(2)}` : "el importe vigente";
 
   // Appeal modal
   const [appealModal, setAppealModal] = useState({ open: false, penaltyId: null });
@@ -44,16 +65,20 @@ export default function StorePenalties() {
   const fetchPenalties = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { limit: 50 };
+      const params = { limit: PAGE_SIZE, offset };
       if (filterType) params.type = filterType;
+      // La pestaña filtra en el servidor: si no, el contador y la lista no cuadran al paginar.
+      if (activeTab === "pending") params.pending_only = "true";
       const { data } = await getStorePenaltiesAPI(params);
       setPenalties(data?.data || []);
+      setTotal(data?.count ?? 0);
+      if (data?.summary) setSummary(data.summary);
     } catch (err) {
       toast.error("Error cargando sanciones: " + err.message);
     } finally {
       setLoading(false);
     }
-  }, [filterType]);
+  }, [filterType, offset, activeTab]);
 
   useEffect(() => {
     fetchPenalties();
@@ -69,9 +94,7 @@ export default function StorePenalties() {
     setSearchParams({}, { replace: true });
 
     const reveal = (target) => {
-      const hasAppeal = target.reason?.includes("📝 Apelación");
-      const isPendingAction = !target.is_acknowledged && target.status !== "dismissed" && !hasAppeal && !target.resolved_by;
-      if (!isPendingAction) setActiveTab("all");
+      if (!needsStoreAction(target)) setActiveTab("all");
       setHighlightId(target.id);
       setTimeout(() => {
         document.getElementById(`row-${target.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -145,28 +168,12 @@ export default function StorePenalties() {
       day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
     }) : "—";
 
-  // Summary counts based on all penalties
-  const counts = {
-    total: penalties.length,
-    pending: penalties.filter(p => {
-      const hasAppeal = p.reason?.includes("📝 Apelación");
-      return !p.is_acknowledged && p.status !== "dismissed" && !hasAppeal && !p.resolved_by;
-    }).length,
-    applied: penalties.filter(p => p.status === "applied").length,
-    finesTotal: penalties
-      .filter(p => p.type === "fine" && p.status === "applied")
-      .reduce((sum, p) => sum + Number(p.amount || 0), 0),
-  };
-
+  // `summary` viene del servidor y no depende ni del filtro ni de la página.
+  const counts = summary;
 
   // Filter list based on active tab
-  const displayedPenalties = penalties.filter(p => {
-    if (activeTab === "pending") {
-      const hasAppeal = p.reason?.includes("📝 Apelación");
-      return !p.is_acknowledged && p.status !== "dismissed" && !hasAppeal && !p.resolved_by;
-    }
-    return true; // "all" shows everything
-  });
+  // El servidor ya devuelve la lista de la pestaña activa (`pending_only`).
+  const displayedPenalties = penalties;
 
   return (
     <div className="pb-10 font-['Manrope']">
@@ -218,19 +225,19 @@ export default function StorePenalties() {
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-3">
               <span className="text-xs font-black text-amber-800 block mb-1">⚠️ 1. Advertencia</span>
-              <p className="text-[11px] text-amber-700/95 leading-snug">Se genera al exceder las <strong>24 horas</strong> de SLA inicial sin despachar el producto.</p>
+              <p className="text-[11px] text-amber-700/95 leading-snug">Se genera al exceder las <strong>{slaPlazo(1)}</strong> de SLA inicial sin despachar el producto.</p>
             </div>
             <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-3">
-              <span className="text-xs font-black text-orange-800 block mb-1">💸 2. Multa ($3.00)</span>
-              <p className="text-[11px] text-orange-700/95 leading-snug">Se aplica al superar el doble del SLA (<strong>48 horas</strong>). Se debita automáticamente de tu wallet.</p>
+              <span className="text-xs font-black text-orange-800 block mb-1">💸 2. Multa ({slaMulta})</span>
+              <p className="text-[11px] text-orange-700/95 leading-snug">Se aplica al superar el doble del SLA (<strong>{slaPlazo(2)}</strong>). Se descuenta de tu saldo disponible una vez que un administrador la aprueba; si no alcanza, queda como deuda y se cobra de tus próximas ventas.</p>
             </div>
             <div className="bg-red-50/50 border border-red-100 rounded-xl p-3">
               <span className="text-xs font-black text-red-800 block mb-1">🚨 3. Suspensión</span>
-              <p className="text-[11px] text-red-700/95 leading-snug">Se activa al superar el triple del SLA (<strong>72 horas</strong>). Tu tienda se inhabilita para recibir nuevas ventas.</p>
+              <p className="text-[11px] text-red-700/95 leading-snug">Se activa al superar el triple del SLA (<strong>{slaPlazo(3)}</strong>). Tu tienda se inhabilita para recibir nuevas ventas.</p>
             </div>
             <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3">
               <span className="text-xs font-black text-slate-800 block mb-1">🚫 4. Cancelación</span>
-              <p className="text-[11px] text-slate-700/95 leading-snug">Al exceder el cuádruple del SLA (<strong>96 horas</strong>), la orden se cancela de forma automática y se reembolsa al cliente.</p>
+              <p className="text-[11px] text-slate-700/95 leading-snug">Al exceder el cuádruple del SLA (<strong>{slaPlazo(4)}</strong>), la orden se cancela de forma automática y se reembolsa al cliente.</p>
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-gray-100 flex flex-wrap gap-x-6 gap-y-2 text-[11px] text-gray-500">
@@ -243,22 +250,22 @@ export default function StorePenalties() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total Acumulado</p>
+          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total acumulado</p>
           <p className="text-3xl font-black text-gray-900 mt-1">{counts.total}</p>
         </div>
         <div className={`rounded-2xl border p-4 shadow-sm transition-all ${counts.pending > 0 ? "bg-amber-50/50 border-amber-200 shadow-amber-50/10" : "bg-white border-gray-200"}`}>
-          <p className={`text-[10px] font-bold uppercase tracking-wider ${counts.pending > 0 ? "text-amber-600" : "text-gray-400"}`}>Acciones Pendientes</p>
+          <p className={`text-[10px] font-bold uppercase tracking-wider ${counts.pending > 0 ? "text-amber-600" : "text-gray-400"}`}>Acciones pendientes</p>
           <div className="flex items-baseline gap-2 mt-1">
             <p className={`text-3xl font-black ${counts.pending > 0 ? "text-amber-700" : "text-gray-900"}`}>{counts.pending}</p>
             {counts.pending > 0 && <span className="text-[10px] font-bold bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-md animate-bounce">Atención</span>}
           </div>
         </div>
         <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Amonestaciones Aplicadas</p>
+          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Sanciones aplicadas</p>
           <p className="text-3xl font-black text-rose-700 mt-1">{counts.applied}</p>
         </div>
         <div className="bg-[#1a0a2e] rounded-2xl border border-white/[0.06] p-4 shadow-lg text-white">
-          <p className="text-[10px] text-[#c3ff00]/70 font-bold uppercase tracking-wider">Total Fines Debitado</p>
+          <p className="text-[10px] text-[#c3ff00]/70 font-bold uppercase tracking-wider">Total en multas cobradas</p>
           <p className="text-3xl font-black text-[#c3ff00] mt-1">${counts.finesTotal.toFixed(2)}</p>
         </div>
       </div>
@@ -268,16 +275,16 @@ export default function StorePenalties() {
         {/* Tabs */}
         <div className="flex gap-2 p-1 bg-gray-150 rounded-xl">
           <button
-            onClick={() => setActiveTab("pending")}
+            onClick={() => { setActiveTab("pending"); setOffset(0); }}
             className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === "pending" ? "bg-white text-[#6b1e96] shadow-sm" : "text-gray-500 hover:text-gray-800"}`}
           >
-            📋 Acciones Requeridas ({counts.pending})
+            📋 Acciones requeridas ({counts.pending})
           </button>
           <button
-            onClick={() => setActiveTab("all")}
+            onClick={() => { setActiveTab("all"); setOffset(0); }}
             className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === "all" ? "bg-white text-[#6b1e96] shadow-sm" : "text-gray-500 hover:text-gray-800"}`}
           >
-            🗂️ Historial Completo ({counts.total})
+            🗂️ Historial completo ({counts.total})
           </button>
         </div>
 
@@ -285,11 +292,11 @@ export default function StorePenalties() {
         <div className="flex items-center gap-3">
           <select
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
+            onChange={(e) => { setFilterType(e.target.value); setOffset(0); }}
             className="border border-gray-300 rounded-xl px-4 py-2 text-xs bg-white font-bold text-gray-700 focus:ring-2 focus:ring-[#6b1e96]/20 focus:border-[#6b1e96] outline-none cursor-pointer"
           >
             <option value="">Filtrar Tipo: Todos</option>
-            <option value="warning">⚠️ Advertencias</option>
+            <option value="warning">⚠️ Amonestaciones</option>
             <option value="fine">💸 Multas</option>
             <option value="suspension">🚨 Suspensiones</option>
             <option value="cancellation">🚫 Cancelaciones</option>
@@ -322,30 +329,16 @@ export default function StorePenalties() {
       ) : (
         <div className="space-y-4">
           {displayedPenalties.map((p) => {
-            const typeConf = TYPE_CONFIG[p.type] || TYPE_CONFIG.warning;
-            const statusConf = STATUS_CONFIG[p.status] || STATUS_CONFIG.pending_review;
-            const hasAppeal = p.reason?.includes("📝 Apelación");
-
-            // Format appeal text details
-            let displayReason = p.reason;
-            let appealText = null;
-            let adminResponse = null;
-
-            if (p.reason?.includes(" | 📝 Apelación de tienda:")) {
-              const parts = p.reason.split(" | 📝 Apelación de tienda:");
-              displayReason = parts[0];
-              const appealParts = parts[1].split(" | Resuelto por Admin:");
-              appealText = appealParts[0];
-              if (appealParts[1]) {
-                adminResponse = appealParts[1];
-              }
-            } else if (p.reason?.includes(" | Resuelto por Admin:")) {
-              const parts = p.reason.split(" | Resuelto por Admin:");
-              displayReason = parts[0];
-              adminResponse = parts[1];
-            }
-
-            const isPendingAction = !p.is_acknowledged && p.status !== "dismissed" && !hasAppeal && !p.resolved_by;
+            const typeConf = typeOf(p.type);
+            const statusConf = statusOf(p.status);
+            const apelada = hasAppeal(p);
+            // Un solo parseador del motivo, compartido con el panel de administración.
+            // Aquí se partía el texto a mano y allí con expresiones regulares: cualquier
+            // cambio de formato rompía uno de los dos sin que nadie se enterara.
+            const { system: displayReason, appeal: appealText, resolution: adminResponse } = parseReason(p.reason);
+            const isPendingAction = needsStoreAction(p);
+            const retraso = formatDelay(p.delay_hours);
+            const producto = p.order_items?.products?.name;
 
             return (
               <div
@@ -358,10 +351,10 @@ export default function StorePenalties() {
                 <div className="p-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-2">
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black border ${typeConf.bg}`}>
+                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black border ${typeConf.chip}`}>
                         {typeConf.icon} {typeConf.label}
                       </span>
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${statusConf.bg}`}>
+                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${statusConf.chip}`}>
                         {statusConf.label}
                       </span>
                       {Number(p.amount) > 0 && (
@@ -376,7 +369,15 @@ export default function StorePenalties() {
                       )}
                     </div>
 
-                    <p className="text-sm text-gray-800 font-medium leading-relaxed mt-2">{displayReason}</p>
+                    {hasLostReason(p) ? (
+                      <p className="text-sm text-amber-800 font-medium leading-relaxed mt-2 bg-amber-50 border border-amber-100 rounded-xl p-3">
+                        El detalle de esta sanción se perdió por un fallo del sistema ya corregido.
+                        Fue una suspensión automática por retraso en el despacho
+                        {formatDelay(p.delay_hours) ? ` (${formatDelay(p.delay_hours)} de retraso)` : ""} y ya está descartada.
+                      </p>
+                    ) : (
+                      <p className="text-sm text-gray-800 font-medium leading-relaxed mt-2">{displayReason}</p>
+                    )}
 
                     {/* Appeal text subsegment */}
                     {appealText && (
@@ -400,9 +401,42 @@ export default function StorePenalties() {
                           Orden: #{p.order_id?.substring(0, 8)}
                         </span>
                       )}
+                      {producto && (
+                        <>
+                          <span>&middot;</span>
+                          <span className="text-gray-500 truncate max-w-[220px]" title={producto}>
+                            {producto}
+                            {p.order_items?.quantity > 1 && ` ×${p.order_items.quantity}`}
+                          </span>
+                        </>
+                      )}
+                      {retraso && (
+                        <>
+                          <span>&middot;</span>
+                          <span>{retraso} de retraso</span>
+                        </>
+                      )}
                       <span>&middot;</span>
-                      <span>Aplicada: {formatDate(p.created_at)}</span>
+                      <span>Registrada: {formatDate(p.created_at)}</span>
+                      {/* Cuándo se cobró de verdad: la tienda veía el importe pero no la
+                          fecha, ni forma de cuadrarlo con su billetera. */}
+                      {p.status === "applied" && p.applied_at && (
+                        <>
+                          <span>&middot;</span>
+                          <span className="text-gray-500">
+                            {p.type === "fine" ? "Cobrada" : "Aplicada"}: {formatDate(p.applied_at)}
+                          </span>
+                        </>
+                      )}
                     </div>
+                    {p.type === "fine" && p.status === "applied" && (
+                      <Link
+                        to="/store/wallet"
+                        className="inline-flex items-center gap-1 mt-2 text-[11px] font-bold text-[#6b1e96] hover:underline"
+                      >
+                        Ver el movimiento en mi billetera →
+                      </Link>
+                    )}
                   </div>
 
                   {/* Actions Column */}
@@ -421,9 +455,7 @@ export default function StorePenalties() {
                     {isPendingAction && (
                       <>
                         {/* Appeal button: available for pending_review OR applied suspensions/cancellations */}
-                        {(p.status === "pending_review" ||
-                          ((p.type === "suspension" || p.type === "cancellation") && p.status === "applied")
-                        ) && (
+                        {canAppeal(p) && (
                           <button
                             onClick={() => handleAppealOpen(p.id)}
                             className="text-xs font-black px-4 py-2 bg-[#6b1e96] hover:bg-[#8b2bc0] text-white rounded-xl transition-all shadow-sm shadow-[#6b1e96]/20"
@@ -445,7 +477,7 @@ export default function StorePenalties() {
                     )}
 
                     {/* Appeal statuses */}
-                    {hasAppeal && !p.resolved_by && (
+                    {apelada && !p.resolved_by && (
                       <span className="text-center text-[10px] font-bold px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 border border-blue-100 flex items-center justify-center gap-1.5 animate-pulse">
                         ⏳ Apelada en curso
                       </span>
@@ -467,6 +499,38 @@ export default function StorePenalties() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Paginación. Antes se pedían 50 filas fijas y sin contador: a partir de la 51 las
+          sanciones simplemente no existían para la tienda, sin ningún aviso. */}
+      {!loading && total > PAGE_SIZE && (
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-5 px-1">
+          <p className="text-xs text-gray-500">
+            Mostrando{" "}
+            <span className="font-bold text-gray-800">
+              {offset + 1}–{Math.min(offset + penalties.length, total)}
+            </span>{" "}
+            de <span className="font-bold text-gray-800">{total}</span>
+            {filterType ? " (con el filtro aplicado)" : ""}
+
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+              disabled={offset === 0}
+              className="px-3 py-1.5 text-xs font-bold border border-gray-200 bg-white rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              ← Anterior
+            </button>
+            <button
+              onClick={() => setOffset(offset + PAGE_SIZE)}
+              disabled={offset + penalties.length >= total}
+              className="px-3 py-1.5 text-xs font-bold border border-gray-200 bg-white rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              Siguiente →
+            </button>
+          </div>
         </div>
       )}
 

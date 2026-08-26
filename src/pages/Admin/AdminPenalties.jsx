@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from "react";
 import { useSearchParams } from "react-router-dom";
-import { getPenaltiesAPI, resolvePenaltyAPI, getPenaltyStatsAPI, reactivateStoreAPI } from "../../services/api";
+import { getPenaltiesAPI, resolvePenaltyAPI, getPenaltyStatsAPI, reactivateStoreAPI, exportPenaltiesAPI } from "../../services/api";
+import {
+  typeOf, statusOf, parseReason, hasAppeal, applyAction, dismissAction, formatDelay,
+  hasLostReason,
+} from "../../utils/penalties";
 import toast from "react-hot-toast";
 import SearchableSelect from "../../components/ui/SearchableSelect";
 import "../../components/ui/SearchableSelect.css";
@@ -26,38 +30,14 @@ const ShieldAlertIcon = ({ className }) => (
   </svg>
 );
 
-// El tipo se lee como texto con un punto de color: el estado es lo que lleva
-// pastilla, así las dos columnas no compiten por la misma atención.
-const TYPE_CONFIG = {
-  warning:      { label: "Advertencia",  text: "text-amber-700",  dot: "bg-amber-500" },
-  fine:         { label: "Multa",        text: "text-orange-700", dot: "bg-orange-500" },
-  suspension:   { label: "Suspensión",   text: "text-rose-700",   dot: "bg-rose-500" },
-  cancellation: { label: "Cancelación",  text: "text-slate-600",  dot: "bg-slate-400" },
-};
-
-// El color dice qué le pasó a la TIENDA, no si la gestión salió bien:
-// aplicada = el castigo surtió efecto (rojo), descartada = anulada (gris).
-const STATUS_CONFIG = {
-  pending_review: {
-    label: "Pendiente",
-    hint: "Propuesta por el sistema. Espera tu decisión y todavía no afecta a la tienda.",
-    bg: "bg-amber-100/70 text-amber-800",
-  },
-  applied: {
-    label: "Aplicada",
-    hint: "Ejecutada: la multa ya se descontó del wallet o la suspensión ya está activa.",
-    bg: "bg-rose-100/70 text-rose-800",
-  },
-  dismissed: {
-    label: "Descartada",
-    hint: "Anulada por un administrador. No tiene ningún efecto sobre la tienda.",
-    bg: "bg-slate-100 text-slate-500",
-  },
-};
-
+// El tipo se lee como texto con un punto de color: el estado es lo que lleva pastilla, así
+// las dos columnas no compiten por la misma atención.
+// Tipos, estados, parseo del motivo y textos de las acciones viven en un solo sitio
+// (utils/penalties.js). Este panel y el de la tienda tenían cada uno su copia, con
+// etiquetas distintas para el mismo estado y DOS parseadores del mismo campo `reason`.
 const TYPE_OPTIONS = [
   { value: "", label: "Todos los Tipos" },
-  { value: "warning", label: "⚠️ Advertencias" },
+  { value: "warning", label: "⚠️ Amonestaciones" },
   { value: "fine", label: "💸 Multas" },
   { value: "suspension", label: "🚨 Suspensiones" },
   { value: "cancellation", label: "🚫 Cancelaciones" },
@@ -70,48 +50,13 @@ const STATUS_OPTIONS = [
   { value: "dismissed", label: "❌ Descartadas" },
 ];
 
-// El campo `reason` acumula tres voces separadas por " | ": el motivo que escribió
-// el cron de SLA, la apelación de la tienda y la resolución del administrador.
-const REASON_SEGMENTS = [
-  { key: "appeal", re: /^📝\s*Apelación de tienda:\s*/ },
-  { key: "resolution", re: /^Resuelto por Admin:\s*/ },
+const SORT_OPTIONS = [
+  { value: "created_at", label: "Más recientes" },
+  { value: "delay_hours", label: "Mayor retraso" },
+  { value: "amount", label: "Mayor monto" },
+  { value: "store_name", label: "Tienda (A-Z)" },
 ];
-
-const parseReason = (raw) => {
-  const parsed = { system: "", appeal: "", resolution: "" };
-  String(raw || "").split(/\s*\|\s*/).forEach((segment) => {
-    const match = REASON_SEGMENTS.find((s) => s.re.test(segment));
-    if (match) parsed[match.key] = segment.replace(match.re, "");
-    else if (segment.trim()) parsed.system = parsed.system ? `${parsed.system} | ${segment}` : segment;
-  });
-  return parsed;
-};
-
-// Qué hace de verdad "aplicar" según el tipo, para no prometer más de lo que ocurre.
-const applyAction = (p) => {
-  switch (p.type) {
-    case "fine":
-      return {
-        label: `Cobrar $${Number(p.amount).toFixed(2)}`,
-        hint: "Descuenta el monto del wallet de la tienda de inmediato.",
-        toast: `Multa de $${Number(p.amount).toFixed(2)} cobrada del wallet de la tienda`,
-      };
-    case "suspension":
-      return {
-        label: "Suspender tienda",
-        hint: "Bloquea la operación de la tienda hasta que se levante la suspensión.",
-        toast: "Suspensión aplicada: la tienda queda bloqueada",
-      };
-    default:
-      return {
-        label: "Aplicar",
-        hint: "Deja la sanción registrada como ejecutada en el historial de la tienda.",
-        toast: "Sanción aplicada",
-      };
-  }
-};
-
-const EMPTY_FILTERS = { type: "", status: "", storeId: "", search: "", appeals: false };
+const EMPTY_FILTERS = { type: "", status: "", storeId: "", search: "", appeals: false, from: "", to: "", sort: "created_at" };
 
 const PAGE_SIZES = [10, 25, 50, 100];
 
@@ -136,7 +81,11 @@ const KPI_CARDS = [
     format: (v) => `$${Number(v || 0).toFixed(2)}`,
   },
   {
-    key: "suspended",
+    // Cuenta tiendas con `is_suspended`, no filas de la tabla. El cron crea UNA suspensión
+    // por cada ítem retrasado, así que contar filas convertía una tienda con 3 pedidos
+    // tarde en "3 tiendas suspendidas". Al pulsar sí se filtran las filas, que casi nunca
+    // son el mismo número: de ahí el pie de la tarjeta.
+    key: "suspendedStores",
     label: "Tiendas suspendidas",
     icon: "block",
     iconClass: "bg-rose-50 text-rose-600 border-rose-100",
@@ -178,7 +127,7 @@ export default function AdminPenalties() {
   const [dismissReason, setDismissReason] = useState("");
 
   // KPIs
-  const [kpis, setKpis] = useState({ pending: 0, finesTotal: 0, suspended: 0, cancellations: 0 });
+  const [kpis, setKpis] = useState({ pending: 0, finesTotal: 0, suspendedStores: 0, suspensionRows: 0, cancellations: 0 });
 
   const updateFilters = useCallback((patch) => {
     setFilters((prev) => ({ ...prev, ...patch }));
@@ -201,6 +150,9 @@ export default function AdminPenalties() {
       if (filters.storeId) params.store_id = filters.storeId;
       if (filters.search.trim()) params.search = filters.search.trim();
       if (filters.appeals) params.appeals_only = "true";
+      if (filters.from) params.from = filters.from;
+      if (filters.to) params.to = filters.to;
+      if (filters.sort) params.sort = filters.sort;
 
       const { data } = await getPenaltiesAPI(params);
       setPenalties(data?.data || []);
@@ -295,9 +247,41 @@ export default function AdminPenalties() {
     }
   };
 
-  const handleDismissOpen = (id) => {
-    setDismissModal({ open: true, penaltyId: id });
+  const handleDismissOpen = (penalty) => {
+    setDismissModal({ open: true, penaltyId: penalty.id, penalty });
     setDismissReason("");
+  };
+
+  // Descarga el CSV con los filtros puestos. El navegador no sigue la URL directamente
+  // porque la ruta exige cabecera Authorization, así que se pide por axios y se vuelca.
+  const [exporting, setExporting] = useState(false);
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const params = {};
+      if (filters.type) params.type = filters.type;
+      if (filters.status) params.status = filters.status;
+      if (filters.storeId) params.store_id = filters.storeId;
+      if (filters.search.trim()) params.search = filters.search.trim();
+      if (filters.appeals) params.appeals_only = "true";
+      if (filters.from) params.from = filters.from;
+      if (filters.to) params.to = filters.to;
+
+      const res = await exportPenaltiesAPI(params);
+      const url = URL.createObjectURL(new Blob([res.data], { type: "text/csv;charset=utf-8" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sanciones-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Descarga iniciada");
+    } catch (err) {
+      toast.error("No se pudo exportar: " + (err.response?.data?.error || err.message));
+    } finally {
+      setExporting(false);
+    }
   };
 
   const handleDismissConfirm = async () => {
@@ -308,7 +292,11 @@ export default function AdminPenalties() {
     setActionLoading(dismissModal.penaltyId);
     try {
       await resolvePenaltyAPI(dismissModal.penaltyId, "dismissed", dismissReason.trim());
-      toast.success("Sanción descartada exitosamente");
+      toast.success(
+        dismissModal.penalty?.type === "fine" && dismissModal.penalty?.status === "applied"
+          ? "Multa anulada y devuelta a la tienda"
+          : "Sanción descartada exitosamente"
+      );
       setDismissModal({ open: false, penaltyId: null });
       refreshAll();
     } catch (err) {
@@ -356,7 +344,8 @@ export default function AdminPenalties() {
   };
 
   const hasActiveFilters =
-    filters.type || filters.status || filters.storeId || filters.search || filters.appeals;
+    filters.type || filters.status || filters.storeId || filters.search || filters.appeals ||
+    filters.from || filters.to;
 
   const storeOptions = useMemo(() => {
     const opts = [{ value: "", label: "Todas las Tiendas" }];
@@ -401,13 +390,24 @@ export default function AdminPenalties() {
             Las multas que apliques se descuentan al instante del wallet de la tienda.
           </p>
         </div>
-        <button
-          onClick={refreshAll}
-          className="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl text-xs font-bold hover:border-[#6b1e96]/30 hover:text-[#6b1e96] active:scale-[0.97] transition-all shadow-sm self-start md:self-auto"
-        >
-          <span className="material-symbols-outlined text-[16px]">refresh</span>
-          Refrescar
-        </button>
+        <div className="flex items-center gap-2 self-start md:self-auto">
+          <button
+            onClick={handleExport}
+            disabled={exporting || total === 0}
+            title="Descarga en CSV exactamente las sanciones que estás viendo, con los filtros aplicados"
+            className="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl text-xs font-bold hover:border-[#6b1e96]/30 hover:text-[#6b1e96] active:scale-[0.97] transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <span className="material-symbols-outlined text-[16px]">download</span>
+            {exporting ? "Generando..." : "Exportar CSV"}
+          </button>
+          <button
+            onClick={refreshAll}
+            className="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl text-xs font-bold hover:border-[#6b1e96]/30 hover:text-[#6b1e96] active:scale-[0.97] transition-all shadow-sm"
+          >
+            <span className="material-symbols-outlined text-[16px]">refresh</span>
+            Refrescar
+          </button>
+        </div>
       </div>
 
       <>
@@ -439,7 +439,11 @@ export default function AdminPenalties() {
                   </div>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-2.5 truncate">
-                  {active ? "Filtro activo · pulsa para quitarlo" : card.context}
+                  {active
+                    ? "Filtro activo · pulsa para quitarlo"
+                    : card.key === "suspendedStores" && kpis.suspensionRows > 0
+                      ? `${kpis.suspensionRows} sanción${kpis.suspensionRows !== 1 ? "es" : ""} de suspensión activa${kpis.suspensionRows !== 1 ? "s" : ""}`
+                      : card.context}
                 </p>
               </button>
             );
@@ -455,7 +459,7 @@ export default function AdminPenalties() {
               </svg>
               <input
                 type="text"
-                placeholder="Buscar en el motivo, la apelación o la resolución..."
+                placeholder="Buscar por nº de orden, tienda, producto o motivo..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50/60 hover:bg-white focus:bg-white focus:ring-2 focus:ring-[#6b1e96]/10 focus:border-[#6b1e96] outline-none transition-all"
@@ -492,6 +496,39 @@ export default function AdminPenalties() {
                 placeholder="Estado: Todos"
                 searchPlaceholder="Buscar estado..."
                 icon={<ShieldAlertIcon className="h-4 w-4" />}
+              />
+            </div>
+
+            <div className="w-[calc(50%-5px)] sm:w-[165px]">
+              <SearchableSelect
+                options={SORT_OPTIONS}
+                value={filters.sort}
+                onChange={(val) => updateFilters({ sort: val || "created_at" })}
+                placeholder="Ordenar por"
+                searchPlaceholder="Ordenar por..."
+                icon={<span className="material-symbols-outlined text-[16px]">sort</span>}
+              />
+            </div>
+
+            {/* Rango de fechas: no había forma de acotar "lo del mes pasado". */}
+            <div className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50/60 px-2.5 py-1.5">
+              <span className="material-symbols-outlined text-[16px] text-gray-400">date_range</span>
+              <input
+                type="date"
+                value={filters.from}
+                max={filters.to || undefined}
+                onChange={(e) => updateFilters({ from: e.target.value })}
+                aria-label="Desde"
+                className="bg-transparent text-xs text-gray-700 outline-none w-[112px]"
+              />
+              <span className="text-gray-300 text-xs">→</span>
+              <input
+                type="date"
+                value={filters.to}
+                min={filters.from || undefined}
+                onChange={(e) => updateFilters({ to: e.target.value })}
+                aria-label="Hasta"
+                className="bg-transparent text-xs text-gray-700 outline-none w-[112px]"
               />
             </div>
 
@@ -561,15 +598,20 @@ export default function AdminPenalties() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {penalties.map((p) => {
-                    const typeConf = TYPE_CONFIG[p.type] || TYPE_CONFIG.warning;
-                    const statusConf = STATUS_CONFIG[p.status] || STATUS_CONFIG.pending_review;
+                    const typeConf = typeOf(p.type);
+                    const statusConf = statusOf(p.status);
                     const reason = parseReason(p.reason);
                     const date = formatDate(p.created_at);
                     const isExpanded = expandedId === p.id;
                     const isPending = p.status === "pending_review";
                     const isActiveSuspension = p.status === "applied" && p.type === "suspension";
+                    // Amonestaciones y cancelaciones nacen ya aplicadas, así que el panel les
+                    // mostraba un "—" y nada más: eran la mitad de la tabla sin ninguna acción
+                    // posible. Se pueden descartar, que es limpiar el historial de la tienda.
+                    const isDismissable = p.status === "applied" && !isActiveSuspension;
                     const busy = actionLoading === p.id || actionLoading === p.store_id;
-                    const storeName = p.store_profiles?.business_name || p.store_id?.substring(0, 8);
+                    const storeName = p.store_name || p.store_id?.substring(0, 8);
+                    const retraso = formatDelay(p.delay_hours);
 
                     return (
                       <Fragment key={p.id}>
@@ -590,9 +632,28 @@ export default function AdminPenalties() {
                           </td>
                           <td className="px-4 py-2.5 align-middle">
                             <p className="font-semibold text-gray-900 leading-tight">{storeName}</p>
-                            <p className="text-gray-400 font-mono text-[11px]" title={p.order_id}>
-                              #{p.order_id?.substring(0, 8)}
-                            </p>
+                            {/* Una suspensión manual del administrador no nace de ningún
+                                pedido: order_id va en NULL a propósito (migración 063). */}
+                            {p.order_id ? (
+                              <p className="text-gray-400 font-mono text-[11px]" title={p.order_id}>
+                                #{p.order_short || p.order_id.substring(0, 8)}
+                              </p>
+                            ) : (
+                              <p className="text-gray-400 text-[11px] italic">Sin pedido asociado</p>
+                            )}
+                            {/* El producto sancionado no se veía en ninguna pantalla, ni aquí
+                                ni en el panel de la tienda: solo el id corto de la orden. */}
+                            {p.product_name && (
+                              <p className="text-gray-500 text-[11px] truncate max-w-[220px]" title={p.product_name}>
+                                {p.product_name}
+                                {p.item_quantity > 1 && <span className="text-gray-400"> ×{p.item_quantity}</span>}
+                              </p>
+                            )}
+                            {p.store_is_suspended && (
+                              <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-100">
+                                ● Tienda suspendida ahora
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-2.5 align-middle whitespace-nowrap">
                             <span className={`inline-flex items-center gap-2 text-[13px] font-semibold ${typeConf.text}`}>
@@ -602,12 +663,19 @@ export default function AdminPenalties() {
                             {Number(p.amount) > 0 && (
                               <span className="ml-2 text-[13px] font-bold text-gray-900 tabular-nums">${Number(p.amount).toFixed(2)}</span>
                             )}
+                            {/* El retraso estaba enterrado en la frase del motivo: como texto
+                                no se podía ordenar ni comparar de un vistazo. */}
+                            {retraso && (
+                              <p className="text-[11px] text-gray-400 mt-0.5">
+                                {retraso} de retraso
+                              </p>
+                            )}
                           </td>
                           <td className="px-4 py-2.5 align-middle whitespace-nowrap">
-                            <span title={statusConf.hint} className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold cursor-help ${statusConf.bg}`}>
+                            <span title={statusConf.hint} className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold border cursor-help ${statusConf.chip}`}>
                               {statusConf.label}
                             </span>
-                            {reason.appeal && (
+                            {hasAppeal(p) && (
                               <span className="ml-1.5 inline-flex items-center px-2 py-1 rounded-md text-[11px] font-bold bg-blue-100/70 text-blue-800">
                                 Apelada
                               </span>
@@ -633,9 +701,9 @@ export default function AdminPenalties() {
                                   )}
                                 </button>
                                 <button
-                                  onClick={() => handleDismissOpen(p.id)}
+                                  onClick={() => handleDismissOpen(p)}
                                   disabled={busy}
-                                  title="Anula la sanción: la tienda no sufre ninguna consecuencia"
+                                  title={dismissAction(p).blurb}
                                   className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg font-bold transition-all active:scale-95 flex items-center gap-1 disabled:opacity-50"
                                 >
                                   <span className="material-symbols-outlined text-[14px]">close</span>
@@ -656,6 +724,20 @@ export default function AdminPenalties() {
                                   </>
                                 )}
                               </button>
+                            ) : isDismissable ? (
+                              <button
+                                onClick={() => handleDismissOpen(p)}
+                                disabled={busy}
+                                title={dismissAction(p).blurb}
+                                className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg font-bold transition-all active:scale-95 inline-flex items-center gap-1 disabled:opacity-50"
+                              >
+                                {busy ? "..." : (
+                                  <>
+                                    <span className="material-symbols-outlined text-[14px]">close</span>
+                                    {p.type === "fine" ? "Anular y devolver" : "Descartar"}
+                                  </>
+                                )}
+                              </button>
                             ) : (
                               <span className="text-gray-300 select-none" aria-label="Sin acciones disponibles">—</span>
                             )}
@@ -668,7 +750,15 @@ export default function AdminPenalties() {
                               <div className="grid gap-4 md:grid-cols-3">
                                 <div>
                                   <p className="text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">Motivo del sistema</p>
-                                  <p className="text-xs text-gray-700 leading-relaxed">{reason.system || "—"}</p>
+                                  {hasLostReason(p) ? (
+                                    <p className="text-xs text-amber-700 leading-relaxed bg-amber-50 border border-amber-100 rounded-lg p-2">
+                                      El motivo original se perdió: hasta agosto de 2026, reactivar una tienda
+                                      sobrescribía este campo en lugar de añadir la resolución. Lo que se conserva es
+                                      el retraso ({formatDelay(p.delay_hours) || "desconocido"}), recalculado desde las fechas.
+                                    </p>
+                                  ) : (
+                                    <p className="text-xs text-gray-700 leading-relaxed">{reason.system || "—"}</p>
+                                  )}
                                 </div>
                                 <div>
                                   <p className="text-[10px] font-black uppercase tracking-wider text-blue-500 mb-1">Apelación de la tienda</p>
@@ -680,11 +770,40 @@ export default function AdminPenalties() {
                                 </div>
                               </div>
 
+                              {/* La autoría se guardaba en la base y no se pintaba en ninguna
+                                  pantalla: nadie sabía qué admin había cobrado qué multa. */}
+                              <div className="mt-4 pt-4 border-t border-gray-200/70 grid gap-4 md:grid-cols-3 text-[11px]">
+                                <div>
+                                  <p className="font-black uppercase tracking-wider text-gray-400 mb-1">Origen</p>
+                                  <p className="text-gray-700">
+                                    {p.created_by_email
+                                      ? <>Creada a mano por <span className="font-semibold">{p.created_by_email}</span></>
+                                      : "Generada automáticamente por el sistema de SLA"}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="font-black uppercase tracking-wider text-gray-400 mb-1">Resuelta por</p>
+                                  <p className="text-gray-700">
+                                    {p.resolved_by_email || <span className="text-gray-400 italic">Sin resolver</span>}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="font-black uppercase tracking-wider text-gray-400 mb-1">Aplicada el</p>
+                                  <p className="text-gray-700">
+                                    {p.applied_at
+                                      ? `${formatDate(p.applied_at).day} · ${formatDate(p.applied_at).time}`
+                                      : <span className="text-gray-400 italic">No aplicada</span>}
+                                  </p>
+                                </div>
+                              </div>
+
                               <div className="mt-4 pt-4 border-t border-gray-200/70 flex flex-wrap items-center justify-between gap-3">
-                                <p className="text-[11px] text-gray-400 font-mono">Orden {p.order_id} · Sanción {p.id}</p>
+                                <p className="text-[11px] text-gray-400 font-mono">
+                                  {p.order_id ? `Orden ${p.order_id} · ` : "Sanción sin pedido · "}Sanción {p.id}
+                                </p>
                                 {isActiveSuspension && (
                                   <button
-                                    onClick={() => handleReactivateStore(p.store_id, p.store_profiles?.business_name)}
+                                    onClick={() => handleReactivateStore(p.store_id, p.store_name)}
                                     disabled={busy}
                                     className="text-xs px-3.5 py-2 rounded-xl font-bold border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-all inline-flex items-center gap-1.5 disabled:opacity-50"
                                   >

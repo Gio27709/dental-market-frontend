@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import api from "../services/api";
 import { FileText, Scale, CreditCard, Truck, AlertTriangle, Gavel, Users, Info } from "lucide-react";
 
 export default function TermsConditions() {
@@ -8,6 +9,22 @@ export default function TermsConditions() {
   const targetAnchor = hash ? hash.slice(1) : "";
   const [highlighted, setHighlighted] = useState("");
   const highlightTimer = useRef(null);
+
+  // El plazo de despacho lo fija el administrador en `global_settings`, y aquí estaba
+  // escrito a mano ("24 horas hábiles"). Estos términos son lo que la tienda acepta al
+  // registrarse: si el plazo cambia y este texto no, la plataforma queda sancionando por un
+  // incumplimiento distinto del que declaró. Se lee del ajuste, con las 24 h por defecto,
+  // que es también el valor al que cae el cron cuando la clave falta.
+  const [slaHoras, setSlaHoras] = useState(24);
+
+  useEffect(() => {
+    api.get("/admin/settings")
+      .then(({ data }) => {
+        const h = Number(data?.data?.shipping_sla_hours?.hours);
+        if (Number.isFinite(h) && h > 0) setSlaHoras(h);
+      })
+      .catch(() => { /* sin conexión se queda el valor por defecto, nunca uno inventado */ });
+  }, []);
 
   const buyerTerms = [
     {
@@ -132,7 +149,7 @@ export default function TermsConditions() {
           </p>
           <ul className="list-disc pl-6 space-y-2 text-gray-600 text-sm">
             <li>
-              Las tiendas tienen un límite de <strong>24 horas hábiles</strong> para despachar los pedidos una vez que el pago ha sido aprobado por administración.
+              Las tiendas tienen un límite de <strong>{slaHoras} horas hábiles</strong> para despachar los pedidos una vez que el pago ha sido aprobado por administración.
             </li>
             <li>
               Las demoras injustificadas que violen los Acuerdos de Nivel de Servicio (SLA) darán lugar a multas automáticas aplicadas en la wallet o la suspensión temporal del catálogo de la tienda.

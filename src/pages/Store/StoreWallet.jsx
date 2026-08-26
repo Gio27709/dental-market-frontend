@@ -11,6 +11,12 @@ const TX_TYPE_CONFIG = {
   sale: { label: "Venta", bg: "bg-green-50 text-green-700 border border-green-100" },
   fine_deduction: { label: "Sanción", bg: "bg-orange-50 text-orange-700 border border-orange-100" },
   refund: { label: "Reembolso", bg: "bg-purple-50 text-purple-700 border border-purple-100" },
+  // Los tres tipos que el libro admite desde las migraciones 058, 059 y 063. Sin entrada
+  // aquí el fallback pinta el nombre crudo del enum, así que la tienda leía badges que
+  // decían "refund_charge" o "fine_reversal" en su historial de movimientos.
+  refund_charge: { label: "Cargo por reembolso", bg: "bg-purple-50 text-purple-700 border border-purple-100" },
+  debt_settlement: { label: "Cobro de deuda", bg: "bg-orange-50 text-orange-700 border border-orange-100" },
+  fine_reversal: { label: "Sanción anulada", bg: "bg-emerald-50 text-emerald-700 border border-emerald-100" },
 };
 
 const VENEZUELAN_BANKS = [
@@ -38,7 +44,27 @@ const VENEZUELAN_BANKS = [
 ];
 
 export default function StoreWallet() {
-  const [wallet, setWallet] = useState({ balance_available: 0, balance_pending: 0 });
+  // `escrow` viene desglosado del backend (v_escrow_items, la misma fuente que ve el
+  // administrador). Antes esta pantalla pintaba `balance_pending`, una columna que nadie
+  // mantenía: le decía $0.00 a tiendas con cientos de dólares retenidos de verdad.
+  const [wallet, setWallet] = useState({
+    balance_available: 0,
+    balance_pending: 0,
+    balance_debt: 0,
+    // Disponible menos deuda. Es contra esto que valida el retiro (migración 064): sin
+    // ello el formulario dejaba pedir un importe que el backend rechaza después.
+    balance_withdrawable: 0,
+    escrow: { retained: 0, in_transit: 0, claimable: 0, legacy: 0, items: 0 },
+  });
+
+  // El backend ya lo calcula, pero se recalcula aquí como red por si la respuesta viene de
+  // una versión anterior sin el campo: nunca hay que ofrecer un botón de retiro por un
+  // importe que la RPC va a rechazar.
+  const retirable = Math.max(
+    Number(wallet.balance_withdrawable ?? (Number(wallet.balance_available || 0) - Number(wallet.balance_debt || 0))),
+    0
+  );
+
   const [transactions, setTransactions] = useState([]);
   const [payouts, setPayouts] = useState([]); // Solicitudes de retiro de la tienda
   const [loading, setLoading] = useState(true);
@@ -130,8 +156,10 @@ export default function StoreWallet() {
 
     if (!withdrawAmount || isNaN(amountNum) || amountNum <= 0) {
       tempErrors.amount = "El monto debe ser un número mayor a 0";
-    } else if (amountNum > wallet.balance_available) {
-      tempErrors.amount = `Fondos insuficientes. Tu saldo disponible es $${Number(wallet.balance_available).toFixed(2)}`;
+    } else if (amountNum > retirable) {
+      tempErrors.amount = Number(wallet.balance_debt || 0) > 0
+        ? `Fondos insuficientes. Tienes $${Number(wallet.balance_available).toFixed(2)} disponibles, pero $${Number(wallet.balance_debt).toFixed(2)} son deuda pendiente: puedes retirar hasta $${retirable.toFixed(2)}`
+        : `Fondos insuficientes. Tu saldo disponible es $${Number(wallet.balance_available).toFixed(2)}`;
     } else if (amountNum > 100000) {
       tempErrors.amount = "El monto máximo por retiro es $100,000";
     }
@@ -299,20 +327,20 @@ export default function StoreWallet() {
 
           <button
             onClick={handleOpenModal}
-            disabled={wallet.balance_available <= 0 || loading}
+            disabled={retirable <= 0 || loading}
             className="w-full md:w-auto self-start mt-6 px-6 py-3 rounded-xl font-bold transition-all duration-200 shadow-md shadow-[#c3ff00]/10 flex items-center justify-center gap-2 text-[#1a0a2e] disabled:opacity-50 disabled:cursor-not-allowed uppercase text-sm tracking-wider"
             style={{
-              backgroundColor: wallet.balance_available > 0 && !loading ? "#c3ff00" : "rgba(255,255,255,0.15)",
-              color: wallet.balance_available > 0 && !loading ? "#1a0a2e" : "rgba(255,255,255,0.4)",
+              backgroundColor: retirable > 0 && !loading ? "#c3ff00" : "rgba(255,255,255,0.15)",
+              color: retirable > 0 && !loading ? "#1a0a2e" : "rgba(255,255,255,0.4)",
             }}
             onMouseEnter={(e) => {
-              if (wallet.balance_available > 0 && !loading) {
+              if (retirable > 0 && !loading) {
                 e.currentTarget.style.boxShadow = "0 8px 20px rgba(195, 255, 0, 0.4)";
                 e.currentTarget.style.transform = "translateY(-1px)";
               }
             }}
             onMouseLeave={(e) => {
-              if (wallet.balance_available > 0 && !loading) {
+              if (retirable > 0 && !loading) {
                 e.currentTarget.style.boxShadow = "0 4px 6px rgba(195, 255, 0, 0.1)";
                 e.currentTarget.style.transform = "translateY(0)";
               }
@@ -337,9 +365,27 @@ export default function StoreWallet() {
             {loading ? (
               <div className="h-10 w-32 bg-gray-100 animate-pulse rounded-lg mt-3" />
             ) : (
-              <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mt-2 text-gray-800 font-mono">
-                ${Number(wallet.balance_pending).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </h2>
+              <>
+                <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mt-2 text-gray-800 font-mono">
+                  ${Number(wallet.escrow?.retained || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </h2>
+                {/* El desglose es lo que de verdad le interesa a la tienda: no es lo mismo
+                    dinero que aún viaja que dinero ya entregado esperando liberación. */}
+                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500">
+                  <span>
+                    En camino{" "}
+                    <span className="font-mono font-bold text-gray-700">
+                      ${Number(wallet.escrow?.in_transit || 0).toFixed(2)}
+                    </span>
+                  </span>
+                  <span>
+                    Entregado, por liberar{" "}
+                    <span className="font-mono font-bold text-amber-600">
+                      ${Number(wallet.escrow?.claimable || 0).toFixed(2)}
+                    </span>
+                  </span>
+                </div>
+              </>
             )}
           </div>
 
@@ -347,6 +393,28 @@ export default function StoreWallet() {
             <span className="font-semibold text-purple-700 block mb-1">¿Por qué este saldo está pendiente?</span>
             Estos fondos corresponden a ventas en curso y están retenidos temporalmente en custodia (escrow). Serán liberados automáticamente a tu saldo disponible cuando el comprador confirme la entrega conforme del pedido.
           </div>
+
+          {Number(wallet.escrow?.legacy || 0) > 0 && (
+            <div className="mt-3 p-4 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-600 leading-relaxed">
+              <span className="font-semibold text-gray-700 block mb-1">
+                Ventas liquidadas fuera de la plataforma: ${Number(wallet.escrow.legacy).toFixed(2)}
+              </span>
+              Son entregas anteriores a la puesta en marcha del escrow. Ya se te pagaron por
+              fuera, así que no se cobran por esta vía y no forman parte de tu saldo. Aparecen
+              aquí solo para que el historial esté completo.
+            </div>
+          )}
+
+          {Number(wallet.balance_debt || 0) > 0 && (
+            <div className="mt-3 p-4 rounded-xl bg-orange-50 border border-orange-200 text-xs text-orange-900 leading-relaxed">
+              <span className="font-semibold text-orange-700 block mb-1">
+                Pendiente de cobro: ${Number(wallet.balance_debt).toFixed(2)}
+              </span>
+              Corresponde a reembolsos a compradores y a multas por incumplimiento de SLA que
+              no se pudieron descontar de tu saldo en su momento. Se descontará automáticamente
+              de tu próxima venta liberada, y mientras tanto no forma parte de lo que puedes retirar.
+            </div>
+          )}
         </div>
       </div>
 
@@ -616,7 +684,7 @@ export default function StoreWallet() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold font-['Manrope'] text-gray-900">Solicitar Retiro de Fondos</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">Saldo disponible: ${Number(wallet.balance_available).toFixed(2)}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Puedes retirar hasta ${retirable.toFixed(2)}</p>
                 </div>
               </div>
               <button
