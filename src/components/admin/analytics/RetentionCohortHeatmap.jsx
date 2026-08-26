@@ -10,10 +10,10 @@ export default function RetentionCohortHeatmap({ data = [] }) {
   }
 
   const getHeatColor = (pct) => {
-    if (pct >= 50) return "bg-emerald-500/80 text-fx-text font-bold";
-    if (pct >= 30) return "bg-emerald-500/50 text-fx-text";
-    if (pct >= 15) return "bg-amber-500/40 text-amber-200";
-    if (pct > 0) return "bg-purple-500/30 text-fx-muted";
+    if (pct >= 50) return "bg-fx-pos/80 text-fx-text font-bold";
+    if (pct >= 30) return "bg-fx-pos/50 text-fx-text";
+    if (pct >= 15) return "bg-fx-warn/40 text-fx-warn";
+    if (pct > 0) return "bg-fx-violet/30 text-fx-muted";
     return "bg-purple-900/20 text-gray-500";
   };
 
@@ -50,7 +50,7 @@ export default function RetentionCohortHeatmap({ data = [] }) {
               const p3 = Math.round((m3 / total) * 100);
 
               return (
-                <tr key={row.cohort_month || idx} className="border-b border-fx-line hover:bg-purple-500/5">
+                <tr key={row.cohort_month || idx} className="border-b border-fx-line hover:bg-fx-violet/5">
                   <td className="py-3 px-3 font-semibold text-fx-text">{row.cohort_month}</td>
                   <td className="py-3 px-3 font-bold text-fx-muted">{total.toLocaleString()}</td>
                   <td className={`py-3 px-3 text-center rounded-lg ${getHeatColor(p0)}`}>{p0}%</td>

@@ -23,10 +23,10 @@ const num = (v) => Number(v || 0).toLocaleString("en-US");
 const marginColor = (pct) => {
   const v = parseFloat(pct);
   if (!Number.isFinite(v)) return "text-gray-500";
-  if (v < 0) return "text-rose-400";
-  if (v < 15) return "text-amber-400";
-  if (v < 30) return "text-lime-300";
-  return "text-emerald-400";
+  if (v < 0) return "text-fx-neg";
+  if (v < 15) return "text-fx-warn";
+  if (v < 30) return "text-fx-accent";
+  return "text-fx-pos";
 };
 
 const MOVEMENT_LABELS = {
@@ -39,11 +39,11 @@ const MOVEMENT_LABELS = {
 
 // Verde = entra inventario, rojo = sale, morado = correcciones humanas.
 const MOVEMENT_COLORS = {
-  sale: "#f43f5e",
-  initial: "#a855f7",
-  restock: "#c3ff00",
-  adjustment: "#facc15",
-  cancellation: "#38bdf8"
+  sale: "#b8482f",
+  initial: "#7c4f9e",
+  restock: "#6b1e96",
+  adjustment: "#9a6a10",
+  cancellation: "#3f7794"
 };
 
 export default function CatalogTab() {
@@ -261,7 +261,7 @@ export default function CatalogTab() {
             {
               header: "Pérdida/Unidad",
               accessor: "margin_usd",
-              render: (r) => <span className="font-semibold text-rose-400">{money(r.margin_usd)}</span>
+              render: (r) => <span className="font-semibold text-fx-neg">{money(r.margin_usd)}</span>
             },
             { header: "Vendidas", accessor: "units_sold", render: (r) => num(r.units_sold) }
           ]}
@@ -298,7 +298,7 @@ export default function CatalogTab() {
             {
               header: "Facturado a Ciegas",
               accessor: "revenue_usd",
-              render: (r) => <span className="font-semibold text-amber-400">{money(r.revenue_usd)}</span>
+              render: (r) => <span className="font-semibold text-fx-warn">{money(r.revenue_usd)}</span>
             }
           ]}
           data={data?.productsWithoutCost || []}
@@ -325,7 +325,7 @@ export default function CatalogTab() {
               </thead>
               <tbody>
                 {data.fakeDiscounts.map((r) => (
-                  <tr key={r.product_id} className="border-b border-fx-line hover:bg-purple-500/5 transition-colors">
+                  <tr key={r.product_id} className="border-b border-fx-line hover:bg-fx-violet/5 transition-colors">
                     <td className="py-3 px-4">
                       <button
                         onClick={() =>
@@ -342,7 +342,7 @@ export default function CatalogTab() {
                     </td>
                     <td className="py-3 px-4">{r.store_name || "—"}</td>
                     <td className="py-3 px-4 line-through text-gray-500">{money(r.compare_at_price)}</td>
-                    <td className="py-3 px-4 font-semibold text-rose-400">{money(r.price)}</td>
+                    <td className="py-3 px-4 font-semibold text-fx-neg">{money(r.price)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -360,42 +360,42 @@ export default function CatalogTab() {
         <ResponsiveContainer width="100%" height={260}>
           {chartMode === "line" ? (
             <LineChart data={movements}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="label" stroke="#7b6c99" fontSize={10} />
-              <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="label" stroke="#877f92" fontSize={10} />
+              <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Line type="monotone" dataKey="units_in" name="Unidades que entran" stroke="#c3ff00" strokeWidth={3} dot={false} />
-              <Line type="monotone" dataKey="units_out" name="Unidades que salen" stroke="#f43f5e" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="units_in" name="Unidades que entran" stroke="#6b1e96" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="units_out" name="Unidades que salen" stroke="#b8482f" strokeWidth={2} dot={false} />
             </LineChart>
           ) : chartMode === "area" ? (
             <AreaChart data={movements}>
               <defs>
                 <linearGradient id="colorCatIn" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#c3ff00" stopOpacity={0.5} />
-                  <stop offset="95%" stopColor="#c3ff00" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#6b1e96" stopOpacity={0.5} />
+                  <stop offset="95%" stopColor="#6b1e96" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorCatOut" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#b8482f" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#b8482f" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="label" stroke="#7b6c99" fontSize={10} />
-              <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="label" stroke="#877f92" fontSize={10} />
+              <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Area type="monotone" dataKey="units_in" name="Unidades que entran" stroke="#c3ff00" strokeWidth={3} fillOpacity={1} fill="url(#colorCatIn)" />
-              <Area type="monotone" dataKey="units_out" name="Unidades que salen" stroke="#f43f5e" strokeWidth={2} fillOpacity={1} fill="url(#colorCatOut)" />
+              <Area type="monotone" dataKey="units_in" name="Unidades que entran" stroke="#6b1e96" strokeWidth={3} fillOpacity={1} fill="url(#colorCatIn)" />
+              <Area type="monotone" dataKey="units_out" name="Unidades que salen" stroke="#b8482f" strokeWidth={2} fillOpacity={1} fill="url(#colorCatOut)" />
             </AreaChart>
           ) : (
             <BarChart data={movements}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="label" stroke="#7b6c99" fontSize={10} />
-              <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="label" stroke="#877f92" fontSize={10} />
+              <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
               <Tooltip
                 cursor={{ fill: "rgba(168,85,247,0.1)" }}
-                contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
+                contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
                 formatter={(value, _n, entry) => [`${value} movimientos · neto ${entry.payload.net_units} unidades`, entry.payload.label]}
               />
               <Bar dataKey="movements" name="Movimientos" radius={[6, 6, 0, 0]}>
@@ -429,7 +429,7 @@ export default function CatalogTab() {
                   className="font-bold text-fx-accent hover:underline text-left"
                 >
                   {r.brand_name}
-                  {!r.is_active && <span className="ml-2 text-[10px] text-rose-400 font-normal">(inactiva)</span>}
+                  {!r.is_active && <span className="ml-2 text-[10px] text-fx-neg font-normal">(inactiva)</span>}
                 </button>
               )
             },
@@ -495,7 +495,7 @@ export default function CatalogTab() {
               header: "Estado",
               accessor: "is_active",
               render: (r) => (
-                <span className={r.is_active ? "text-emerald-400" : "text-gray-500"}>
+                <span className={r.is_active ? "text-fx-pos" : "text-gray-500"}>
                   {r.is_active ? "Activa" : "Inactiva"}
                 </span>
               )
@@ -527,7 +527,7 @@ export default function CatalogTab() {
               header: "Estado",
               accessor: "is_active",
               render: (r) => (
-                <span className={r.is_active ? "text-emerald-400" : "text-gray-500"}>
+                <span className={r.is_active ? "text-fx-pos" : "text-gray-500"}>
                   {r.is_active ? "Activa" : "Inactiva"}
                 </span>
               )
@@ -563,7 +563,7 @@ export default function CatalogTab() {
           },
           { header: "Tienda", accessor: "store_name", render: (r) => r.store_name || "—" },
           { header: "Movimientos", accessor: "movements", render: (r) => num(r.movements) },
-          { header: "Vendidas", accessor: "sold_units", render: (r) => <span className="text-emerald-400 font-bold">{num(r.sold_units)}</span> },
+          { header: "Vendidas", accessor: "sold_units", render: (r) => <span className="text-fx-pos font-bold">{num(r.sold_units)}</span> },
           { header: "Repuestas", accessor: "restocked_units", render: (r) => num(r.restocked_units) },
           { header: "Stock Actual", accessor: "last_known_stock", render: (r) => <span className="font-bold text-fx-text">{num(r.last_known_stock)}</span> },
           {
@@ -614,7 +614,7 @@ export default function CatalogTab() {
               const v = parseFloat(r.price_change_pct);
               if (!Number.isFinite(v)) return "—";
               return (
-                <span className={`font-semibold ${v > 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                <span className={`font-semibold ${v > 0 ? "text-fx-pos" : "text-fx-neg"}`}>
                   {v > 0 ? "+" : ""}{v}%
                 </span>
               );

@@ -20,8 +20,8 @@ export default function FreshnessBadge({ lastUpdated, onRefresh, isLoading = fal
   return (
     <div className="inline-flex items-center gap-3 bg-fx-panel border border-fx-line rounded-full px-4 py-1.5">
       <span className="flex h-2 w-2 relative">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c3ff00] opacity-75"></span>
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#c3ff00]"></span>
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#6b1e96] opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#6b1e96]"></span>
       </span>
 
       <span className="text-xs text-fx-muted font-medium">

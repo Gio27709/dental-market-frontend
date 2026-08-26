@@ -83,12 +83,12 @@ export default function AlertRulesConfigModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 animate-fadeIn">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#33243d]/45 animate-fadeIn">
       <div className="bg-fx-panel border border-fx-line-strong rounded-xl p-6 max-w-2xl w-full relative overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-fx-line mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xl font-bold">
+            <div className="w-10 h-10 rounded-2xl bg-fx-warn/10 border border-fx-warn/30 flex items-center justify-center text-fx-warn text-xl font-bold">
               ⚙️
             </div>
             <div>
@@ -122,7 +122,7 @@ export default function AlertRulesConfigModal({ isOpen, onClose }) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-bold text-fx-text text-sm">{rule.rule_name}</span>
-                    <span className="text-[10px] uppercase font-semibold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                    <span className="text-[10px] uppercase font-semibold text-fx-warn bg-fx-warn/10 px-2 py-0.5 rounded-full border border-fx-warn/20">
                       {rule.rule_key}
                     </span>
                   </div>
@@ -143,7 +143,7 @@ export default function AlertRulesConfigModal({ isOpen, onClose }) {
                     <button
                       onClick={() => handleSaveThreshold(rule.rule_key)}
                       disabled={savingRuleKey === rule.rule_key}
-                      className="ml-2 text-[11px] font-bold text-fx-accent bg-[#c3ff00]/10 hover:bg-[#c3ff00]/20 border border-fx-accent/30 px-2 py-0.5 rounded-lg transition-all"
+                      className="ml-2 text-[11px] font-bold text-fx-accent bg-[#6b1e96]/10 hover:bg-[#6b1e96]/20 border border-fx-accent/30 px-2 py-0.5 rounded-lg transition-all"
                     >
                       {savingRuleKey === rule.rule_key ? "..." : "Guardar"}
                     </button>
@@ -154,7 +154,7 @@ export default function AlertRulesConfigModal({ isOpen, onClose }) {
                     disabled={savingRuleKey === rule.rule_key}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                       rule.is_enabled
-                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30"
+                        ? "bg-fx-pos/20 text-fx-pos border-fx-pos/40 hover:bg-fx-pos/30"
                         : "bg-gray-800 text-fx-muted border-gray-700 hover:bg-gray-700"
                     }`}
                   >
@@ -170,7 +170,7 @@ export default function AlertRulesConfigModal({ isOpen, onClose }) {
         <div className="pt-4 mt-4 border-t border-fx-line text-right">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-fx-text rounded-xl text-xs font-bold transition-all shadow-lg"
+            className="px-5 py-2 bg-[#6b1e96] hover:bg-[#531575] text-white rounded-xl text-xs font-bold transition-all shadow-lg"
           >
             Cerrar Ventana
           </button>

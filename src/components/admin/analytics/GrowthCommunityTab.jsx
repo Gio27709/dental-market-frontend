@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getGrowthAnalyticsAPI, getStoresListAPI } from "../../../services/api";
+import { getGrowthAnalyticsAPI } from "../../../services/api";
 import KpiCard from "./KpiCard";
 import ChartCard from "./ChartCard";
 import DataTable from "./DataTable";
@@ -7,39 +7,31 @@ import SkeletonLoader from "./SkeletonLoader";
 import FreshnessBadge from "./FreshnessBadge";
 import DateRangePicker from "./DateRangePicker";
 import CompareToggle from "./CompareToggle";
-import AnalyticsStoreFilter from "./AnalyticsStoreFilter";
 import AnalyticsExportButton from "./AnalyticsExportButton";
 import RetentionCohortHeatmap from "./RetentionCohortHeatmap";
 import useDrilldown from "../../../hooks/useDrilldown";
 import DrilldownModal from "./DrilldownModal";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, LineChart, Line } from "recharts";
 
+// Sin filtro de tiendas: lo que mide esta pestaña es la plataforma, no un comercio
+// (usuarios registrados, dentistas verificados, posts, cursos y la concentración de
+// GMV, que acotada a unas tiendas daría 100% por definición). El selector se enviaba
+// y el backend lo ignoraba en sus nueve consultas.
 export default function GrowthCommunityTab() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [storeList, setStoreList] = useState([]);
 
   const [period, setPeriod] = useState("30d");
   const [isComparing, setIsComparing] = useState(false);
-  const [selectedStoreIds, setSelectedStoreIds] = useState([]);
   const [chartMode, setChartMode] = useState("area");
   const drilldown = useDrilldown();
-
-  useEffect(() => {
-    getStoresListAPI()
-      .then((res) => {
-        if (res.data?.data) setStoreList(res.data.data);
-      })
-      .catch((err) => console.error("Error cargando lista de tiendas:", err));
-  }, []);
 
   const fetchGrowthData = useCallback(async (isRefresh = false) => {
     setLoading(true);
     setError(null);
     try {
       const params = { period };
-      if (selectedStoreIds.length > 0) params.store_ids = selectedStoreIds.join(",");
       if (isRefresh) params.refresh = "true";
 
       const res = await getGrowthAnalyticsAPI(params);
@@ -53,7 +45,7 @@ export default function GrowthCommunityTab() {
     } finally {
       setLoading(false);
     }
-  }, [period, selectedStoreIds]);
+  }, [period]);
 
   useEffect(() => {
     fetchGrowthData();
@@ -64,14 +56,14 @@ export default function GrowthCommunityTab() {
   if (error) {
     return (
       <div className="fx-card-danger text-center my-6">
-        <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mx-auto mb-3 text-2xl">
+        <div className="w-12 h-12 rounded-2xl bg-fx-neg/10 border border-fx-neg/20 flex items-center justify-center text-fx-neg mx-auto mb-3 text-2xl">
           ⚠️
         </div>
         <h3 className="text-lg font-bold text-fx-text mb-1">Error al Cargar Growth & Comunidad</h3>
         <p className="text-fx-muted text-xs mb-4">{error}</p>
         <button
           onClick={() => fetchGrowthData(true)}
-          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-fx-text rounded-xl text-xs font-bold transition-all shadow-lg"
+          className="px-4 py-2 bg-[#6b1e96] hover:bg-[#531575] text-white rounded-xl text-xs font-bold transition-all shadow-lg"
         >
           🔄 Reintentar Cargar
         </button>
@@ -92,11 +84,6 @@ export default function GrowthCommunityTab() {
       {/* Header Controls Row */}
       <div className="relative z-30 flex flex-col md:flex-row md:items-center justify-between gap-4 fx-card-sm">
         <div className="flex items-center gap-3 flex-wrap">
-          <AnalyticsStoreFilter
-            storeList={storeList}
-            selectedStoreIds={selectedStoreIds}
-            onStoreChange={setSelectedStoreIds}
-          />
           <CompareToggle isComparing={isComparing} onToggle={setIsComparing} />
           <AnalyticsExportButton activeArea="growth" period={period} />
         </div>
@@ -162,35 +149,35 @@ export default function GrowthCommunityTab() {
         <ResponsiveContainer width="100%" height={260}>
           {chartMode === "bar" ? (
             <BarChart data={acquisitionTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-              <Bar dataKey="new_buyers" name="Nuevos Compradores" fill="#c3ff00" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="new_professionals" name="Nuevos Odontólogos" fill="#a855f7" radius={[4, 4, 0, 0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <Bar dataKey="new_buyers" name="Nuevos Compradores" fill="#6b1e96" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="new_professionals" name="Nuevos Odontólogos" fill="#7c4f9e" radius={[4, 4, 0, 0]} />
             </BarChart>
           ) : chartMode === "line" ? (
             <LineChart data={acquisitionTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-              <Line type="monotone" dataKey="new_buyers" name="Nuevos Compradores" stroke="#c3ff00" strokeWidth={3} dot={false} />
-              <Line type="monotone" dataKey="new_professionals" name="Nuevos Odontólogos" stroke="#a855f7" strokeWidth={2} dot={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <Line type="monotone" dataKey="new_buyers" name="Nuevos Compradores" stroke="#6b1e96" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="new_professionals" name="Nuevos Odontólogos" stroke="#7c4f9e" strokeWidth={2} dot={false} />
             </LineChart>
           ) : (
             <AreaChart data={acquisitionTrend}>
               <defs>
                 <linearGradient id="colorBuyers" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#c3ff00" stopOpacity={0.5} />
-                  <stop offset="95%" stopColor="#c3ff00" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#6b1e96" stopOpacity={0.5} />
+                  <stop offset="95%" stopColor="#6b1e96" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-              <Area type="monotone" dataKey="new_buyers" name="Nuevos Compradores" stroke="#c3ff00" strokeWidth={3} fillOpacity={1} fill="url(#colorBuyers)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <Area type="monotone" dataKey="new_buyers" name="Nuevos Compradores" stroke="#6b1e96" strokeWidth={3} fillOpacity={1} fill="url(#colorBuyers)" />
             </AreaChart>
           )}
         </ResponsiveContainer>

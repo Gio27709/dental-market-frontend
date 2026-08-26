@@ -53,7 +53,7 @@ export default function ProductSalesDrilldownModal({ isOpen, onClose, productId,
   });
 
   return (
-    <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/85 animate-fadeIn">
+    <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-[#33243d]/45 animate-fadeIn">
       <div className="bg-fx-panel border border-fx-line-strong rounded-xl p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto relative">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-fx-line mb-5 gap-3">
@@ -71,11 +71,11 @@ export default function ProductSalesDrilldownModal({ isOpen, onClose, productId,
                 <span className="text-[10px] font-semibold uppercase bg-purple-950 text-fx-faint px-2 py-0.5 rounded-full border border-fx-line-strong">
                   🏪 {storeName}
                 </span>
-                <span className="text-[10px] font-semibold uppercase bg-emerald-500/10 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                <span className="text-[10px] font-semibold uppercase bg-fx-pos/10 text-fx-pos px-2 py-0.5 rounded-full border border-fx-pos/20">
                   {categoryName}
                 </span>
                 {rating > 0 && (
-                  <span className="text-amber-300 font-bold text-xs">★ {rating.toFixed(1)}</span>
+                  <span className="text-fx-warn font-bold text-xs">★ {rating.toFixed(1)}</span>
                 )}
               </div>
               <p className="text-fx-muted text-xs">
@@ -192,7 +192,7 @@ export default function ProductSalesDrilldownModal({ isOpen, onClose, productId,
         <div className="pt-4 mt-4 border-t border-fx-line text-right">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-fx-text rounded-xl text-xs font-bold transition-all shadow-lg"
+            className="px-5 py-2 bg-[#6b1e96] hover:bg-[#531575] text-white rounded-xl text-xs font-bold transition-all shadow-lg"
           >
             Cerrar Desglose
           </button>

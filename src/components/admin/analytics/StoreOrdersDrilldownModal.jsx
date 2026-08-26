@@ -50,32 +50,32 @@ export default function StoreOrdersDrilldownModal({ isOpen, onClose, storeId, pe
     const st = (statusStr || "").toLowerCase();
     if (st === "approved" || st === "paid" || st === "completed" || st === "delivered") {
       return (
-        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm">
+        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-fx-pos/20 text-fx-pos border border-fx-pos/40 shadow-sm">
           ✓ {statusStr}
         </span>
       );
     }
     if (st === "under_review" || st === "pending" || st === "processing") {
       return (
-        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm">
+        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-fx-warn/20 text-fx-warn border border-fx-warn/40 shadow-sm">
           ⏳ {statusStr}
         </span>
       );
     }
     return (
-      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm">
+      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-fx-neg/20 text-fx-neg border border-fx-neg/40 shadow-sm">
         ✕ {statusStr}
       </span>
     );
   };
 
   return (
-    <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/85 animate-fadeIn">
+    <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-[#33243d]/45 animate-fadeIn">
       <div className="bg-fx-panel border border-fx-line-strong rounded-xl p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto relative">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-fx-line mb-5 gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#c3ff00]/10 border border-fx-accent/30 flex items-center justify-center text-fx-accent text-xl font-bold">
+            <div className="w-10 h-10 rounded-2xl bg-[#6b1e96]/10 border border-fx-accent/30 flex items-center justify-center text-fx-accent text-xl font-bold">
               🏪
             </div>
             <div>
@@ -169,7 +169,7 @@ export default function StoreOrdersDrilldownModal({ isOpen, onClose, storeId, pe
         <div className="pt-4 mt-4 border-t border-fx-line text-right">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-fx-text rounded-xl text-xs font-bold transition-all shadow-lg"
+            className="px-5 py-2 bg-[#6b1e96] hover:bg-[#531575] text-white rounded-xl text-xs font-bold transition-all shadow-lg"
           >
             Cerrar Desglose
           </button>

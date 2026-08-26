@@ -17,7 +17,7 @@ const money = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractio
 const momento = (v) => (v ? new Date(v).toLocaleString("es-VE") : "—");
 const dias = (v) => (v === null || v === undefined ? "—" : `${Number(v).toFixed(1)} d`);
 
-const siNo = (v, tonoSi = "text-emerald-400", tonoNo = "text-gray-500") =>
+const siNo = (v, tonoSi = "text-fx-pos", tonoNo = "text-gray-500") =>
   v ? <span className={`font-bold ${tonoSi}`}>Sí</span> : <span className={tonoNo}>No</span>;
 
 const PENALTY_LABELS = {
@@ -27,24 +27,24 @@ const PENALTY_LABELS = {
   cancellation: "Cancelación"
 };
 const PENALTY_STYLES = {
-  warning: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  fine: "bg-orange-500/15 text-orange-300 border-orange-500/30",
-  suspension: "bg-rose-500/15 text-rose-300 border-rose-500/30",
-  cancellation: "bg-red-500/15 text-red-300 border-red-500/30"
+  warning: "bg-fx-warn/15 text-fx-warn border-fx-warn/30",
+  fine: "bg-fx-warn/15 text-fx-warn border-fx-warn/30",
+  suspension: "bg-fx-neg/15 text-fx-neg border-fx-neg/30",
+  cancellation: "bg-fx-neg/15 text-fx-neg border-fx-neg/30"
 };
 
 const PSTATUS_LABELS = { applied: "Aplicada", dismissed: "Descartada", pending: "Pendiente" };
 const PSTATUS_STYLES = {
-  applied: "bg-rose-500/15 text-rose-300 border-rose-500/30",
+  applied: "bg-fx-neg/15 text-fx-neg border-fx-neg/30",
   dismissed: "bg-gray-500/15 text-fx-muted border-gray-500/30",
-  pending: "bg-amber-500/15 text-amber-300 border-amber-500/30"
+  pending: "bg-fx-warn/15 text-fx-warn border-fx-warn/30"
 };
 
 const ROLE_STYLES = {
-  user: "bg-sky-500/15 text-sky-300 border-sky-500/30",
-  store: "bg-purple-500/15 text-fx-faint border-fx-line-strong",
-  admin: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  owner: "bg-lime-500/15 text-lime-300 border-lime-500/30"
+  user: "bg-fx-info/15 text-fx-info border-fx-info/30",
+  store: "bg-fx-violet/15 text-fx-faint border-fx-line-strong",
+  admin: "bg-fx-warn/15 text-fx-warn border-fx-warn/30",
+  owner: "bg-fx-accent/15 text-fx-accent border-fx-accent/30"
 };
 
 const badge = (valor, estilos, etiquetas = {}) => (
@@ -62,13 +62,13 @@ const etapa = (s, i) => (
   <div key={i} className="flex items-start gap-2">
     <span
       className={`mt-0.5 w-4 h-4 shrink-0 rounded-full flex items-center justify-center text-[9px] font-semibold ${
-        s.ok ? "bg-emerald-500/20 text-emerald-300" : "bg-rose-500/25 text-rose-300"
+        s.ok ? "bg-fx-pos/20 text-fx-pos" : "bg-fx-neg/25 text-fx-neg"
       }`}
     >
       {s.ok ? "✓" : "✕"}
     </span>
     <div className="min-w-0">
-      <p className={`text-[11px] font-bold ${s.ok ? "text-fx-muted" : "text-rose-300"}`}>{s.stage}</p>
+      <p className={`text-[11px] font-bold ${s.ok ? "text-fx-muted" : "text-fx-neg"}`}>{s.stage}</p>
       <p className="text-[10px] text-gray-500 font-mono break-all">{s.detail}</p>
     </div>
   </div>
@@ -120,14 +120,14 @@ export default function B2bModulesTab() {
       </div>
 
       {/* Diagnóstico principal */}
-      <div className="bg-rose-500/10 border border-rose-500/40 rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-rose-200 mb-2 uppercase tracking-wide">
+      <div className="bg-fx-neg/10 border border-fx-neg/40 rounded-xl p-5">
+        <h3 className="text-sm font-semibold text-fx-neg mb-2 uppercase tracking-wide">
           Qué está roto y qué simplemente no se usa
         </h3>
         <ul className="space-y-1.5 text-xs text-fx-muted">
           {rotos.length > 0 && (
             <li>
-              <span className="font-semibold text-rose-300">
+              <span className="font-semibold text-fx-neg">
                 {num(rotos.length)} de {num(sum.modulesTracked)} módulos tienen la cadena cortada
               </span>{" "}
               ({rotos.map((m) => m.label).join(", ")}). No están vacíos por falta de uso: es
@@ -136,7 +136,7 @@ export default function B2bModulesTab() {
           )}
           {modules.some((m) => m.blockingStage === "Montada en server") && (
             <li>
-              <span className="font-semibold text-rose-300">
+              <span className="font-semibold text-fx-neg">
                 <span className="font-mono">inventoryRoutes.js</span> nunca se monta en{" "}
                 <span className="font-mono">server.js</span>.
               </span>{" "}
@@ -148,7 +148,7 @@ export default function B2bModulesTab() {
           )}
           {(clinic.dependentServices || []).length > 0 && (
             <li>
-              <span className="font-semibold text-amber-300">
+              <span className="font-semibold text-fx-warn">
                 {num((clinic.dependentServices || []).length)} servicios de backend leen esas tablas vacías
               </span>{" "}
               (<span className="font-mono">{(clinic.dependentServices || []).join(", ")}</span>). Corren sin fallar y
@@ -158,7 +158,7 @@ export default function B2bModulesTab() {
           )}
           {prefs.configured === 0 && prefs.totalUsers > 0 && (
             <li>
-              <span className="font-semibold text-amber-300">
+              <span className="font-semibold text-fx-warn">
                 Ningún usuario ha configurado sus preferencias de notificación
               </span>{" "}
               ({num(prefs.configured)} de {num(prefs.totalUsers)}). La pantalla ya existe (
@@ -170,7 +170,7 @@ export default function B2bModulesTab() {
           )}
           {inertes.length > 0 && (
             <li>
-              <span className="font-semibold text-sky-300">
+              <span className="font-semibold text-fx-info">
                 {num(inertes.length)} módulos funcionan de punta a punta y aun así están en cero
               </span>{" "}
               ({inertes.map((m) => m.label).join(", ")}). Aquí el problema no es técnico sino de adopción, y por eso
@@ -179,7 +179,7 @@ export default function B2bModulesTab() {
           )}
           {pen.total > 0 && ret.requests === 0 && (
             <li>
-              <span className="font-semibold text-lime-300">
+              <span className="font-semibold text-fx-accent">
                 Las incidencias de entrega sí se registran: {num(pen.total)} sanciones a tiendas
               </span>{" "}
               por incumplir el SLA, contra {num(ret.requests)} devoluciones solicitadas. El sistema castiga al proveedor
@@ -201,7 +201,7 @@ export default function B2bModulesTab() {
             <div
               key={m.key}
               className={`rounded-2xl p-4 border ${
-                m.broken ? "border-rose-500/40 bg-rose-500/5" : "border-emerald-500/30 bg-emerald-500/5"
+                m.broken ? "border-fx-neg/40 bg-fx-neg/5" : "border-fx-pos/30 bg-fx-pos/5"
               }`}
             >
               <div className="flex items-start justify-between gap-2 mb-1">
@@ -212,8 +212,8 @@ export default function B2bModulesTab() {
                 <span
                   className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase border whitespace-nowrap ${
                     m.broken
-                      ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
-                      : "bg-sky-500/15 text-sky-300 border-sky-500/30"
+                      ? "bg-fx-neg/15 text-fx-neg border-fx-neg/30"
+                      : "bg-fx-info/15 text-fx-info border-fx-info/30"
                   }`}
                 >
                   {m.broken ? "Cadena rota" : "Sin uso"}
@@ -223,7 +223,7 @@ export default function B2bModulesTab() {
                 <span className="font-semibold text-fx-text">{num(m.rows)}</span> filas registradas
               </p>
               <div className="space-y-1.5 mb-3">{(m.pipeline || []).map(etapa)}</div>
-              <p className="text-[11px] text-fx-muted leading-relaxed border-t border-white/10 pt-2">{m.diagnosis}</p>
+              <p className="text-[11px] text-fx-muted leading-relaxed border-t border-fx-line pt-2">{m.diagnosis}</p>
             </div>
           ))}
         </div>
@@ -290,7 +290,7 @@ export default function B2bModulesTab() {
           />
         </div>
         {ret.requests === 0 && (
-          <p className="text-[11px] text-fx-muted mt-4 border-t border-white/10 pt-3">
+          <p className="text-[11px] text-fx-muted mt-4 border-t border-fx-line pt-3">
             Sin datos aún: la tabla <span className="font-mono">return_requests</span> está vacía. La cadena está
             completa, así que el módulo empezará a llenarse en cuanto un comprador use el botón de{" "}
             <span className="font-mono">Account/OrderDetail.jsx</span>. Los cuadros de arriba quedan instrumentados para
@@ -378,15 +378,15 @@ export default function B2bModulesTab() {
           <ChartCard title="Sanciones por tipo y desenlace" subtitle="Rojo: aplicada. Gris: descartada.">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={penaltyChart} margin={{ top: 10, right: 10, left: 0, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-                <XAxis dataKey="etiqueta" stroke="#7b6c99" fontSize={10} angle={-20} textAnchor="end" height={60} />
-                <YAxis stroke="#7b6c99" fontSize={10} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+                <XAxis dataKey="etiqueta" stroke="#877f92" fontSize={10} angle={-20} textAnchor="end" height={60} />
+                <YAxis stroke="#877f92" fontSize={10} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
+                  contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
                 />
                 <Bar dataKey="n" name="Sanciones" radius={[6, 6, 0, 0]}>
                   {penaltyChart.map((d, i) => (
-                    <Cell key={i} fill={d.aplicada ? "#f43f5e" : "#6b7280"} />
+                    <Cell key={i} fill={d.aplicada ? "#b8482f" : "#6b7280"} />
                   ))}
                 </Bar>
               </BarChart>
@@ -464,7 +464,7 @@ export default function B2bModulesTab() {
           />
         </div>
         {ext.records === 0 && (
-          <p className="text-[11px] text-fx-muted mt-4 border-t border-white/10 pt-3">
+          <p className="text-[11px] text-fx-muted mt-4 border-t border-fx-line pt-3">
             Sin datos aún. La cadena está completa (<span className="font-mono">Store/ProductStats.jsx:131</span> →{" "}
             <span className="font-mono">POST /api/product-stats/:id/external-sale</span>), pero{" "}
             {num(ext.storesWithCatalog)} tiendas con catálogo activo no han registrado una sola venta de mostrador.

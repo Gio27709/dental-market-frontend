@@ -7,10 +7,10 @@ export default function StoreActivationFunnel({ funnelData = {} }) {
   const withSale = parseInt(funnelData?.with_sale || 0, 10);
 
   const steps = [
-    { label: "1. Tiendas Registradas", count: registered, color: "bg-purple-500", pct: 100 },
+    { label: "1. Tiendas Registradas", count: registered, color: "bg-fx-violet", pct: 100 },
     { label: "2. Tiendas Aprobadas", count: approved, color: "bg-indigo-500", pct: registered > 0 ? Math.round((approved / registered) * 100) : 0 },
-    { label: "3. Con Producto Publicado", count: withProduct, color: "bg-cyan-500", pct: registered > 0 ? Math.round((withProduct / registered) * 100) : 0 },
-    { label: "4. Con Primera Venta Realizada", count: withSale, color: "bg-[#c3ff00]", text: "text-black", pct: registered > 0 ? Math.round((withSale / registered) * 100) : 0 },
+    { label: "3. Con Producto Publicado", count: withProduct, color: "bg-fx-info", pct: registered > 0 ? Math.round((withProduct / registered) * 100) : 0 },
+    { label: "4. Con Primera Venta Realizada", count: withSale, color: "bg-[#6b1e96]", text: "text-white", pct: registered > 0 ? Math.round((withSale / registered) * 100) : 0 },
   ];
 
   return (

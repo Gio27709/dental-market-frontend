@@ -31,10 +31,10 @@ const TYPE_LABELS = {
 
 // Verde entra, rojo sale, ámbar son ajustes punitivos.
 const TYPE_COLORS = {
-  sale: "#c3ff00",
-  refund: "#38bdf8",
-  payout: "#f43f5e",
-  fine_deduction: "#fb923c"
+  sale: "#6b1e96",
+  refund: "#3f7794",
+  payout: "#b8482f",
+  fine_deduction: "#9a6a10"
 };
 
 // La tasa se juzga por antigüedad, no por su valor: una tasa vieja es un error que
@@ -42,9 +42,9 @@ const TYPE_COLORS = {
 const staleTone = (days) => {
   const d = parseFloat(days);
   if (!Number.isFinite(d)) return { color: "text-gray-500", label: "sin datos" };
-  if (d <= 1) return { color: "text-emerald-400", label: "al día" };
-  if (d <= 7) return { color: "text-amber-400", label: "atrasada" };
-  return { color: "text-rose-400", label: "obsoleta" };
+  if (d <= 1) return { color: "text-fx-pos", label: "al día" };
+  if (d <= 7) return { color: "text-fx-warn", label: "atrasada" };
+  return { color: "text-fx-neg", label: "obsoleta" };
 };
 
 export default function TreasuryTab() {
@@ -85,33 +85,33 @@ export default function TreasuryTab() {
 
       {/* Alertas de integridad: lo primero que debe ver quien abre esta pestaña */}
       {(kpis.mismatchedWallets > 0 || kpis.orphanPayouts > 0 || parseFloat(kpis.fxDaysStale) > 7) && (
-        <div className="bg-rose-500/10 border border-rose-500/40 rounded-xl p-5">
+        <div className="bg-fx-neg/10 border border-fx-neg/40 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
-            <h3 className="text-sm font-semibold text-rose-200 uppercase tracking-wider">
+            <div className="w-2 h-2 rounded-full bg-fx-neg animate-pulse" />
+            <h3 className="text-sm font-semibold text-fx-neg uppercase tracking-wider">
               Integridad del Dinero
             </h3>
           </div>
           <ul className="space-y-2 text-xs text-fx-muted">
             {kpis.mismatchedWallets > 0 && (
               <li>
-                <span className="font-semibold text-rose-300">{kpis.mismatchedWallets} billeteras</span> tienen
+                <span className="font-semibold text-fx-neg">{kpis.mismatchedWallets} billeteras</span> tienen
                 un saldo que no coincide con su propio libro mayor, por{" "}
-                <span className="font-semibold text-rose-300">{money(kpis.totalVarianceUsd)}</span> en total.
+                <span className="font-semibold text-fx-neg">{money(kpis.totalVarianceUsd)}</span> en total.
                 El saldo se modificó por un camino que no dejó rastro en <code className="text-fx-faint">wallet_transactions</code>.
               </li>
             )}
             {kpis.orphanPayouts > 0 && (
               <li>
-                <span className="font-semibold text-rose-300">{kpis.orphanPayouts} retiros</span> por{" "}
-                <span className="font-semibold text-rose-300">{money(kpis.orphanPayoutUsd)}</span> salieron
+                <span className="font-semibold text-fx-neg">{kpis.orphanPayouts} retiros</span> por{" "}
+                <span className="font-semibold text-fx-neg">{money(kpis.orphanPayoutUsd)}</span> salieron
                 de una billetera sin una solicitud registrada que los respalde.
               </li>
             )}
             {parseFloat(kpis.fxDaysStale) > 7 && (
               <li>
                 La tasa {kpis.fxPair} lleva{" "}
-                <span className="font-semibold text-rose-300">{kpis.fxDaysStale} días</span> sin que el cron la
+                <span className="font-semibold text-fx-neg">{kpis.fxDaysStale} días</span> sin que el cron la
                 verifique contra el BCV (Bs. {kpis.fxRate}). Todo precio en bolívares que ve el cliente y todo
                 retiro que congela su equivalencia usan este valor.
               </li>
@@ -201,7 +201,7 @@ export default function TreasuryTab() {
           title="Total Ya Pagado"
           value={kpis.completedPayoutUsd}
           format="currency"
-          suffix={` en ${kpis.totalPayoutRequests || 0} solicitudes`}
+          suffix={` en ${kpis.completedPayoutRequests || 0} solicitudes`}
           tooltip="Suma de los retiros completados históricamente."
           onDrilldown={() =>
             drilldown.open("payout_requests", { title: "Todas las solicitudes de retiro", filters: { allTime: true } })
@@ -261,9 +261,9 @@ export default function TreasuryTab() {
             render: (r) => {
               const v = Math.abs(parseFloat(r.variance || 0));
               return v < 0.01 ? (
-                <span className="text-emerald-400 font-bold">Cuadra</span>
+                <span className="text-fx-pos font-bold">Cuadra</span>
               ) : (
-                <span className="font-semibold text-rose-400">{money(r.variance)}</span>
+                <span className="font-semibold text-fx-neg">{money(r.variance)}</span>
               );
             }
           },
@@ -271,7 +271,7 @@ export default function TreasuryTab() {
           {
             header: "Pendiente",
             accessor: "balance_pending",
-            render: (r) => <span className="text-amber-400">{money(r.balance_pending)}</span>
+            render: (r) => <span className="text-fx-warn">{money(r.balance_pending)}</span>
           }
         ]}
         data={data?.reconciliation || []}
@@ -287,43 +287,43 @@ export default function TreasuryTab() {
         <ResponsiveContainer width="100%" height={260}>
           {chartMode === "bar" ? (
             <BarChart data={data?.ledgerDaily || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="inflow" name="Entra" fill="#c3ff00" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="outflow" name="Sale" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="inflow" name="Entra" fill="#6b1e96" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="outflow" name="Sale" fill="#b8482f" radius={[4, 4, 0, 0]} />
             </BarChart>
           ) : chartMode === "line" ? (
             <LineChart data={data?.ledgerDaily || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Line type="monotone" dataKey="inflow" name="Entra" stroke="#c3ff00" strokeWidth={3} dot={false} />
-              <Line type="monotone" dataKey="outflow" name="Sale" stroke="#f43f5e" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="inflow" name="Entra" stroke="#6b1e96" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="outflow" name="Sale" stroke="#b8482f" strokeWidth={2} dot={false} />
             </LineChart>
           ) : (
             <AreaChart data={data?.ledgerDaily || []}>
               <defs>
                 <linearGradient id="colorTreasIn" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#c3ff00" stopOpacity={0.5} />
-                  <stop offset="95%" stopColor="#c3ff00" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#6b1e96" stopOpacity={0.5} />
+                  <stop offset="95%" stopColor="#6b1e96" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorTreasOut" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#b8482f" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#b8482f" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Area type="monotone" dataKey="inflow" name="Entra" stroke="#c3ff00" strokeWidth={3} fillOpacity={1} fill="url(#colorTreasIn)" />
-              <Area type="monotone" dataKey="outflow" name="Sale" stroke="#f43f5e" strokeWidth={2} fillOpacity={1} fill="url(#colorTreasOut)" />
+              <Area type="monotone" dataKey="inflow" name="Entra" stroke="#6b1e96" strokeWidth={3} fillOpacity={1} fill="url(#colorTreasIn)" />
+              <Area type="monotone" dataKey="outflow" name="Sale" stroke="#b8482f" strokeWidth={2} fillOpacity={1} fill="url(#colorTreasOut)" />
             </AreaChart>
           )}
         </ResponsiveContainer>
@@ -338,12 +338,12 @@ export default function TreasuryTab() {
           </p>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={ledgerTypes} layout="vertical" margin={{ left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" horizontal={false} />
-              <XAxis type="number" stroke="#7b6c99" fontSize={11} allowDecimals={false} />
-              <YAxis type="category" dataKey="label" stroke="#7b6c99" fontSize={10} width={130} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" horizontal={false} />
+              <XAxis type="number" stroke="#877f92" fontSize={11} allowDecimals={false} />
+              <YAxis type="category" dataKey="label" stroke="#877f92" fontSize={10} width={130} />
               <Tooltip
                 cursor={{ fill: "rgba(168,85,247,0.1)" }}
-                contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
+                contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
                 formatter={(value, _n, entry) => [
                   `${value} movimientos · neto ${money(entry.payload.net)}`,
                   entry.payload.label
@@ -398,7 +398,7 @@ export default function TreasuryTab() {
                     {data.paymentMethods.map((m) => (
                       <span
                         key={m.method_type}
-                        className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/15 text-fx-muted border border-fx-line-strong"
+                        className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-fx-violet/15 text-fx-muted border border-fx-line-strong"
                       >
                         {m.method_type}: {m.total}
                       </span>
@@ -431,7 +431,7 @@ export default function TreasuryTab() {
               </thead>
               <tbody>
                 {data.orphanPayouts.map((r) => (
-                  <tr key={r.id} className="border-b border-fx-line hover:bg-purple-500/5 transition-colors">
+                  <tr key={r.id} className="border-b border-fx-line hover:bg-fx-violet/5 transition-colors">
                     <td className="py-3 px-4">{new Date(r.created_at).toLocaleDateString("es-VE")}</td>
                     <td className="py-3 px-4">
                       <button
@@ -446,10 +446,10 @@ export default function TreasuryTab() {
                         {r.store_name || "—"}
                       </button>
                     </td>
-                    <td className="py-3 px-4 font-semibold text-rose-400">{money(r.amount)}</td>
+                    <td className="py-3 px-4 font-semibold text-fx-neg">{money(r.amount)}</td>
                     <td className="py-3 px-4 text-fx-muted">{r.description || "—"}</td>
                     <td className="py-3 px-4">
-                      {r.actor_name || <span className="text-rose-300 font-bold">sin registrar</span>}
+                      {r.actor_name || <span className="text-fx-neg font-bold">sin registrar</span>}
                     </td>
                   </tr>
                 ))}
@@ -488,11 +488,11 @@ export default function TreasuryTab() {
             accessor: "balance_available",
             render: (r) =>
               r.exceeds_balance ? (
-                <span className="text-rose-400 font-bold">
+                <span className="text-fx-neg font-bold">
                   {money(r.balance_available)} · insuficiente
                 </span>
               ) : (
-                <span className="text-emerald-400">{money(r.balance_available)}</span>
+                <span className="text-fx-pos">{money(r.balance_available)}</span>
               )
           },
           { header: "Método", accessor: "method", render: (r) => <span className="text-fx-muted">{r.method || "—"}</span> },
@@ -503,7 +503,7 @@ export default function TreasuryTab() {
               const h = parseFloat(r.hours_waiting);
               const days = (h / 24).toFixed(1);
               return (
-                <span className={h > 72 ? "text-rose-400 font-bold" : "text-amber-400 font-bold"}>
+                <span className={h > 72 ? "text-fx-neg font-bold" : "text-fx-warn font-bold"}>
                   {days} d
                 </span>
               );
@@ -543,7 +543,7 @@ export default function TreasuryTab() {
             accessor: "pending",
             render: (r) =>
               Number(r.pending) > 0 ? (
-                <span className="text-amber-400 font-bold">{num(r.pending)}</span>
+                <span className="text-fx-warn font-bold">{num(r.pending)}</span>
               ) : (
                 <span className="text-gray-500">0</span>
               )
@@ -552,7 +552,7 @@ export default function TreasuryTab() {
           {
             header: "Total Pagado",
             accessor: "total_paid",
-            render: (r) => <span className="font-bold text-emerald-400">{money(r.total_paid)}</span>
+            render: (r) => <span className="font-bold text-fx-pos">{money(r.total_paid)}</span>
           },
           {
             header: "Última Solicitud",
@@ -591,7 +591,7 @@ export default function TreasuryTab() {
             {
               header: "Disponible",
               accessor: "balance_available",
-              render: (r) => <span className="font-semibold text-amber-400">{money(r.balance_available)}</span>
+              render: (r) => <span className="font-semibold text-fx-warn">{money(r.balance_available)}</span>
             },
             { header: "Pendiente", accessor: "balance_pending", render: (r) => money(r.balance_pending) }
           ]}
@@ -647,7 +647,7 @@ export default function TreasuryTab() {
             header: "Monto",
             accessor: "amount",
             render: (r) => (
-              <span className={`font-semibold ${parseFloat(r.amount) < 0 ? "text-rose-400" : "text-emerald-400"}`}>
+              <span className={`font-semibold ${parseFloat(r.amount) < 0 ? "text-fx-neg" : "text-fx-pos"}`}>
                 {money(r.amount)}
               </span>
             )

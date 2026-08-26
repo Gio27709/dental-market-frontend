@@ -48,7 +48,7 @@ export default function TrafficHeatmap({ cells = [] }) {
                   title={`${DAY_LABELS[dayIndex]} ${String(hour).padStart(2, "0")}:00 — ${value} sesiones`}
                   className="w-6 h-6 rounded border border-fx-line shrink-0"
                   style={{
-                    backgroundColor: value === 0 ? "rgba(168,85,247,0.05)" : "#c3ff00",
+                    backgroundColor: value === 0 ? "rgba(168,85,247,0.05)" : "#6b1e96",
                     // La intensidad es relativa al pico del período, no a un absoluto
                     opacity: value === 0 ? 1 : 0.2 + 0.8 * (value / max),
                   }}
@@ -62,7 +62,7 @@ export default function TrafficHeatmap({ cells = [] }) {
       <div className="flex items-center gap-2 mt-4 text-[10px] text-fx-muted">
         <span>Menos</span>
         {[0.2, 0.4, 0.6, 0.8, 1].map((o) => (
-          <div key={o} className="w-4 h-4 rounded" style={{ backgroundColor: "#c3ff00", opacity: o }} />
+          <div key={o} className="w-4 h-4 rounded" style={{ backgroundColor: "#6b1e96", opacity: o }} />
         ))}
         <span>Más</span>
         <span className="ml-2">· Pico: {max} sesiones</span>

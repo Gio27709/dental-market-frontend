@@ -17,14 +17,14 @@ const usd = (v) => "$" + Number(v || 0).toLocaleString("en-US", { minimumFractio
 const momento = (v) => (v ? new Date(v).toLocaleString("es-VE") : "—");
 const horas = (v) => (v === null || v === undefined ? "—" : `${Number(v).toFixed(1)} h`);
 
-const siNo = (v, tonoSi = "text-emerald-400", tonoNo = "text-gray-500") =>
+const siNo = (v, tonoSi = "text-fx-pos", tonoNo = "text-gray-500") =>
   v ? <span className={`font-bold ${tonoSi}`}>Sí</span> : <span className={tonoNo}>No</span>;
 
 const EVENT_STYLES = {
-  picked_up: "bg-sky-500/15 text-sky-300 border-sky-500/30",
-  arrived: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  delivered: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  failed: "bg-rose-500/15 text-rose-300 border-rose-500/30"
+  picked_up: "bg-fx-info/15 text-fx-info border-fx-info/30",
+  arrived: "bg-fx-warn/15 text-fx-warn border-fx-warn/30",
+  delivered: "bg-fx-pos/15 text-fx-pos border-fx-pos/30",
+  failed: "bg-fx-neg/15 text-fx-neg border-fx-neg/30"
 };
 const EVENT_LABELS = {
   picked_up: "Recogido",
@@ -34,9 +34,9 @@ const EVENT_LABELS = {
 };
 
 const STATUS_STYLES = {
-  delivered: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  shipped: "bg-sky-500/15 text-sky-300 border-sky-500/30",
-  pending: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  delivered: "bg-fx-pos/15 text-fx-pos border-fx-pos/30",
+  shipped: "bg-fx-info/15 text-fx-info border-fx-info/30",
+  pending: "bg-fx-warn/15 text-fx-warn border-fx-warn/30",
   cancelled: "bg-gray-500/15 text-fx-muted border-gray-500/30"
 };
 const STATUS_LABELS = {
@@ -64,12 +64,12 @@ const stageCard = (titulo, etapa, explicacion) => {
     <div
       key={titulo}
       className={`rounded-2xl p-4 border ${
-        bloqueada ? "bg-rose-500/5 border-rose-500/30" : "bg-fx-panel border-fx-line"
+        bloqueada ? "bg-fx-neg/5 border-fx-neg/30" : "bg-fx-panel border-fx-line"
       }`}
     >
       <p className="text-[10px] uppercase tracking-wider text-fx-muted font-bold mb-1">{titulo}</p>
       {bloqueada ? (
-        <p className="text-lg font-semibold text-rose-300">No medible</p>
+        <p className="text-lg font-semibold text-fx-neg">No medible</p>
       ) : (
         <p className="text-2xl font-semibold text-fx-text">{horas(etapa?.hours)}</p>
       )}
@@ -136,14 +136,14 @@ export default function LogisticsDeepTab() {
       </div>
 
       {/* Integridad de la instrumentación */}
-      <div className="bg-rose-500/10 border border-rose-500/40 rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-rose-200 mb-2 uppercase tracking-wide">
+      <div className="bg-fx-neg/10 border border-fx-neg/40 rounded-xl p-5">
+        <h3 className="text-sm font-semibold text-fx-neg mb-2 uppercase tracking-wide">
           Integridad de la Trazabilidad
         </h3>
         <ul className="space-y-1.5 text-xs text-fx-muted">
           {(ins.deliveredWithoutTimestamp || 0) > 0 && (
             <li>
-              <span className="font-semibold text-rose-300">
+              <span className="font-semibold text-fx-neg">
                 {num(ins.deliveredWithoutTimestamp)} ítems entregados
               </span>{" "}
               no tienen hora de entrega. Son legado: hasta la migración 046,{" "}
@@ -155,7 +155,7 @@ export default function LogisticsDeepTab() {
           )}
           {(ins.withSlaPromisedAt || 0) === 0 && (ins.totalItems || 0) > 0 && (
             <li>
-              <span className="font-semibold text-rose-300">Ninguno de los {num(ins.totalItems)} envíos</span> tiene
+              <span className="font-semibold text-fx-neg">Ninguno de los {num(ins.totalItems)} envíos</span> tiene
               promesa de SLA escrita, aunque <span className="font-mono">shipping_sla_hours</span> está configurado en{" "}
               {num(sla.configuredHours)} h. El panel anterior medía el cumplimiento con{" "}
               <span className="font-mono">delivered_at &lt;= sla_promised_at OR sla_promised_at IS NULL</span>: con la
@@ -164,7 +164,7 @@ export default function LogisticsDeepTab() {
           )}
           {skew.coherent === false && (
             <li>
-              <span className="font-semibold text-rose-300">
+              <span className="font-semibold text-fx-neg">
                 {num(skew.eventsBeforeItem)} de {num(skew.pairs)} eventos de entrega
               </span>{" "}
               están fechados ANTES del ítem que entregan (desfase medio {horas(skew.avgOffsetHours)}). Un hito no puede
@@ -174,14 +174,14 @@ export default function LogisticsDeepTab() {
           )}
           {(ev.total || 0) > 0 && (ev.withLat || 0) === 0 && (
             <li>
-              <span className="font-semibold text-amber-300">0 de {num(ev.total)} eventos</span> guardan coordenadas.
+              <span className="font-semibold text-fx-warn">0 de {num(ev.total)} eventos</span> guardan coordenadas.
               Las columnas <span className="font-mono">latitude</span> y <span className="font-mono">longitude</span>{" "}
               existen en la bitácora pero nunca se escriben: la trazabilidad geográfica está cableada y apagada.
             </li>
           )}
           {brokenStates.length > 0 && (
             <li>
-              <span className="font-semibold text-rose-300">
+              <span className="font-semibold text-fx-neg">
                 {num(brokenStates.length)} estado{brokenStates.length === 1 ? "" : "s"} destino
               </span>{" "}
               no existe tal cual en <span className="font-mono">state_distances</span>
@@ -191,7 +191,7 @@ export default function LogisticsDeepTab() {
           )}
           {(car.declaredButLost || 0) > 0 && (
             <li>
-              <span className="font-semibold text-amber-300">{num(car.declaredButLost)} envíos</span> donde el
+              <span className="font-semibold text-fx-warn">{num(car.declaredButLost)} envíos</span> donde el
               comprador eligió transportista salieron sin registrarlo.{" "}
               <span className="font-mono">preferred_shipping_carrier</span> no se propaga a{" "}
               <span className="font-mono">order_items.shipping_carrier</span>.
@@ -199,7 +199,7 @@ export default function LogisticsDeepTab() {
           )}
           {driftRiders.length > 0 && (
             <li>
-              <span className="font-semibold text-amber-300">
+              <span className="font-semibold text-fx-warn">
                 {num(driftRiders.length)} repartidor{driftRiders.length === 1 ? "" : "es"}
               </span>{" "}
               tiene el contador <span className="font-mono">total_deliveries</span> desincronizado de sus eventos
@@ -307,19 +307,19 @@ export default function LogisticsDeepTab() {
       >
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={funnelData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-            <XAxis dataKey="etapa" stroke="#7b6c99" fontSize={11} />
-            <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+            <XAxis dataKey="etapa" stroke="#877f92" fontSize={11} />
+            <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
             <Tooltip
-              contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
+              contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
             />
-            <Bar dataKey="valor" name="Envíos" fill="#c3ff00" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="valor" name="Envíos" fill="#6b1e96" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-          <div className="bg-rose-500/5 border border-rose-500/25 rounded-2xl p-3">
+          <div className="bg-fx-neg/5 border border-fx-neg/25 rounded-2xl p-3">
             <p className="text-[10px] uppercase tracking-wider text-fx-muted font-bold">Entregados sin evento</p>
-            <p className="text-xl font-semibold text-rose-300">{num(fun.deliveredWithoutEvent)}</p>
+            <p className="text-xl font-semibold text-fx-neg">{num(fun.deliveredWithoutEvent)}</p>
             <p className="text-[10px] text-fx-muted mt-1">
               El estado dice entregado y la bitácora no lo registra: la barra de &quot;Entregados&quot; es la realidad
               trazable, no el conteo del negocio ({num(fun.statusDelivered)}).
@@ -335,7 +335,7 @@ export default function LogisticsDeepTab() {
           </div>
           <div className="fx-card-sm">
             <p className="text-[10px] uppercase tracking-wider text-fx-muted font-bold">Fallidos registrados</p>
-            <p className="text-xl font-semibold text-amber-300">{num(fun.failedEvent)}</p>
+            <p className="text-xl font-semibold text-fx-warn">{num(fun.failedEvent)}</p>
             <p className="text-[10px] text-fx-muted mt-1">
               Intentos de entrega que la bitácora marcó como fallidos.
             </p>
@@ -385,13 +385,13 @@ export default function LogisticsDeepTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
           <div
             className={`rounded-2xl p-4 border ${
-              sla.blocked ? "bg-rose-500/5 border-rose-500/30" : "bg-fx-panel border-fx-line"
+              sla.blocked ? "bg-fx-neg/5 border-fx-neg/30" : "bg-fx-panel border-fx-line"
             }`}
           >
             <p className="text-[10px] uppercase tracking-wider text-fx-muted font-bold mb-1">Entregas a Tiempo</p>
             {sla.blocked ? (
               <>
-                <p className="text-lg font-semibold text-rose-300">Retenido</p>
+                <p className="text-lg font-semibold text-fx-neg">Retenido</p>
                 <p className="text-[10px] text-fx-muted mt-2 leading-relaxed">
                   Publicar un porcentaje aquí repetiría el error del panel anterior. Los relojes de las dos tablas no
                   coinciden, así que &quot;a tiempo&quot; saldría 100% por aritmética, no por desempeño.
@@ -512,7 +512,7 @@ export default function LogisticsDeepTab() {
             { header: "Pedido por el comprador", accessor: "declared" },
             { header: "Registrado en el envío", accessor: "actual" },
             { header: "Envíos", accessor: "items", render: (r) => num(r.items) },
-            { header: "Respetado", accessor: "honored", render: (r) => siNo(r.honored, "text-emerald-400", "text-gray-500") }
+            { header: "Respetado", accessor: "honored", render: (r) => siNo(r.honored, "text-fx-pos", "text-gray-500") }
           ]}
           data={car.matrix || []}
           emptyMessage="Sin envíos en el período"
@@ -582,13 +582,13 @@ export default function LogisticsDeepTab() {
           <div className="mb-5">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={stateChart}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-                <XAxis dataKey="estado" stroke="#7b6c99" fontSize={10} />
-                <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+                <XAxis dataKey="estado" stroke="#877f92" fontSize={10} />
+                <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
+                  contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
                 />
-                <Bar dataKey="pedidos" name="Pedidos" fill="#a855f7" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="pedidos" name="Pedidos" fill="#7c4f9e" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -609,12 +609,12 @@ export default function LogisticsDeepTab() {
             {
               header: "Resuelve distancia",
               accessor: "matchesExact",
-              render: (r) => siNo(r.matchesExact, "text-emerald-400", "text-rose-400")
+              render: (r) => siNo(r.matchesExact, "text-fx-pos", "text-fx-neg")
             },
             {
               header: "Rompe por tilde",
               accessor: "brokenByAccent",
-              render: (r) => siNo(r.brokenByAccent, "text-rose-400", "text-gray-500")
+              render: (r) => siNo(r.brokenByAccent, "text-fx-neg", "text-gray-500")
             }
           ]}
           data={geo.states || []}
@@ -639,9 +639,9 @@ export default function LogisticsDeepTab() {
               accessor: "counterDrift",
               render: (r) =>
                 r.counterDrift === 0 ? (
-                  <span className="text-emerald-400 font-bold">0</span>
+                  <span className="text-fx-pos font-bold">0</span>
                 ) : (
-                  <span className="text-rose-400 font-bold">{r.counterDrift}</span>
+                  <span className="text-fx-neg font-bold">{r.counterDrift}</span>
                 )
             },
             { header: "Fallidas", accessor: "realFailed", render: (r) => num(r.realFailed) },
@@ -673,7 +673,7 @@ export default function LogisticsDeepTab() {
               header: "Antigüedad",
               accessor: "ageHours",
               render: (r) => (
-                <span className={r.pastDue ? "text-rose-400 font-bold" : "text-fx-muted"}>{horas(r.ageHours)}</span>
+                <span className={r.pastDue ? "text-fx-neg font-bold" : "text-fx-muted"}>{horas(r.ageHours)}</span>
               )
             }
           ]}
@@ -695,7 +695,7 @@ export default function LogisticsDeepTab() {
             de <span className="text-fx-text font-bold">{num(ev.distinctRiders)}</span> repartidor(es)
           </span>
           <span>
-            con GPS: <span className="text-rose-400 font-bold">{num(ev.geoCoveragePct)}%</span>
+            con GPS: <span className="text-fx-neg font-bold">{num(ev.geoCoveragePct)}%</span>
           </span>
           <span>
             rango: {momento(ev.firstEvent)} → {momento(ev.lastEvent)}
@@ -716,7 +716,7 @@ export default function LogisticsDeepTab() {
               render: (r) => badge(r.deliveryStatus, STATUS_STYLES, STATUS_LABELS)
             },
             { header: "Destino", accessor: "state", render: (r) => r.state || "—" },
-            { header: "GPS", accessor: "hasGeo", render: (r) => siNo(r.hasGeo, "text-emerald-400", "text-rose-400") },
+            { header: "GPS", accessor: "hasGeo", render: (r) => siNo(r.hasGeo, "text-fx-pos", "text-fx-neg") },
             { header: "Notas", accessor: "notes" }
           ]}
           data={ev.rows || []}
@@ -782,7 +782,7 @@ export default function LogisticsDeepTab() {
                   filters: { allTime: true }
                 })
               }
-              className="w-full text-[11px] font-bold text-fx-accent border border-fx-accent/30 rounded-xl py-2 hover:bg-[#c3ff00]/10 transition-colors"
+              className="w-full text-[11px] font-bold text-fx-accent border border-fx-accent/30 rounded-xl py-2 hover:bg-[#6b1e96]/10 transition-colors"
             >
               Ver todas las direcciones
             </button>

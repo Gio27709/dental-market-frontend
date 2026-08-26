@@ -17,8 +17,8 @@ import {
   XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer,
 } from "recharts";
 
-const DEVICE_COLORS = { desktop: "#c3ff00", mobile: "#a855f7", tablet: "#38bdf8", bot: "#f43f5e", unknown: "#64748b" };
-const TOOLTIP_STYLE = { backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" };
+const DEVICE_COLORS = { desktop: "#6b1e96", mobile: "#7c4f9e", tablet: "#3f7794", bot: "#b8482f", unknown: "#64748b" };
+const TOOLTIP_STYLE = { backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" };
 
 export default function AudienceTab() {
   const [period, setPeriod] = useState("30d");
@@ -47,7 +47,7 @@ export default function AudienceTab() {
     <div className="space-y-6">
       <div className="relative z-30 flex flex-col md:flex-row md:items-center justify-between gap-4 fx-card-sm">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-fx-pos animate-pulse" />
           <span className="text-xs font-bold text-fx-text">{kpis.onlineNow || 0}</span>
           <span className="text-[11px] text-fx-muted">usuarios activos ahora mismo</span>
         </div>
@@ -184,44 +184,44 @@ export default function AudienceTab() {
             <ResponsiveContainer width="100%" height={280}>
               {chartMode === "bar" ? (
                 <BarChart data={dailyTrend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-                  <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-                  <YAxis stroke="#7b6c99" fontSize={11} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+                  <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+                  <YAxis stroke="#877f92" fontSize={11} />
                   <Tooltip contentStyle={TOOLTIP_STYLE} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="sessions" name="Sesiones" fill="#c3ff00" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="visitors" name="Visitantes" fill="#a855f7" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="sessions" name="Sesiones" fill="#6b1e96" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="visitors" name="Visitantes" fill="#7c4f9e" radius={[4, 4, 0, 0]} />
                 </BarChart>
               ) : chartMode === "line" ? (
                 <LineChart data={dailyTrend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-                  <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-                  <YAxis stroke="#7b6c99" fontSize={11} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+                  <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+                  <YAxis stroke="#877f92" fontSize={11} />
                   <Tooltip contentStyle={TOOLTIP_STYLE} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Line type="monotone" dataKey="sessions" name="Sesiones" stroke="#c3ff00" strokeWidth={3} dot={false} />
-                  <Line type="monotone" dataKey="visitors" name="Visitantes" stroke="#a855f7" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="page_views" name="Páginas vistas" stroke="#38bdf8" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="sessions" name="Sesiones" stroke="#6b1e96" strokeWidth={3} dot={false} />
+                  <Line type="monotone" dataKey="visitors" name="Visitantes" stroke="#7c4f9e" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="page_views" name="Páginas vistas" stroke="#3f7794" strokeWidth={2} dot={false} />
                 </LineChart>
               ) : (
                 <AreaChart data={dailyTrend}>
                   <defs>
                     <linearGradient id="audienceSessions" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#c3ff00" stopOpacity={0.5} />
-                      <stop offset="95%" stopColor="#c3ff00" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#6b1e96" stopOpacity={0.5} />
+                      <stop offset="95%" stopColor="#6b1e96" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="audienceVisitors" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#7c4f9e" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#7c4f9e" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-                  <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-                  <YAxis stroke="#7b6c99" fontSize={11} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+                  <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+                  <YAxis stroke="#877f92" fontSize={11} />
                   <Tooltip contentStyle={TOOLTIP_STYLE} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Area type="monotone" dataKey="sessions" name="Sesiones" stroke="#c3ff00" strokeWidth={3} fillOpacity={1} fill="url(#audienceSessions)" />
-                  <Area type="monotone" dataKey="visitors" name="Visitantes" stroke="#a855f7" strokeWidth={2} fillOpacity={1} fill="url(#audienceVisitors)" />
+                  <Area type="monotone" dataKey="sessions" name="Sesiones" stroke="#6b1e96" strokeWidth={3} fillOpacity={1} fill="url(#audienceSessions)" />
+                  <Area type="monotone" dataKey="visitors" name="Visitantes" stroke="#7c4f9e" strokeWidth={2} fillOpacity={1} fill="url(#audienceVisitors)" />
                 </AreaChart>
               )}
             </ResponsiveContainer>
@@ -252,8 +252,8 @@ export default function AudienceTab() {
               <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
                   <Pie data={visitorTypeData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={3}>
-                    <Cell fill="#c3ff00" />
-                    <Cell fill="#a855f7" />
+                    <Cell fill="#6b1e96" />
+                    <Cell fill="#7c4f9e" />
                   </Pie>
                   <Tooltip contentStyle={TOOLTIP_STYLE} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />

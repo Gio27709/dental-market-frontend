@@ -190,40 +190,40 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
         <ResponsiveContainer width="100%" height={280}>
           {chartMode === "bar" ? (
             <BarChart data={revenueChart}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-              <Bar dataKey="gmv" name="GMV ($)" fill="#a855f7" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="platform_revenue" name="Ingreso Neto ($)" fill="#c3ff00" radius={[4, 4, 0, 0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <Bar dataKey="gmv" name="GMV ($)" fill="#7c4f9e" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="platform_revenue" name="Ingreso Neto ($)" fill="#6b1e96" radius={[4, 4, 0, 0]} />
             </BarChart>
           ) : chartMode === "line" ? (
             <LineChart data={revenueChart}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-              <Line type="monotone" dataKey="gmv" name="GMV ($)" stroke="#a855f7" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="platform_revenue" name="Ingreso Neto ($)" stroke="#c3ff00" strokeWidth={3} dot={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <Line type="monotone" dataKey="gmv" name="GMV ($)" stroke="#7c4f9e" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="platform_revenue" name="Ingreso Neto ($)" stroke="#6b1e96" strokeWidth={3} dot={false} />
             </LineChart>
           ) : (
             <AreaChart data={revenueChart}>
               <defs>
                 <linearGradient id="colorGmv" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#7c4f9e" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#7c4f9e" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#c3ff00" stopOpacity={0.5} />
-                  <stop offset="95%" stopColor="#c3ff00" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#6b1e96" stopOpacity={0.5} />
+                  <stop offset="95%" stopColor="#6b1e96" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-              <Area type="monotone" dataKey="gmv" name="GMV ($)" stroke="#a855f7" fillOpacity={1} fill="url(#colorGmv)" />
-              <Area type="monotone" dataKey="platform_revenue" name="Ingreso Neto ($)" stroke="#c3ff00" strokeWidth={2} fillOpacity={1} fill="url(#colorRev)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <Area type="monotone" dataKey="gmv" name="GMV ($)" stroke="#7c4f9e" fillOpacity={1} fill="url(#colorGmv)" />
+              <Area type="monotone" dataKey="platform_revenue" name="Ingreso Neto ($)" stroke="#6b1e96" strokeWidth={2} fillOpacity={1} fill="url(#colorRev)" />
             </AreaChart>
           )}
         </ResponsiveContainer>
@@ -235,25 +235,25 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
           Backlog Operativo en Tiempo Real (Pendientes de Acción)
         </h4>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-          <div onClick={() => (window.location.href = "/admin/payment-approvals")} className="cursor-pointer bg-fx-inset border border-fx-line hover:border-amber-500/40 p-3 rounded-2xl transition-all">
+          <div onClick={() => (window.location.href = "/admin/payment-approvals")} className="cursor-pointer bg-fx-inset border border-fx-line hover:border-fx-warn/40 p-3 rounded-2xl transition-all">
             <span className="text-[10px] text-fx-muted block font-semibold">Pagos por Aprobar</span>
-            <span className="text-xl font-semibold text-amber-400">{backlog.pending_payments || 0}</span>
+            <span className="text-xl font-semibold text-fx-warn">{backlog.pending_payments || 0}</span>
           </div>
-          <div onClick={() => (window.location.href = "/admin/payouts")} className="cursor-pointer bg-fx-inset border border-fx-line hover:border-amber-500/40 p-3 rounded-2xl transition-all">
+          <div onClick={() => (window.location.href = "/admin/payouts")} className="cursor-pointer bg-fx-inset border border-fx-line hover:border-fx-warn/40 p-3 rounded-2xl transition-all">
             <span className="text-[10px] text-fx-muted block font-semibold">Retiros Pendientes</span>
-            <span className="text-xl font-semibold text-amber-400">{backlog.pending_payouts || 0}</span>
+            <span className="text-xl font-semibold text-fx-warn">{backlog.pending_payouts || 0}</span>
           </div>
-          <div onClick={() => (window.location.href = "/admin/professional-verifications")} className="cursor-pointer bg-fx-inset border border-fx-line hover:border-cyan-500/40 p-3 rounded-2xl transition-all">
+          <div onClick={() => (window.location.href = "/admin/professional-verifications")} className="cursor-pointer bg-fx-inset border border-fx-line hover:border-fx-info/40 p-3 rounded-2xl transition-all">
             <span className="text-[10px] text-fx-muted block font-semibold">Verif. Médicas</span>
-            <span className="text-xl font-semibold text-cyan-400">{backlog.pending_verifications || 0}</span>
+            <span className="text-xl font-semibold text-fx-info">{backlog.pending_verifications || 0}</span>
           </div>
-          <div onClick={() => (window.location.href = "/admin/product-moderation")} className="cursor-pointer bg-fx-inset border border-fx-line hover:border-purple-400/40 p-3 rounded-2xl transition-all">
+          <div onClick={() => (window.location.href = "/admin/product-moderation")} className="cursor-pointer bg-fx-inset border border-fx-line hover:border-fx-violet/40 p-3 rounded-2xl transition-all">
             <span className="text-[10px] text-fx-muted block font-semibold">Mod. Productos</span>
             <span className="text-xl font-semibold text-fx-faint">{backlog.pending_products || 0}</span>
           </div>
-          <div onClick={() => (window.location.href = "/admin/support")} className="cursor-pointer bg-fx-inset border border-fx-line hover:border-rose-500/40 p-3 rounded-2xl transition-all">
+          <div onClick={() => (window.location.href = "/admin/support")} className="cursor-pointer bg-fx-inset border border-fx-line hover:border-fx-neg/40 p-3 rounded-2xl transition-all">
             <span className="text-[10px] text-fx-muted block font-semibold">Tickets Abiertos</span>
-            <span className="text-xl font-semibold text-rose-400">{backlog.open_tickets || 0}</span>
+            <span className="text-xl font-semibold text-fx-neg">{backlog.open_tickets || 0}</span>
           </div>
         </div>
       </div>
@@ -318,14 +318,14 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
       <DataTable
         title="Feed de Actividad Transaccional Reciente"
         columns={[
-          { header: "Tipo", accessor: "event_type", render: (r) => <span className="uppercase font-bold text-fx-accent text-[10px] bg-[#c3ff00]/10 px-2 py-0.5 rounded-full border border-fx-accent/20">{r.event_type}</span> },
+          { header: "Tipo", accessor: "event_type", render: (r) => <span className="uppercase font-bold text-fx-accent text-[10px] bg-[#6b1e96]/10 px-2 py-0.5 rounded-full border border-fx-accent/20">{r.event_type}</span> },
           { header: "Referencia ID", accessor: "reference_id", render: (r) => <span className="font-mono text-fx-faint">{r.reference_id}</span> },
           { header: "Fecha / Hora", accessor: "created_at", render: (r) => new Date(r.created_at).toLocaleString("es-VE") },
         ]}
         data={feed}
       />
 
-      <DrilldownModal {...drilldown.props} period={period} />
+      <DrilldownModal {...drilldown.props} period={period} storeIds={selectedStoreIds} />
     </div>
   );
 }

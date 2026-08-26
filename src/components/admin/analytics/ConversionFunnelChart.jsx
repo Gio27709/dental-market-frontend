@@ -35,13 +35,13 @@ export default function ConversionFunnelChart({ steps = [] }) {
                   className="h-full rounded-xl transition-all duration-500"
                   style={{
                     width: `${Math.max(widthPct, sessions > 0 ? 2 : 0)}%`,
-                    background: "linear-gradient(90deg, #c3ff00 0%, #a855f7 100%)",
+                    background: "linear-gradient(90deg, #6b1e96 0%, #7c4f9e 100%)",
                   }}
                 />
               </div>
 
               {dropped > 0 && (
-                <p className="text-[10px] text-rose-300/90 mt-1 ml-1">
+                <p className="text-[10px] text-fx-neg/90 mt-1 ml-1">
                   ↓ {dropped.toLocaleString()} sesiones se perdieron aquí
                   {step.pct_of_previous !== null && ` (avanzó el ${parseFloat(step.pct_of_previous || 0).toFixed(1)}%)`}
                 </p>

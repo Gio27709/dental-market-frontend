@@ -27,13 +27,13 @@ const formatCell = (value, format) => {
       return new Date(value).toLocaleString("es-VE");
     case "bool":
       return value ? (
-        <span className="text-emerald-400 font-bold">Sí</span>
+        <span className="text-fx-pos font-bold">Sí</span>
       ) : (
-        <span className="text-rose-400 font-bold">No</span>
+        <span className="text-fx-neg font-bold">No</span>
       );
     case "stars":
       return (
-        <span className="text-amber-400 font-bold whitespace-nowrap">
+        <span className="text-fx-warn font-bold whitespace-nowrap">
           {"★".repeat(Math.round(value))}
           <span className="text-gray-600">{"★".repeat(Math.max(0, 5 - Math.round(value)))}</span>
         </span>
@@ -57,7 +57,7 @@ const toCsvCell = (value) => {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-export default function DrilldownModal({ isOpen, onClose, dataset, title, subtitle, filters = {}, period = "30d" }) {
+export default function DrilldownModal({ isOpen, onClose, dataset, title, subtitle, filters = {}, period = "30d", storeIds = [] }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [payload, setPayload] = useState(null);
@@ -69,6 +69,7 @@ export default function DrilldownModal({ isOpen, onClose, dataset, title, subtit
   // `filters` suele llegar como objeto literal desde el JSX del padre, que cambia de
   // identidad en cada render. Sin esto el efecto de carga se dispararía en bucle.
   const filtersKey = JSON.stringify(filters);
+  const storeIdsKey = storeIds.join(",");
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
@@ -77,6 +78,7 @@ export default function DrilldownModal({ isOpen, onClose, dataset, title, subtit
       const res = await getDrilldownAPI(dataset, {
         ...JSON.parse(filtersKey),
         period,
+        ...(storeIdsKey ? { store_ids: storeIdsKey } : {}),
         page,
         pageSize: 50,
         ...(sort ? { sort, dir } : {})
@@ -87,7 +89,7 @@ export default function DrilldownModal({ isOpen, onClose, dataset, title, subtit
     } finally {
       setLoading(false);
     }
-  }, [dataset, filtersKey, period, page, sort, dir]);
+  }, [dataset, filtersKey, storeIdsKey, period, page, sort, dir]);
 
   useEffect(() => {
     if (isOpen) fetchRows();
@@ -97,7 +99,7 @@ export default function DrilldownModal({ isOpen, onClose, dataset, title, subtit
   // página que puede ya no existir en el nuevo conjunto de resultados.
   useEffect(() => {
     setPage(1);
-  }, [dataset, filtersKey, period]);
+  }, [dataset, filtersKey, storeIdsKey, period]);
 
   const columns = useMemo(() => payload?.columns || [], [payload]);
   const rows = useMemo(() => payload?.rows || [], [payload]);
@@ -136,12 +138,12 @@ export default function DrilldownModal({ isOpen, onClose, dataset, title, subtit
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/85 animate-fadeIn">
+    <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-[#33243d]/45 animate-fadeIn">
       <div className="bg-fx-panel border border-fx-line-strong rounded-xl p-6 max-w-7xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-fx-line mb-4 gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 shrink-0 rounded-2xl bg-[#c3ff00]/10 border border-fx-accent/30 flex items-center justify-center text-fx-accent text-xl">
+            <div className="w-10 h-10 shrink-0 rounded-2xl bg-[#6b1e96]/10 border border-fx-accent/30 flex items-center justify-center text-fx-accent text-xl">
               🔍
             </div>
             <div className="min-w-0">
@@ -163,7 +165,7 @@ export default function DrilldownModal({ isOpen, onClose, dataset, title, subtit
             <button
               onClick={exportCsv}
               disabled={rows.length === 0}
-              className="px-3 py-1.5 bg-[#c3ff00]/10 hover:bg-[#c3ff00]/20 border border-fx-accent/30 text-fx-accent rounded-xl text-xs font-bold transition-all disabled:opacity-40"
+              className="px-3 py-1.5 bg-[#6b1e96]/10 hover:bg-[#6b1e96]/20 border border-fx-accent/30 text-fx-accent rounded-xl text-xs font-bold transition-all disabled:opacity-40"
             >
               ↓ CSV
             </button>
@@ -176,6 +178,14 @@ export default function DrilldownModal({ isOpen, onClose, dataset, title, subtit
           </div>
         </div>
 
+        {payload?.storeScope?.requested && !payload.storeScope.applied && (
+          <div className="mb-4 px-3 py-2 rounded-xl bg-fx-warn/10 border border-fx-warn/30 text-fx-warn text-xs">
+            {payload.storeScope.exempt
+              ? "Este detalle no se acota por tienda: la métrica que lo abre es de toda la plataforma."
+              : "Este detalle no puede acotarse por tienda, así que muestra todos los comercios aunque haya un filtro activo."}
+          </div>
+        )}
+
         {/* Cuerpo */}
         <div className="flex-1 overflow-auto min-h-[200px]">
           {loading ? (
@@ -184,11 +194,11 @@ export default function DrilldownModal({ isOpen, onClose, dataset, title, subtit
             </div>
           ) : error ? (
             <div className="py-16 text-center">
-              <p className="text-rose-300 text-sm font-bold mb-2">No se pudo cargar el detalle</p>
+              <p className="text-fx-neg text-sm font-bold mb-2">No se pudo cargar el detalle</p>
               <p className="text-fx-muted text-xs mb-4">{error}</p>
               <button
                 onClick={fetchRows}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-fx-text rounded-xl text-xs font-bold transition-all"
+                className="px-4 py-2 bg-[#6b1e96] hover:bg-[#531575] text-white rounded-xl text-xs font-bold transition-all"
               >
                 Reintentar
               </button>
@@ -252,7 +262,7 @@ export default function DrilldownModal({ isOpen, onClose, dataset, title, subtit
             </button>
             <button
               onClick={onClose}
-              className="px-5 py-1.5 bg-purple-600 hover:bg-purple-500 text-fx-text rounded-xl text-xs font-bold transition-all shadow-lg"
+              className="px-5 py-1.5 bg-[#6b1e96] hover:bg-[#531575] text-white rounded-xl text-xs font-bold transition-all shadow-lg"
             >
               Cerrar
             </button>
@@ -269,6 +279,7 @@ DrilldownModal.propTypes = {
   dataset: PropTypes.string.isRequired,
   title: PropTypes.string,
   subtitle: PropTypes.string,
+  storeIds: PropTypes.arrayOf(PropTypes.string),
   filters: PropTypes.object,
   period: PropTypes.string
 };

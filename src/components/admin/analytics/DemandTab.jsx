@@ -26,11 +26,11 @@ const AGE_LABELS = {
 // El degradado va de recuperable (verde) a demanda muerta (rojo): mientras más viejo
 // el carrito, menos sentido tiene invertir en recuperarlo.
 const AGE_COLORS = {
-  hoy: "#c3ff00",
-  ultima_semana: "#a3e635",
-  ultimo_mes: "#facc15",
-  ultimo_trimestre: "#fb923c",
-  mas_90d: "#f43f5e"
+  hoy: "#6b1e96",
+  ultima_semana: "#6b1e96",
+  ultimo_mes: "#9a6a10",
+  ultimo_trimestre: "#9a6a10",
+  mas_90d: "#b8482f"
 };
 
 const AGE_ORDER = ["hoy", "ultima_semana", "ultimo_mes", "ultimo_trimestre", "mas_90d"];
@@ -192,43 +192,43 @@ export default function DemandTab() {
         <ResponsiveContainer width="100%" height={260}>
           {chartMode === "bar" ? (
             <BarChart data={data?.dailyTrend || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="favorites" name="Favoritos" fill="#a855f7" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="cart_adds" name="Agregados al carrito" fill="#c3ff00" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="favorites" name="Favoritos" fill="#7c4f9e" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="cart_adds" name="Agregados al carrito" fill="#6b1e96" radius={[4, 4, 0, 0]} />
             </BarChart>
           ) : chartMode === "line" ? (
             <LineChart data={data?.dailyTrend || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Line type="monotone" dataKey="favorites" name="Favoritos" stroke="#a855f7" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="cart_adds" name="Agregados al carrito" stroke="#c3ff00" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="favorites" name="Favoritos" stroke="#7c4f9e" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="cart_adds" name="Agregados al carrito" stroke="#6b1e96" strokeWidth={3} dot={false} />
             </LineChart>
           ) : (
             <AreaChart data={data?.dailyTrend || []}>
               <defs>
                 <linearGradient id="colorDemandFav" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#7c4f9e" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#7c4f9e" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorDemandCart" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#c3ff00" stopOpacity={0.5} />
-                  <stop offset="95%" stopColor="#c3ff00" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#6b1e96" stopOpacity={0.5} />
+                  <stop offset="95%" stopColor="#6b1e96" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Area type="monotone" dataKey="favorites" name="Favoritos" stroke="#a855f7" strokeWidth={2} fillOpacity={1} fill="url(#colorDemandFav)" />
-              <Area type="monotone" dataKey="cart_adds" name="Agregados al carrito" stroke="#c3ff00" strokeWidth={3} fillOpacity={1} fill="url(#colorDemandCart)" />
+              <Area type="monotone" dataKey="favorites" name="Favoritos" stroke="#7c4f9e" strokeWidth={2} fillOpacity={1} fill="url(#colorDemandFav)" />
+              <Area type="monotone" dataKey="cart_adds" name="Agregados al carrito" stroke="#6b1e96" strokeWidth={3} fillOpacity={1} fill="url(#colorDemandCart)" />
             </AreaChart>
           )}
         </ResponsiveContainer>
@@ -243,12 +243,12 @@ export default function DemandTab() {
           </p>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={ageBuckets} layout="vertical" margin={{ left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" horizontal={false} />
-              <XAxis type="number" stroke="#7b6c99" fontSize={11} allowDecimals={false} />
-              <YAxis type="category" dataKey="label" stroke="#7b6c99" fontSize={10} width={110} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" horizontal={false} />
+              <XAxis type="number" stroke="#877f92" fontSize={11} allowDecimals={false} />
+              <YAxis type="category" dataKey="label" stroke="#877f92" fontSize={10} width={110} />
               <Tooltip
                 cursor={{ fill: "rgba(168,85,247,0.1)" }}
-                contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
+                contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
                 formatter={(value, _name, entry) => [`${value} carritos · ${money(entry.payload.value_usd)}`, "Detenido"]}
               />
               <Bar dataKey="carts" radius={[0, 6, 6, 0]}>
@@ -289,7 +289,7 @@ export default function DemandTab() {
               header: "Stock",
               accessor: "stock_status",
               render: (r) => (
-                <span className={r.stock_status === "Activo" ? "text-emerald-400" : "text-rose-400 font-bold"}>
+                <span className={r.stock_status === "Activo" ? "text-fx-pos" : "text-fx-neg font-bold"}>
                   {r.stock_status || "—"}
                 </span>
               )
@@ -331,7 +331,7 @@ export default function DemandTab() {
             header: "Días Sin Tocar",
             accessor: "days_idle",
             render: (r) => (
-              <span className={parseFloat(r.days_idle) > 30 ? "text-rose-400 font-bold" : "text-amber-400 font-bold"}>
+              <span className={parseFloat(r.days_idle) > 30 ? "text-fx-neg font-bold" : "text-fx-warn font-bold"}>
                 {r.days_idle} d
               </span>
             )
@@ -361,7 +361,7 @@ export default function DemandTab() {
               </thead>
               <tbody>
                 {data.blockedDemand.map((r) => (
-                  <tr key={r.product_id} className="border-b border-fx-line hover:bg-purple-500/5 transition-colors">
+                  <tr key={r.product_id} className="border-b border-fx-line hover:bg-fx-violet/5 transition-colors">
                     <td className="py-3 px-4">
                       <button
                         onClick={() =>
@@ -379,7 +379,7 @@ export default function DemandTab() {
                     <td className="py-3 px-4">{money(r.price)}</td>
                     <td className="py-3 px-4 font-bold text-fx-accent">{r.demand_signals}</td>
                     <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-rose-500/15 text-rose-300 border border-rose-500/30 whitespace-nowrap">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-fx-neg/15 text-fx-neg border border-fx-neg/30 whitespace-nowrap">
                         {r.blocked_reason}
                       </span>
                     </td>
@@ -422,9 +422,9 @@ export default function DemandTab() {
             accessor: "units_sold",
             render: (r) =>
               Number(r.units_sold) === 0 ? (
-                <span className="text-rose-400 font-bold">0 · nunca se vendió</span>
+                <span className="text-fx-neg font-bold">0 · nunca se vendió</span>
               ) : (
-                <span className="text-emerald-400 font-bold">{Number(r.units_sold).toLocaleString("en-US")}</span>
+                <span className="text-fx-pos font-bold">{Number(r.units_sold).toLocaleString("en-US")}</span>
               )
           }
         ]}

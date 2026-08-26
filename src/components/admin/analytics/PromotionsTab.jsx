@@ -20,9 +20,9 @@ const usd = (v) => "$" + Number(v || 0).toLocaleString("en-US", { minimumFractio
 const fecha = (v) => (v ? new Date(v).toLocaleDateString("es-VE") : "—");
 
 const APPROVAL_STYLES = {
-  approved: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  rejected: "bg-rose-500/15 text-rose-300 border-rose-500/30",
-  pending: "bg-amber-500/15 text-amber-300 border-amber-500/30"
+  approved: "bg-fx-pos/15 text-fx-pos border-fx-pos/30",
+  rejected: "bg-fx-neg/15 text-fx-neg border-fx-neg/30",
+  pending: "bg-fx-warn/15 text-fx-warn border-fx-warn/30"
 };
 const APPROVAL_LABELS = { approved: "Aprobado", rejected: "Rechazado", pending: "Pendiente" };
 
@@ -44,8 +44,8 @@ const stockBadge = (estado) => {
     <span
       className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase border whitespace-nowrap ${
         ok
-          ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-          : "bg-rose-500/15 text-rose-300 border-rose-500/30"
+          ? "bg-fx-pos/15 text-fx-pos border-fx-pos/30"
+          : "bg-fx-neg/15 text-fx-neg border-fx-neg/30"
       }`}
     >
       {estado || "—"}
@@ -53,7 +53,7 @@ const stockBadge = (estado) => {
   );
 };
 
-const siNo = (v, tonoSi = "text-emerald-400", tonoNo = "text-gray-500") =>
+const siNo = (v, tonoSi = "text-fx-pos", tonoNo = "text-gray-500") =>
   v ? <span className={`font-bold ${tonoSi}`}>Sí</span> : <span className={tonoNo}>No</span>;
 
 export default function PromotionsTab() {
@@ -108,14 +108,14 @@ export default function PromotionsTab() {
 
       {/* Alertas de integridad promocional */}
       {hasIntegrityIssues && (
-        <div className="bg-rose-500/10 border border-rose-500/40 rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-rose-200 mb-2 uppercase tracking-wide">
+        <div className="bg-fx-neg/10 border border-fx-neg/40 rounded-xl p-5">
+          <h3 className="text-sm font-semibold text-fx-neg mb-2 uppercase tracking-wide">
             Integridad de Promociones y Precios
           </h3>
           <ul className="space-y-1.5 text-xs text-fx-muted">
             {(ck.orphanedCodesCount || 0) > 0 && (
               <li>
-                <span className="font-semibold text-rose-300">
+                <span className="font-semibold text-fx-neg">
                   {num(ck.orphanedCodesCount)} código{ck.orphanedCodesCount === 1 ? "" : "s"} de cupón
                 </span>{" "}
                 con redenciones ya no existe. El código válido se sintetiza en checkout como{" "}
@@ -125,7 +125,7 @@ export default function PromotionsTab() {
             )}
             {(dk.resolvableUnapproved || 0) > 0 && (
               <li>
-                <span className="font-semibold text-rose-300">{num(dk.resolvableUnapproved)} descuentos</span> que
+                <span className="font-semibold text-fx-neg">{num(dk.resolvableUnapproved)} descuentos</span> que
                 moderación no aprobó son aplicables hoy de todos modos:{" "}
                 <span className="font-mono">getApplicableDiscount</span> no filtra{" "}
                 <span className="font-mono">approval_status</span>, así que catálogo, carrito y checkout los usan.
@@ -133,39 +133,39 @@ export default function PromotionsTab() {
             )}
             {(dk.rejectedButActive || 0) > 0 && (dk.resolvableUnapproved || 0) === 0 && (
               <li>
-                <span className="font-semibold text-amber-300">{num(dk.rejectedButActive)} descuentos rechazados</span>{" "}
+                <span className="font-semibold text-fx-warn">{num(dk.rejectedButActive)} descuentos rechazados</span>{" "}
                 siguen marcados como activos. Hoy solo los salva su fecha vencida; si alguien la extiende, se aplican.
               </li>
             )}
             {(dk.zombies || 0) > 0 && (
               <li>
-                <span className="font-semibold text-rose-300">{num(dk.zombies)} descuentos vencidos</span> siguen
+                <span className="font-semibold text-fx-neg">{num(dk.zombies)} descuentos vencidos</span> siguen
                 declarándose activos. Nada apaga <span className="font-mono">is_active</span> al expirar, así que la
                 tienda los ve vigentes en su panel.
               </li>
             )}
             {(pk.zombies || 0) > 0 && (
               <li>
-                <span className="font-semibold text-rose-300">{num(pk.zombies)} promociones vencidas</span> siguen
+                <span className="font-semibold text-fx-neg">{num(pk.zombies)} promociones vencidas</span> siguen
                 activas en la vitrina.
               </li>
             )}
             {(pk.neverEnding || 0) > 0 && (
               <li>
-                <span className="font-semibold text-amber-300">{num(pk.neverEnding)} promociones sin fecha de fin</span>{" "}
+                <span className="font-semibold text-fx-warn">{num(pk.neverEnding)} promociones sin fecha de fin</span>{" "}
                 corren indefinidamente. Una oferta que no termina deja de ser una oferta.
               </li>
             )}
             {promotedUnbuyable > 0 && (
               <li>
-                <span className="font-semibold text-rose-300">{num(promotedUnbuyable)} productos promocionados</span> no
+                <span className="font-semibold text-fx-neg">{num(promotedUnbuyable)} productos promocionados</span> no
                 se pueden comprar (sin stock, en borrador o inactivos). Ocupan el mejor espacio de la portada para llevar
                 al comprador a una pared.
               </li>
             )}
             {(pi.fakeCompareAt || 0) > 0 && (
               <li>
-                <span className="font-semibold text-amber-300">{num(pi.fakeCompareAt)} productos</span> tienen un
+                <span className="font-semibold text-fx-warn">{num(pi.fakeCompareAt)} productos</span> tienen un
                 &quot;precio antes&quot; que no supera al precio actual: la tachadura que sostiene visualmente la oferta
                 es decorativa.
               </li>
@@ -293,7 +293,7 @@ export default function PromotionsTab() {
             <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-fx-accent">
               Código activo ahora mismo
             </span>
-            <span className="px-3 py-1 rounded-lg bg-[#c3ff00]/15 border border-fx-accent/40 font-mono text-sm font-semibold text-fx-accent">
+            <span className="px-3 py-1 rounded-lg bg-[#6b1e96]/15 border border-fx-accent/40 font-mono text-sm font-semibold text-fx-accent">
               {cfg.activeCode}
             </span>
             <span className="text-[11px] text-fx-muted">
@@ -311,12 +311,12 @@ export default function PromotionsTab() {
             ].map(([label, ok]) => (
               <div key={label} className="bg-fx-panel border border-fx-line rounded-xl px-3 py-2">
                 <p className="text-fx-muted mb-0.5">{label}</p>
-                <p className={`font-semibold ${ok ? "text-emerald-400" : "text-rose-400"}`}>{ok ? "Sí" : "No"}</p>
+                <p className={`font-semibold ${ok ? "text-fx-pos" : "text-fx-neg"}`}>{ok ? "Sí" : "No"}</p>
               </div>
             ))}
           </div>
           <p className="text-[11px] text-fx-muted mt-3">
-            Se aplica a <span className="text-amber-300 font-bold">{cfg.appliesTo}</span>, no al total del pedido.
+            Se aplica a <span className="text-fx-warn font-bold">{cfg.appliesTo}</span>, no al total del pedido.
           </p>
         </div>
       </div>
@@ -353,9 +353,9 @@ export default function PromotionsTab() {
             accessor: "isCurrentlyValid",
             render: (r) =>
               r.isCurrentlyValid ? (
-                <span className="font-bold text-emerald-400">Sí</span>
+                <span className="font-bold text-fx-pos">Sí</span>
               ) : (
-                <span className="font-bold text-rose-400">No · huérfano</span>
+                <span className="font-bold text-fx-neg">No · huérfano</span>
               )
           },
           { header: "Redenciones", accessor: "redemptions", render: (r) => num(r.redemptions) },
@@ -371,7 +371,7 @@ export default function PromotionsTab() {
               </span>
             )
           },
-          { header: "Cedido", accessor: "cededUsd", render: (r) => <span className="font-bold text-rose-300">{usd(r.cededUsd)}</span> },
+          { header: "Cedido", accessor: "cededUsd", render: (r) => <span className="font-bold text-fx-neg">{usd(r.cededUsd)}</span> },
           { header: "Facturado Bruto", accessor: "grossGmvUsd", render: (r) => usd(r.grossGmvUsd) }
         ]}
         data={cup.codes || []}
@@ -387,27 +387,27 @@ export default function PromotionsTab() {
         <ResponsiveContainer width="100%" height={260}>
           {chartMode === "line" ? (
             <AreaChart data={cup.daily || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="day" stroke="#7b6c99" fontSize={11} tickFormatter={fecha} />
-              <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="day" stroke="#877f92" fontSize={11} tickFormatter={fecha} />
+              <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
               <Tooltip
                 labelFormatter={fecha}
-                contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
+                contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Area type="monotone" dataKey="cededUsd" name="Cedido (USD)" stroke="#a855f7" fill="rgba(168,85,247,0.25)" strokeWidth={2} />
+              <Area type="monotone" dataKey="cededUsd" name="Cedido (USD)" stroke="#7c4f9e" fill="rgba(168,85,247,0.25)" strokeWidth={2} />
             </AreaChart>
           ) : (
             <BarChart data={cup.daily || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="day" stroke="#7b6c99" fontSize={11} tickFormatter={fecha} />
-              <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="day" stroke="#877f92" fontSize={11} tickFormatter={fecha} />
+              <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
               <Tooltip
                 labelFormatter={fecha}
-                contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
+                contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="redemptions" name="Redenciones" fill="#c3ff00" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="redemptions" name="Redenciones" fill="#6b1e96" radius={[6, 6, 0, 0]} />
             </BarChart>
           )}
         </ResponsiveContainer>
@@ -444,9 +444,9 @@ export default function PromotionsTab() {
             accessor: "isSubscriber",
             render: (r) =>
               r.isSubscriber ? (
-                <span className="font-bold text-emerald-400">Sí</span>
+                <span className="font-bold text-fx-pos">Sí</span>
               ) : (
-                <span className="font-bold text-amber-400">No</span>
+                <span className="font-bold text-fx-warn">No</span>
               )
           },
           {
@@ -456,14 +456,14 @@ export default function PromotionsTab() {
               const total = ck.redemptions || 0;
               const share = total > 0 ? (r.redemptions / total) * 100 : 0;
               return (
-                <span className={share >= 30 ? "font-semibold text-rose-400" : "font-bold text-fx-text"}>
+                <span className={share >= 30 ? "font-semibold text-fx-neg" : "font-bold text-fx-text"}>
                   {num(r.redemptions)}
                   <span className="text-[10px] font-normal text-fx-muted"> · {share.toFixed(0)}%</span>
                 </span>
               );
             }
           },
-          { header: "Cedido", accessor: "cededUsd", render: (r) => <span className="font-bold text-rose-300">{usd(r.cededUsd)}</span> },
+          { header: "Cedido", accessor: "cededUsd", render: (r) => <span className="font-bold text-fx-neg">{usd(r.cededUsd)}</span> },
           { header: "Facturado", accessor: "gmvUsd", render: (r) => usd(r.gmvUsd) },
           {
             header: "Ventana de Uso",
@@ -616,17 +616,17 @@ export default function PromotionsTab() {
           {
             header: "Declarado Activo",
             accessor: "isActive",
-            render: (r) => siNo(r.isActive, "text-emerald-400", "text-gray-500")
+            render: (r) => siNo(r.isActive, "text-fx-pos", "text-gray-500")
           },
           {
             header: "Aplicable Hoy",
             accessor: "resolvableToday",
             render: (r) => {
               if (r.resolvableToday && r.approvalStatus !== "approved") {
-                return <span className="font-semibold text-rose-400">Sí · sin aprobar</span>;
+                return <span className="font-semibold text-fx-neg">Sí · sin aprobar</span>;
               }
-              if (r.resolvableToday) return <span className="font-bold text-emerald-400">Sí</span>;
-              if (r.isZombie) return <span className="font-bold text-amber-400">No · vencido</span>;
+              if (r.resolvableToday) return <span className="font-bold text-fx-pos">Sí</span>;
+              if (r.isZombie) return <span className="font-bold text-fx-warn">No · vencido</span>;
               return <span className="text-gray-500">No</span>;
             }
           },
@@ -635,7 +635,7 @@ export default function PromotionsTab() {
             accessor: "endsAt",
             render: (r) => (
               <span className="text-[11px] text-fx-muted">
-                {fecha(r.startsAt)} → {r.endsAt ? fecha(r.endsAt) : <span className="text-amber-400">sin fin</span>}
+                {fecha(r.startsAt)} → {r.endsAt ? fecha(r.endsAt) : <span className="text-fx-warn">sin fin</span>}
               </span>
             )
           },
@@ -645,7 +645,7 @@ export default function PromotionsTab() {
             render: (r) => (
               <span>
                 {num(r.currentUses)}
-                {r.maxUses ? <span className="text-[10px] text-fx-muted"> / {num(r.maxUses)}</span> : <span className="text-[10px] text-amber-400"> / sin tope</span>}
+                {r.maxUses ? <span className="text-[10px] text-fx-muted"> / {num(r.maxUses)}</span> : <span className="text-[10px] text-fx-warn"> / sin tope</span>}
               </span>
             )
           },
@@ -653,7 +653,7 @@ export default function PromotionsTab() {
             header: "Usos Reales",
             accessor: "realUses",
             render: (r) => (
-              <span className={r.counterDrift ? "font-semibold text-rose-400" : "font-bold text-emerald-400"}>
+              <span className={r.counterDrift ? "font-semibold text-fx-neg" : "font-bold text-fx-pos"}>
                 {num(r.realUses)}
                 {r.counterDrift && <span className="text-[10px] font-normal"> · no coincide</span>}
               </span>
@@ -777,8 +777,8 @@ export default function PromotionsTab() {
             header: "Viva Hoy",
             accessor: "liveToday",
             render: (r) => {
-              if (r.liveToday) return <span className="font-bold text-emerald-400">Sí</span>;
-              if (r.isZombie) return <span className="font-bold text-rose-400">No · vencida y activa</span>;
+              if (r.liveToday) return <span className="font-bold text-fx-pos">Sí</span>;
+              if (r.isZombie) return <span className="font-bold text-fx-neg">No · vencida y activa</span>;
               return <span className="text-gray-500">No</span>;
             }
           },
@@ -787,7 +787,7 @@ export default function PromotionsTab() {
             accessor: "endsAt",
             render: (r) => (
               <span className="text-[11px] text-fx-muted">
-                {fecha(r.startsAt)} → {r.endsAt ? fecha(r.endsAt) : <span className="text-amber-400">sin fin</span>}
+                {fecha(r.startsAt)} → {r.endsAt ? fecha(r.endsAt) : <span className="text-fx-warn">sin fin</span>}
               </span>
             )
           },
@@ -797,7 +797,7 @@ export default function PromotionsTab() {
             render: (r) => {
               const falta = (r.targetedProducts || 0) - (r.buyableProducts || 0);
               return (
-                <span className={falta > 0 ? "font-semibold text-rose-400" : "font-bold text-emerald-400"}>
+                <span className={falta > 0 ? "font-semibold text-fx-neg" : "font-bold text-fx-pos"}>
                   {num(r.buyableProducts)} / {num(r.targetedProducts)}
                   {falta > 0 && <span className="text-[10px] font-normal"> · {falta} en pared</span>}
                 </span>
@@ -809,9 +809,9 @@ export default function PromotionsTab() {
             accessor: "fakeDiscountProducts",
             render: (r) =>
               Number(r.fakeDiscountProducts) > 0 ? (
-                <span className="font-bold text-amber-400">{num(r.fakeDiscountProducts)}</span>
+                <span className="font-bold text-fx-warn">{num(r.fakeDiscountProducts)}</span>
               ) : (
-                <span className="text-emerald-400">0</span>
+                <span className="text-fx-pos">0</span>
               )
           },
           { header: "Destacada", accessor: "isFeatured", render: (r) => siNo(r.isFeatured) },
@@ -866,7 +866,7 @@ export default function PromotionsTab() {
               Number(r.realDiscountPct) > 0 ? (
                 <span className="font-semibold text-fx-accent">{r.realDiscountPct}%</span>
               ) : (
-                <span className="font-bold text-rose-400">0% · sin ahorro</span>
+                <span className="font-bold text-fx-neg">0% · sin ahorro</span>
               )
           },
           { header: "Stock", accessor: "stockStatus", render: (r) => stockBadge(r.stockStatus) },
@@ -875,9 +875,9 @@ export default function PromotionsTab() {
             accessor: "isBuyable",
             render: (r) =>
               r.isBuyable ? (
-                <span className="font-bold text-emerald-400">Sí</span>
+                <span className="font-bold text-fx-pos">Sí</span>
               ) : (
-                <span className="font-semibold text-rose-400">No</span>
+                <span className="font-semibold text-fx-neg">No</span>
               )
           }
         ]}

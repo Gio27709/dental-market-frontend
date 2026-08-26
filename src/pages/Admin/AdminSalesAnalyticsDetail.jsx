@@ -15,13 +15,13 @@ import { ArrowLeft, ArrowRight, FileDown, FileSpreadsheet, Info, Package, Rotate
 import * as XLSX from "xlsx";
 
 /** Mismo lenguaje visual que el resto de analíticas (ver index.css). */
-const AXIS = "#7b6c99";
-const GRID = "#ffffff12";
+const AXIS = "#877f92";
+const GRID = "#00000010";
 const TOOLTIP_STYLE = {
-  backgroundColor: "#0d0418",
-  border: "1px solid #ffffff29",
+  backgroundColor: "#f7f4fc",
+  border: "1px solid #00000020",
   borderRadius: "10px",
-  color: "#f4f1f8",
+  color: "#33243d",
   fontSize: 12,
   boxShadow: "0 8px 24px rgba(0,0,0,0.55)"
 };
@@ -289,7 +289,7 @@ export default function AdminSalesAnalyticsDetail() {
   };
 
   return (
-    <div className="bg-fx-base border border-fx-line rounded-2xl p-4 md:p-6 space-y-5">
+    <div className="bg-fx-base border border-fx-line-outer rounded-2xl p-4 md:p-6 space-y-5">
       {/* ── Cabecera y navegación de vuelta ── */}
       <header className="relative z-30 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="min-w-0">
@@ -520,8 +520,8 @@ export default function AdminSalesAnalyticsDetail() {
                   <XAxis dataKey="date" stroke={AXIS} fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke={AXIS} fontSize={11} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "#ffffff0a" }} />
-                  <Bar dataKey="sales_volume" name="GMV ($)" fill="#c3ff00" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="units_sold" name="Unidades" fill="#a855f7" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="sales_volume" name="GMV ($)" fill="#6b1e96" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="units_sold" name="Unidades" fill="#7c4f9e" radius={[4, 4, 0, 0]} />
                 </BarChart>
               ) : chartMode === "line" ? (
                 <LineChart data={salesTrend}>
@@ -529,22 +529,22 @@ export default function AdminSalesAnalyticsDetail() {
                   <XAxis dataKey="date" stroke={AXIS} fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke={AXIS} fontSize={11} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "#ffffff0a" }} />
-                  <Line type="monotone" dataKey="sales_volume" name="GMV ($)" stroke="#c3ff00" strokeWidth={3} dot={false} />
-                  <Line type="monotone" dataKey="units_sold" name="Unidades" stroke="#a855f7" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="sales_volume" name="GMV ($)" stroke="#6b1e96" strokeWidth={3} dot={false} />
+                  <Line type="monotone" dataKey="units_sold" name="Unidades" stroke="#7c4f9e" strokeWidth={2} dot={false} />
                 </LineChart>
               ) : (
                 <AreaChart data={salesTrend}>
                   <defs>
                     <linearGradient id="colorSalesDetail" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#c3ff00" stopOpacity={0.5} />
-                      <stop offset="95%" stopColor="#c3ff00" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#6b1e96" stopOpacity={0.5} />
+                      <stop offset="95%" stopColor="#6b1e96" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
                   <XAxis dataKey="date" stroke={AXIS} fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke={AXIS} fontSize={11} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "#ffffff0a" }} />
-                  <Area type="monotone" dataKey="sales_volume" name="GMV ($)" stroke="#c3ff00" strokeWidth={3} fillOpacity={1} fill="url(#colorSalesDetail)" />
+                  <Area type="monotone" dataKey="sales_volume" name="GMV ($)" stroke="#6b1e96" strokeWidth={3} fillOpacity={1} fill="url(#colorSalesDetail)" />
                 </AreaChart>
               )}
             </ResponsiveContainer>

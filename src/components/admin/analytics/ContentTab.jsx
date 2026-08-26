@@ -17,7 +17,7 @@ import {
   XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer,
 } from "recharts";
 
-const TOOLTIP_STYLE = { backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" };
+const TOOLTIP_STYLE = { backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" };
 
 const VALID_PERIODS = ["7d", "15d", "30d", "90d", "365d"];
 
@@ -166,44 +166,44 @@ export default function ContentTab() {
         <ResponsiveContainer width="100%" height={280}>
           {chartMode === "bar" ? (
             <BarChart data={data?.engagementTrend || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="impressions" name="Alcance" fill="#7b6c99" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="views" name="Lecturas" fill="#c3ff00" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="likes" name="Me gusta" fill="#a855f7" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="comments" name="Comentarios" fill="#38bdf8" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="impressions" name="Alcance" fill="#877f92" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="views" name="Lecturas" fill="#6b1e96" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="likes" name="Me gusta" fill="#7c4f9e" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="comments" name="Comentarios" fill="#3f7794" radius={[4, 4, 0, 0]} />
             </BarChart>
           ) : chartMode === "line" ? (
             <LineChart data={data?.engagementTrend || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Line type="monotone" dataKey="impressions" name="Alcance" stroke="#7b6c99" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="views" name="Lecturas" stroke="#c3ff00" strokeWidth={3} dot={false} />
-              <Line type="monotone" dataKey="likes" name="Me gusta" stroke="#a855f7" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="comments" name="Comentarios" stroke="#38bdf8" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="impressions" name="Alcance" stroke="#877f92" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="views" name="Lecturas" stroke="#6b1e96" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="likes" name="Me gusta" stroke="#7c4f9e" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="comments" name="Comentarios" stroke="#3f7794" strokeWidth={2} dot={false} />
             </LineChart>
           ) : (
             <AreaChart data={data?.engagementTrend || []}>
               <defs>
                 <linearGradient id="contentViews" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#c3ff00" stopOpacity={0.5} />
-                  <stop offset="95%" stopColor="#c3ff00" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#6b1e96" stopOpacity={0.5} />
+                  <stop offset="95%" stopColor="#6b1e96" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Area type="monotone" dataKey="impressions" name="Alcance" stroke="#7b6c99" strokeWidth={2} fillOpacity={0.15} fill="#7b6c99" />
-              <Area type="monotone" dataKey="views" name="Lecturas" stroke="#c3ff00" strokeWidth={3} fillOpacity={1} fill="url(#contentViews)" />
-              <Area type="monotone" dataKey="likes" name="Me gusta" stroke="#a855f7" strokeWidth={2} fillOpacity={0.2} fill="#a855f7" />
+              <Area type="monotone" dataKey="impressions" name="Alcance" stroke="#877f92" strokeWidth={2} fillOpacity={0.15} fill="#877f92" />
+              <Area type="monotone" dataKey="views" name="Lecturas" stroke="#6b1e96" strokeWidth={3} fillOpacity={1} fill="url(#contentViews)" />
+              <Area type="monotone" dataKey="likes" name="Me gusta" stroke="#7c4f9e" strokeWidth={2} fillOpacity={0.2} fill="#7c4f9e" />
             </AreaChart>
           )}
         </ResponsiveContainer>

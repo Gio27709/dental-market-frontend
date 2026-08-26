@@ -43,12 +43,12 @@ export default function GmvDrilldownModal({ isOpen, onClose, period = "30d" }) {
   const aov = totalOrders > 0 ? totalGmv / totalOrders : 0;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/85 animate-fadeIn">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#33243d]/45 animate-fadeIn">
       <div className="bg-fx-panel border border-fx-line-strong rounded-xl p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto relative">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-fx-line mb-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#c3ff00]/10 border border-fx-accent/30 flex items-center justify-center text-fx-accent text-xl font-bold">
+            <div className="w-10 h-10 rounded-2xl bg-[#6b1e96]/10 border border-fx-accent/30 flex items-center justify-center text-fx-accent text-xl font-bold">
               📊
             </div>
             <div>
@@ -107,7 +107,7 @@ export default function GmvDrilldownModal({ isOpen, onClose, period = "30d" }) {
                           {pm.order_count} pedidos ({pct}% del total)
                         </span>
                       </div>
-                      <div className="text-xl font-bold text-purple-400/40">💳</div>
+                      <div className="text-xl font-bold text-fx-violet/40">💳</div>
                     </div>
                   );
                 })}
@@ -115,11 +115,11 @@ export default function GmvDrilldownModal({ isOpen, onClose, period = "30d" }) {
 
               <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={paymentMix}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-                  <XAxis dataKey="payment_method" stroke="#7b6c99" fontSize={11} />
-                  <YAxis stroke="#7b6c99" fontSize={11} />
-                  <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-                  <Bar dataKey="total_usd" name="Monto Procesado ($)" fill="#c3ff00" radius={[4, 4, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+                  <XAxis dataKey="payment_method" stroke="#877f92" fontSize={11} />
+                  <YAxis stroke="#877f92" fontSize={11} />
+                  <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+                  <Bar dataKey="total_usd" name="Monto Procesado ($)" fill="#6b1e96" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -204,7 +204,7 @@ export default function GmvDrilldownModal({ isOpen, onClose, period = "30d" }) {
         <div className="pt-4 mt-4 border-t border-fx-line text-right">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-fx-text rounded-xl text-xs font-bold transition-all shadow-lg"
+            className="px-5 py-2 bg-[#6b1e96] hover:bg-[#531575] text-white rounded-xl text-xs font-bold transition-all shadow-lg"
           >
             Cerrar Ventana
           </button>

@@ -29,7 +29,7 @@ export default function AnalyticsExportButton({ activeArea = "executive" }) {
       <button
         onClick={() => handleExport("excel")}
         disabled={exporting}
-        className="px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-all flex items-center gap-1.5 disabled:opacity-50"
+        className="px-3 py-1.5 rounded-lg text-xs font-bold text-fx-pos hover:bg-fx-pos/20 transition-all flex items-center gap-1.5 disabled:opacity-50"
       >
         <span>📊</span>
         <span>Exportar Excel</span>

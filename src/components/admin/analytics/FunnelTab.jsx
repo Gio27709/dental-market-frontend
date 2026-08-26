@@ -17,7 +17,7 @@ import {
   XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer,
 } from "recharts";
 
-const TOOLTIP_STYLE = { backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" };
+const TOOLTIP_STYLE = { backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" };
 
 export default function FunnelTab() {
   const [period, setPeriod] = useState("30d");
@@ -105,35 +105,35 @@ export default function FunnelTab() {
             <ResponsiveContainer width="100%" height={280}>
               {chartMode === "bar" ? (
                 <BarChart data={data?.dailyConversion || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-                  <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-                  <YAxis stroke="#7b6c99" fontSize={11} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+                  <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+                  <YAxis stroke="#877f92" fontSize={11} />
                   <Tooltip contentStyle={TOOLTIP_STYLE} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="sessions" name="Sesiones" fill="#a855f7" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="converted_sessions" name="Con compra" fill="#c3ff00" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="sessions" name="Sesiones" fill="#7c4f9e" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="converted_sessions" name="Con compra" fill="#6b1e96" radius={[4, 4, 0, 0]} />
                 </BarChart>
               ) : chartMode === "line" ? (
                 <LineChart data={data?.dailyConversion || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-                  <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-                  <YAxis stroke="#7b6c99" fontSize={11} unit="%" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+                  <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+                  <YAxis stroke="#877f92" fontSize={11} unit="%" />
                   <Tooltip contentStyle={TOOLTIP_STYLE} />
-                  <Line type="monotone" dataKey="conversion_rate_pct" name="Conversión %" stroke="#c3ff00" strokeWidth={3} dot={false} />
+                  <Line type="monotone" dataKey="conversion_rate_pct" name="Conversión %" stroke="#6b1e96" strokeWidth={3} dot={false} />
                 </LineChart>
               ) : (
                 <AreaChart data={data?.dailyConversion || []}>
                   <defs>
                     <linearGradient id="funnelConversion" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#c3ff00" stopOpacity={0.5} />
-                      <stop offset="95%" stopColor="#c3ff00" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#6b1e96" stopOpacity={0.5} />
+                      <stop offset="95%" stopColor="#6b1e96" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-                  <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-                  <YAxis stroke="#7b6c99" fontSize={11} unit="%" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+                  <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+                  <YAxis stroke="#877f92" fontSize={11} unit="%" />
                   <Tooltip contentStyle={TOOLTIP_STYLE} />
-                  <Area type="monotone" dataKey="conversion_rate_pct" name="Conversión %" stroke="#c3ff00" strokeWidth={3} fillOpacity={1} fill="url(#funnelConversion)" />
+                  <Area type="monotone" dataKey="conversion_rate_pct" name="Conversión %" stroke="#6b1e96" strokeWidth={3} fillOpacity={1} fill="url(#funnelConversion)" />
                 </AreaChart>
               )}
             </ResponsiveContainer>
@@ -224,10 +224,10 @@ export default function FunnelTab() {
                   {zeroResults.map((row) => (
                     <div
                       key={row.query}
-                      className="flex items-center justify-between gap-3 bg-rose-500/5 border border-rose-500/20 rounded-xl px-3 py-2"
+                      className="flex items-center justify-between gap-3 bg-fx-neg/5 border border-fx-neg/20 rounded-xl px-3 py-2"
                     >
                       <span className="text-xs font-bold text-fx-text truncate">{row.query}</span>
-                      <span className="text-[11px] font-semibold text-rose-300 shrink-0">
+                      <span className="text-[11px] font-semibold text-fx-neg shrink-0">
                         {row.searches} {row.searches === 1 ? "búsqueda" : "búsquedas"}
                       </span>
                     </div>
@@ -290,7 +290,7 @@ export default function FunnelTab() {
                   </button>
                 ),
               },
-              { header: "Vistas sin conversión", accessor: "views", render: (r) => <span className="font-semibold text-amber-300">{parseInt(r.views || 0).toLocaleString()}</span> },
+              { header: "Vistas sin conversión", accessor: "views", render: (r) => <span className="font-semibold text-fx-warn">{parseInt(r.views || 0).toLocaleString()}</span> },
             ]}
             data={data?.viewedNeverAddedProducts || []}
             searchPlaceholder="Buscar producto..."

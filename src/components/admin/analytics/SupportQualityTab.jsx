@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getSupportAnalyticsAPI, getStoresListAPI } from "../../../services/api";
+import { getSupportAnalyticsAPI } from "../../../services/api";
 import useDrilldown from "../../../hooks/useDrilldown";
 import KpiCard from "./KpiCard";
 import ChartCard from "./ChartCard";
@@ -8,35 +8,26 @@ import DrilldownModal from "./DrilldownModal";
 import SkeletonLoader from "./SkeletonLoader";
 import FreshnessBadge from "./FreshnessBadge";
 import DateRangePicker from "./DateRangePicker";
-import AnalyticsStoreFilter from "./AnalyticsStoreFilter";
 import AnalyticsExportButton from "./AnalyticsExportButton";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, LineChart, Line } from "recharts";
 
+// Sin filtro de tiendas: un ticket de soporte no tiene tienda. `support_tickets` no
+// guarda store_id y su `order_id` está vacío en todas las filas, así que acotar por
+// tienda dejaba cada métrica en cero. El selector se enviaba y el backend lo ignoraba.
 export default function SupportQualityTab() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [storeList, setStoreList] = useState([]);
 
   const [period, setPeriod] = useState("30d");
-  const [selectedStoreIds, setSelectedStoreIds] = useState([]);
   const [chartMode, setChartMode] = useState("bar");
   const drilldown = useDrilldown();
-
-  useEffect(() => {
-    getStoresListAPI()
-      .then((res) => {
-        if (res.data?.data) setStoreList(res.data.data);
-      })
-      .catch((err) => console.error("Error cargando lista de tiendas:", err));
-  }, []);
 
   const fetchSupportData = useCallback(async (isRefresh = false) => {
     setLoading(true);
     setError(null);
     try {
       const params = { period };
-      if (selectedStoreIds.length > 0) params.store_ids = selectedStoreIds.join(",");
       if (isRefresh) params.refresh = "true";
 
       const res = await getSupportAnalyticsAPI(params);
@@ -50,7 +41,7 @@ export default function SupportQualityTab() {
     } finally {
       setLoading(false);
     }
-  }, [period, selectedStoreIds]);
+  }, [period]);
 
   useEffect(() => {
     fetchSupportData();
@@ -61,14 +52,14 @@ export default function SupportQualityTab() {
   if (error) {
     return (
       <div className="fx-card-danger text-center my-6">
-        <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mx-auto mb-3 text-2xl">
+        <div className="w-12 h-12 rounded-2xl bg-fx-neg/10 border border-fx-neg/20 flex items-center justify-center text-fx-neg mx-auto mb-3 text-2xl">
           ⚠️
         </div>
         <h3 className="text-lg font-bold text-fx-text mb-1">Error al Cargar Soporte & Calidad</h3>
         <p className="text-fx-muted text-xs mb-4">{error}</p>
         <button
           onClick={() => fetchSupportData(true)}
-          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-fx-text rounded-xl text-xs font-bold transition-all shadow-lg"
+          className="px-4 py-2 bg-[#6b1e96] hover:bg-[#531575] text-white rounded-xl text-xs font-bold transition-all shadow-lg"
         >
           🔄 Reintentar Cargar
         </button>
@@ -87,11 +78,6 @@ export default function SupportQualityTab() {
       {/* Header Controls Row */}
       <div className="relative z-30 flex flex-col md:flex-row md:items-center justify-between gap-4 fx-card-sm">
         <div className="flex items-center gap-3 flex-wrap">
-          <AnalyticsStoreFilter
-            storeList={storeList}
-            selectedStoreIds={selectedStoreIds}
-            onStoreChange={setSelectedStoreIds}
-          />
           <AnalyticsExportButton activeArea="support" period={period} />
         </div>
 
@@ -166,35 +152,35 @@ export default function SupportQualityTab() {
         <ResponsiveContainer width="100%" height={260}>
           {chartMode === "bar" ? (
             <BarChart data={ticketTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-              <Bar dataKey="created_count" name="Ingresados" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="resolved_count" name="Resueltos" fill="#c3ff00" radius={[4, 4, 0, 0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <Bar dataKey="created_count" name="Ingresados" fill="#9a6a10" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="resolved_count" name="Resueltos" fill="#6b1e96" radius={[4, 4, 0, 0]} />
             </BarChart>
           ) : chartMode === "line" ? (
             <LineChart data={ticketTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-              <Line type="monotone" dataKey="created_count" name="Ingresados" stroke="#f59e0b" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="resolved_count" name="Resueltos" stroke="#c3ff00" strokeWidth={3} dot={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <Line type="monotone" dataKey="created_count" name="Ingresados" stroke="#9a6a10" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="resolved_count" name="Resueltos" stroke="#6b1e96" strokeWidth={3} dot={false} />
             </LineChart>
           ) : (
             <AreaChart data={ticketTrend}>
               <defs>
                 <linearGradient id="colorTickets" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#c3ff00" stopOpacity={0.5} />
-                  <stop offset="95%" stopColor="#c3ff00" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#6b1e96" stopOpacity={0.5} />
+                  <stop offset="95%" stopColor="#6b1e96" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-              <Area type="monotone" dataKey="resolved_count" name="Resueltos" stroke="#c3ff00" strokeWidth={3} fillOpacity={1} fill="url(#colorTickets)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <Area type="monotone" dataKey="resolved_count" name="Resueltos" stroke="#6b1e96" strokeWidth={3} fillOpacity={1} fill="url(#colorTickets)" />
             </AreaChart>
           )}
         </ResponsiveContainer>
@@ -205,7 +191,7 @@ export default function SupportQualityTab() {
         <DataTable
           title="Disputas y Solicitudes de Reembolso por Motivo"
           columns={[
-            { header: "Motivo Reclamo", accessor: "reason", render: (r) => <span className="font-semibold text-rose-300">{r.reason}</span> },
+            { header: "Motivo Reclamo", accessor: "reason", render: (r) => <span className="font-semibold text-fx-neg">{r.reason}</span> },
             { header: "Solicitudes", accessor: "total_requests", render: (r) => parseInt(r.total_requests || 0).toLocaleString() },
             { header: "Monto Reclamado", accessor: "total_amount", render: (r) => `$${parseFloat(r.total_amount || 0).toFixed(2)}` }
           ]}
@@ -215,9 +201,9 @@ export default function SupportQualityTab() {
           title="Resumen de Penalizaciones Aplicadas a Tiendas"
           columns={[
             { header: "Comercio", accessor: "store_name", render: (r) => <span className="font-bold text-fx-text">{r.store_name}</span> },
-            { header: "Motivo / Falta", accessor: "reason", render: (r) => <span className="text-rose-300 font-semibold">{r.reason}</span> },
+            { header: "Motivo / Falta", accessor: "reason", render: (r) => <span className="text-fx-neg font-semibold">{r.reason}</span> },
             { header: "Monto Multa", accessor: "amount", render: (r) => `$${parseFloat(r.amount || 0).toFixed(2)}` },
-            { header: "Estado", accessor: "status", render: (r) => <span className="uppercase font-bold text-amber-400 text-[10px] bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">{r.status}</span> }
+            { header: "Estado", accessor: "status", render: (r) => <span className="uppercase font-bold text-fx-warn text-[10px] bg-fx-warn/10 px-2 py-0.5 rounded-full border border-fx-warn/20">{r.status}</span> }
           ]}
           data={penalties}
         />
@@ -246,7 +232,7 @@ export default function SupportQualityTab() {
             )
           },
           { header: "Fecha / Hora", accessor: "created_at", render: (r) => new Date(r.created_at).toLocaleString("es-VE") },
-          { header: "Estado", accessor: "status", render: (r) => <span className="uppercase text-[10px] font-bold text-emerald-400">{r.status}</span> }
+          { header: "Estado", accessor: "status", render: (r) => <span className="uppercase text-[10px] font-bold text-fx-pos">{r.status}</span> }
         ]}
         data={recentTickets}
       />

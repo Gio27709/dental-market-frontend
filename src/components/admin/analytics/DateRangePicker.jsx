@@ -31,7 +31,7 @@ export default function DateRangePicker({ selectedPeriod, onPeriodChange }) {
             onClick={() => handleSelectPeriod(p.key)}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ${
               isActive
-                ? "bg-[#c3ff00] text-black shadow-md font-semibold"
+                ? "bg-[#6b1e96] text-white shadow-md font-semibold"
                 : "text-fx-muted hover:text-fx-text hover:bg-fx-raised"
             }`}
           >

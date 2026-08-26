@@ -16,19 +16,19 @@ import {
   XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend, Cell
 } from "recharts";
 
-const STAR_COLORS = { 5: "#c3ff00", 4: "#a3e635", 3: "#facc15", 2: "#fb923c", 1: "#f43f5e" };
+const STAR_COLORS = { 5: "#6b1e96", 4: "#6b1e96", 3: "#9a6a10", 2: "#9a6a10", 1: "#b8482f" };
 
 const ratingColor = (value) => {
   const v = parseFloat(value || 0);
-  if (v >= 4) return "text-emerald-400";
-  if (v >= 3) return "text-amber-400";
-  return "text-rose-400";
+  if (v >= 4) return "text-fx-pos";
+  if (v >= 3) return "text-fx-warn";
+  return "text-fx-neg";
 };
 
 const Stars = ({ value }) => {
   const n = Math.round(parseFloat(value) || 0);
   return (
-    <span className="whitespace-nowrap text-amber-400 font-bold">
+    <span className="whitespace-nowrap text-fx-warn font-bold">
       {"★".repeat(n)}
       <span className="text-gray-600">{"★".repeat(Math.max(0, 5 - n))}</span>
     </span>
@@ -181,12 +181,12 @@ export default function ReputationTab() {
           <p className="text-xs text-fx-muted mb-4">Dónde se concentra realmente la opinión, más allá del promedio</p>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={distribution} layout="vertical" margin={{ left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" horizontal={false} />
-              <XAxis type="number" stroke="#7b6c99" fontSize={11} allowDecimals={false} />
-              <YAxis type="category" dataKey="label" stroke="#7b6c99" fontSize={12} width={45} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" horizontal={false} />
+              <XAxis type="number" stroke="#877f92" fontSize={11} allowDecimals={false} />
+              <YAxis type="category" dataKey="label" stroke="#877f92" fontSize={12} width={45} />
               <Tooltip
                 cursor={{ fill: "rgba(168,85,247,0.1)" }}
-                contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
+                contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
                 formatter={(value, _name, entry) => [`${value} reseñas (${entry.payload.pct}%)`, "Volumen"]}
               />
               <Bar dataKey="total" radius={[0, 6, 6, 0]}>
@@ -235,7 +235,7 @@ export default function ReputationTab() {
               accessor: "negative",
               render: (r) =>
                 Number(r.negative) > 0 ? (
-                  <span className="text-rose-400 font-bold">{r.negative}</span>
+                  <span className="text-fx-neg font-bold">{r.negative}</span>
                 ) : (
                   <span className="text-gray-500">0</span>
                 )
@@ -254,43 +254,43 @@ export default function ReputationTab() {
         <ResponsiveContainer width="100%" height={260}>
           {chartMode === "bar" ? (
             <BarChart data={data?.dailyTrend || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="reviews" name="Reseñas" fill="#a855f7" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="negative" name="Negativas" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="reviews" name="Reseñas" fill="#7c4f9e" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="negative" name="Negativas" fill="#b8482f" radius={[4, 4, 0, 0]} />
             </BarChart>
           ) : chartMode === "line" ? (
             <LineChart data={data?.dailyTrend || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Line type="monotone" dataKey="reviews" name="Reseñas" stroke="#a855f7" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="negative" name="Negativas" stroke="#f43f5e" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="reviews" name="Reseñas" stroke="#7c4f9e" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="negative" name="Negativas" stroke="#b8482f" strokeWidth={3} dot={false} />
             </LineChart>
           ) : (
             <AreaChart data={data?.dailyTrend || []}>
               <defs>
                 <linearGradient id="colorRepTotal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#7c4f9e" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#7c4f9e" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorRepNeg" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.5} />
-                  <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#b8482f" stopOpacity={0.5} />
+                  <stop offset="95%" stopColor="#b8482f" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Area type="monotone" dataKey="reviews" name="Reseñas" stroke="#a855f7" strokeWidth={2} fillOpacity={1} fill="url(#colorRepTotal)" />
-              <Area type="monotone" dataKey="negative" name="Negativas" stroke="#f43f5e" strokeWidth={3} fillOpacity={1} fill="url(#colorRepNeg)" />
+              <Area type="monotone" dataKey="reviews" name="Reseñas" stroke="#7c4f9e" strokeWidth={2} fillOpacity={1} fill="url(#colorRepTotal)" />
+              <Area type="monotone" dataKey="negative" name="Negativas" stroke="#b8482f" strokeWidth={3} fillOpacity={1} fill="url(#colorRepNeg)" />
             </AreaChart>
           )}
         </ResponsiveContainer>
@@ -335,7 +335,7 @@ export default function ReputationTab() {
             header: "Negativas",
             accessor: "negative",
             render: (r) =>
-              Number(r.negative) > 0 ? <span className="text-rose-400 font-bold">{r.negative}</span> : <span className="text-gray-500">0</span>
+              Number(r.negative) > 0 ? <span className="text-fx-neg font-bold">{r.negative}</span> : <span className="text-gray-500">0</span>
           },
           { header: "Verificadas", accessor: "verified", render: (r) => Number(r.verified).toLocaleString("en-US") }
         ]}
@@ -363,7 +363,7 @@ export default function ReputationTab() {
                   <div className="flex items-center gap-2 shrink-0">
                     <Stars value={r.rating} />
                     {r.is_verified_purchase && (
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase bg-fx-pos/15 text-fx-pos border border-fx-pos/30">
                         Verificada
                       </span>
                     )}
@@ -395,7 +395,7 @@ export default function ReputationTab() {
               header: "Días Esperando",
               accessor: "days_waiting",
               render: (r) => (
-                <span className={parseFloat(r.days_waiting) > 3 ? "text-rose-400 font-semibold" : "text-amber-400 font-bold"}>
+                <span className={parseFloat(r.days_waiting) > 3 ? "text-fx-neg font-semibold" : "text-fx-warn font-bold"}>
                   {r.days_waiting} d
                 </span>
               )
@@ -414,7 +414,7 @@ export default function ReputationTab() {
               header: "Tasa Respuesta",
               accessor: "answer_rate_pct",
               render: (r) => (
-                <span className={`font-semibold ${parseFloat(r.answer_rate_pct) >= 80 ? "text-emerald-400" : "text-rose-400"}`}>
+                <span className={`font-semibold ${parseFloat(r.answer_rate_pct) >= 80 ? "text-fx-pos" : "text-fx-neg"}`}>
                   {r.answer_rate_pct ?? "—"}%
                 </span>
               )

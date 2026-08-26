@@ -18,9 +18,9 @@ import {
 const num = (v) => Number(v || 0).toLocaleString("en-US");
 
 const STATUS_STYLES = {
-  approved: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  rejected: "bg-rose-500/15 text-rose-300 border-rose-500/30",
-  pending: "bg-amber-500/15 text-amber-300 border-amber-500/30"
+  approved: "bg-fx-pos/15 text-fx-pos border-fx-pos/30",
+  rejected: "bg-fx-neg/15 text-fx-neg border-fx-neg/30",
+  pending: "bg-fx-warn/15 text-fx-warn border-fx-warn/30"
 };
 
 const STATUS_LABELS = { approved: "Aprobada", rejected: "Rechazada", pending: "Pendiente" };
@@ -40,9 +40,9 @@ const statusBadge = (status) => (
 const decisionTone = (hours) => {
   const h = parseFloat(hours);
   if (!Number.isFinite(h)) return "text-gray-500";
-  if (h <= 24) return "text-emerald-400";
-  if (h <= 72) return "text-amber-400";
-  return "text-rose-400";
+  if (h <= 24) return "text-fx-pos";
+  if (h <= 72) return "text-fx-warn";
+  return "text-fx-neg";
 };
 
 export default function OnboardingTab() {
@@ -85,38 +85,38 @@ export default function OnboardingTab() {
 
       {/* Alertas de integridad del alta */}
       {hasIntegrityIssues && (
-        <div className="bg-rose-500/10 border border-rose-500/40 rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-rose-200 mb-2 uppercase tracking-wide">
+        <div className="bg-fx-neg/10 border border-fx-neg/40 rounded-xl p-5">
+          <h3 className="text-sm font-semibold text-fx-neg mb-2 uppercase tracking-wide">
             Integridad del Proceso de Alta
           </h3>
           <ul className="space-y-1.5 text-xs text-fx-muted">
             {(kpis.storesWithoutApplication || 0) > 0 && (
               <li>
-                <span className="font-semibold text-rose-300">{num(kpis.storesWithoutApplication)} tiendas</span> operan
+                <span className="font-semibold text-fx-neg">{num(kpis.storesWithoutApplication)} tiendas</span> operan
                 sin haber pasado nunca por el formulario de solicitud. Existen, publican y venden, pero nadie las revisó.
               </li>
             )}
             {kpis.storeProfiles > 0 && (kpis.verifiedStores || 0) === 0 && (
               <li>
-                <span className="font-semibold text-rose-300">Ninguna de las {num(kpis.storeProfiles)} tiendas</span> está
+                <span className="font-semibold text-fx-neg">Ninguna de las {num(kpis.storeProfiles)} tiendas</span> está
                 marcada como verificada. El campo <span className="font-mono">is_verified</span> existe y jamás se ha usado.
               </li>
             )}
             {(kpis.storesWentDark || 0) > 0 && (
               <li>
-                <span className="font-semibold text-rose-300">{num(kpis.storesWentDark)} tiendas</span> ya vendieron
+                <span className="font-semibold text-fx-neg">{num(kpis.storesWentDark)} tiendas</span> ya vendieron
                 alguna vez pero hoy no tienen un solo producto comprable: siguen abiertas con la persiana bajada.
               </li>
             )}
             {(kpis.ridersWithCounterDrift || 0) > 0 && (
               <li>
-                <span className="font-semibold text-rose-300">{num(kpis.ridersWithCounterDrift)} repartidores</span> tienen
+                <span className="font-semibold text-fx-neg">{num(kpis.ridersWithCounterDrift)} repartidores</span> tienen
                 un contador de entregas que no coincide con sus eventos reales. El contador guardado no se actualiza.
               </li>
             )}
             {(kpis.riderDecisionsUntracked || 0) > 0 && (
               <li>
-                <span className="font-semibold text-rose-300">
+                <span className="font-semibold text-fx-neg">
                   {num(kpis.riderDecisionsUntracked)} solicitudes de repartidor
                 </span>{" "}
                 se decidieron sin dejar marca de cuándo: aprobar no toca la fecha de actualización, así que el tiempo de
@@ -260,12 +260,12 @@ export default function OnboardingTab() {
                     className="h-full rounded-xl transition-all duration-500"
                     style={{
                       width: `${Math.max(widthPct, count > 0 ? 2 : 0)}%`,
-                      background: "linear-gradient(90deg, #c3ff00 0%, #a855f7 100%)"
+                      background: "linear-gradient(90deg, #6b1e96 0%, #7c4f9e 100%)"
                     }}
                   />
                 </div>
                 {dropped > 0 && (
-                  <p className="text-[10px] text-rose-300/90 mt-1 ml-1">
+                  <p className="text-[10px] text-fx-neg/90 mt-1 ml-1">
                     ↓ {num(dropped)} tiendas se quedaron en el paso anterior
                   </p>
                 )}
@@ -274,7 +274,7 @@ export default function OnboardingTab() {
           })}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6 pt-5 border-t border-purple-500/15">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6 pt-5 border-t border-fx-violet/15">
           <div>
             <p className="text-[10px] uppercase tracking-wider text-fx-faint font-bold mb-1">Vendibles Hoy</p>
             <p className="text-lg font-semibold text-fx-text">
@@ -287,7 +287,7 @@ export default function OnboardingTab() {
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-wider text-fx-faint font-bold mb-1">Persiana Bajada</p>
-            <p className={`text-lg font-semibold ${(kpis.storesWentDark || 0) > 0 ? "text-rose-400" : "text-emerald-400"}`}>
+            <p className={`text-lg font-semibold ${(kpis.storesWentDark || 0) > 0 ? "text-fx-neg" : "text-fx-pos"}`}>
               {num(kpis.storesWentDark)}
             </p>
             <p className="text-[10px] text-gray-500 leading-snug mt-0.5">
@@ -313,43 +313,43 @@ export default function OnboardingTab() {
         <ResponsiveContainer width="100%" height={260}>
           {chartMode === "line" ? (
             <LineChart data={data?.applicationsDaily || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Line type="monotone" dataKey="store_applications" name="Tiendas" stroke="#c3ff00" strokeWidth={3} dot={false} />
-              <Line type="monotone" dataKey="rider_applications" name="Repartidores" stroke="#a855f7" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="store_applications" name="Tiendas" stroke="#6b1e96" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="rider_applications" name="Repartidores" stroke="#7c4f9e" strokeWidth={2} dot={false} />
             </LineChart>
           ) : chartMode === "area" ? (
             <AreaChart data={data?.applicationsDaily || []}>
               <defs>
                 <linearGradient id="colorOnbStore" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#c3ff00" stopOpacity={0.5} />
-                  <stop offset="95%" stopColor="#c3ff00" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#6b1e96" stopOpacity={0.5} />
+                  <stop offset="95%" stopColor="#6b1e96" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorOnbRider" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#7c4f9e" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#7c4f9e" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Area type="monotone" dataKey="store_applications" name="Tiendas" stroke="#c3ff00" strokeWidth={3} fillOpacity={1} fill="url(#colorOnbStore)" />
-              <Area type="monotone" dataKey="rider_applications" name="Repartidores" stroke="#a855f7" strokeWidth={2} fillOpacity={1} fill="url(#colorOnbRider)" />
+              <Area type="monotone" dataKey="store_applications" name="Tiendas" stroke="#6b1e96" strokeWidth={3} fillOpacity={1} fill="url(#colorOnbStore)" />
+              <Area type="monotone" dataKey="rider_applications" name="Repartidores" stroke="#7c4f9e" strokeWidth={2} fillOpacity={1} fill="url(#colorOnbRider)" />
             </AreaChart>
           ) : (
             <BarChart data={data?.applicationsDaily || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="store_applications" name="Tiendas" fill="#c3ff00" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="rider_applications" name="Repartidores" fill="#a855f7" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="store_applications" name="Tiendas" fill="#6b1e96" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="rider_applications" name="Repartidores" fill="#7c4f9e" radius={[4, 4, 0, 0]} />
             </BarChart>
           )}
         </ResponsiveContainer>
@@ -386,7 +386,7 @@ export default function OnboardingTab() {
                 r.rif ? (
                   <span className="font-mono text-[11px]">{r.rif}</span>
                 ) : (
-                  <span className="text-rose-400 font-bold">sin RIF</span>
+                  <span className="text-fx-neg font-bold">sin RIF</span>
                 )
             },
             { header: "Alta", accessor: "created_at", render: (r) => new Date(r.created_at).toLocaleDateString("es-VE") },
@@ -401,9 +401,9 @@ export default function OnboardingTab() {
               accessor: "is_verified",
               render: (r) =>
                 r.is_verified ? (
-                  <span className="text-emerald-400 font-bold">Sí</span>
+                  <span className="text-fx-pos font-bold">Sí</span>
                 ) : (
-                  <span className="text-rose-400 font-bold">No</span>
+                  <span className="text-fx-neg font-bold">No</span>
                 )
             }
           ]}
@@ -454,7 +454,7 @@ export default function OnboardingTab() {
             accessor: "attempts",
             render: (r) =>
               Number(r.attempts) > 1 ? (
-                <span className="font-bold text-amber-400">{r.attempts} intentos</span>
+                <span className="font-bold text-fx-warn">{r.attempts} intentos</span>
               ) : (
                 <span className="text-fx-muted">1</span>
               )
@@ -467,9 +467,9 @@ export default function OnboardingTab() {
                 return <span className="text-gray-500">sin perfil creado</span>;
               }
               return Number(r.products) > 0 ? (
-                <span className="text-emerald-400 font-bold">{num(r.products)} productos</span>
+                <span className="text-fx-pos font-bold">{num(r.products)} productos</span>
               ) : (
-                <span className="text-rose-400 font-bold">perfil vacío</span>
+                <span className="text-fx-neg font-bold">perfil vacío</span>
               );
             }
           }
@@ -501,16 +501,16 @@ export default function OnboardingTab() {
                 </button>
               )
             },
-            { header: "Intentos", accessor: "attempts", render: (r) => <span className="font-bold text-amber-400">{r.attempts}</span> },
-            { header: "Rechazos", accessor: "rejections", render: (r) => <span className="text-rose-400 font-bold">{r.rejections}</span> },
+            { header: "Intentos", accessor: "attempts", render: (r) => <span className="font-bold text-fx-warn">{r.attempts}</span> },
+            { header: "Rechazos", accessor: "rejections", render: (r) => <span className="text-fx-neg font-bold">{r.rejections}</span> },
             {
               header: "Desenlace",
               accessor: "eventually_approved",
               render: (r) =>
                 r.eventually_approved ? (
-                  <span className="text-emerald-400 font-bold">Terminó aprobado</span>
+                  <span className="text-fx-pos font-bold">Terminó aprobado</span>
                 ) : (
-                  <span className="text-rose-400 font-bold">Se quedó fuera</span>
+                  <span className="text-fx-neg font-bold">Se quedó fuera</span>
                 )
             },
             { header: "Días en Proceso", accessor: "days_in_process", render: (r) => `${r.days_in_process} d` }
@@ -532,7 +532,7 @@ export default function OnboardingTab() {
               header: "Días desde el Alta",
               accessor: "days_since_signup",
               render: (r) => (
-                <span className={parseFloat(r.days_since_signup) > 60 ? "text-rose-400 font-bold" : "text-amber-400 font-bold"}>
+                <span className={parseFloat(r.days_since_signup) > 60 ? "text-fx-neg font-bold" : "text-fx-warn font-bold"}>
                   {r.days_since_signup} d
                 </span>
               )
@@ -542,7 +542,7 @@ export default function OnboardingTab() {
               header: "Dónde se Atascó",
               accessor: "stall_reason",
               render: (r) => (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-rose-500/15 text-rose-300 border border-rose-500/30 whitespace-nowrap">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-fx-neg/15 text-fx-neg border border-fx-neg/30 whitespace-nowrap">
                   {r.stall_reason}
                 </span>
               )
@@ -638,9 +638,9 @@ export default function OnboardingTab() {
             accessor: "has_profile",
             render: (r) =>
               r.has_profile ? (
-                <span className="text-emerald-400 font-bold">Sí</span>
+                <span className="text-fx-pos font-bold">Sí</span>
               ) : (
-                <span className={r.status === "approved" ? "text-rose-400 font-bold" : "text-gray-500"}>No</span>
+                <span className={r.status === "approved" ? "text-fx-neg font-bold" : "text-gray-500"}>No</span>
               )
           }
         ]}
@@ -667,7 +667,7 @@ export default function OnboardingTab() {
           {
             header: "Zona",
             accessor: "zone",
-            render: (r) => (r.zone ? r.zone : <span className="text-amber-400">sin zona</span>)
+            render: (r) => (r.zone ? r.zone : <span className="text-fx-warn">sin zona</span>)
           },
           {
             header: "Contador Guardado",
@@ -680,7 +680,7 @@ export default function OnboardingTab() {
             render: (r) => {
               const drift = Number(r.total_deliveries || 0) !== Number(r.real_deliveries || 0);
               return (
-                <span className={drift ? "text-rose-400 font-semibold" : "text-emerald-400 font-bold"}>
+                <span className={drift ? "text-fx-neg font-semibold" : "text-fx-pos font-bold"}>
                   {num(r.real_deliveries)}
                   {drift && <span className="text-[10px] font-normal"> · no coincide</span>}
                 </span>
@@ -721,9 +721,9 @@ export default function OnboardingTab() {
               accessor: "spelling_variants",
               render: (r) =>
                 Number(r.spelling_variants) > 1 ? (
-                  <span className="font-bold text-rose-400">{r.spelling_variants} formas</span>
+                  <span className="font-bold text-fx-neg">{r.spelling_variants} formas</span>
                 ) : (
-                  <span className="text-emerald-400">1 forma</span>
+                  <span className="text-fx-pos">1 forma</span>
                 )
             },
             {

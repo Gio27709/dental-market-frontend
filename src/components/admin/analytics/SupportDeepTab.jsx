@@ -16,13 +16,13 @@ const num = (v) => Number(v || 0).toLocaleString("en-US");
 const momento = (v) => (v ? new Date(v).toLocaleString("es-VE") : "—");
 const horas = (v) => (v === null || v === undefined ? "—" : `${Number(v).toFixed(2)} h`);
 
-const siNo = (v, tonoSi = "text-emerald-400", tonoNo = "text-gray-500") =>
+const siNo = (v, tonoSi = "text-fx-pos", tonoNo = "text-gray-500") =>
   v ? <span className={`font-bold ${tonoSi}`}>Sí</span> : <span className={tonoNo}>No</span>;
 
 const STATUS_STYLES = {
-  open: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  in_progress: "bg-sky-500/15 text-sky-300 border-sky-500/30",
-  resolved: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  open: "bg-fx-warn/15 text-fx-warn border-fx-warn/30",
+  in_progress: "bg-fx-info/15 text-fx-info border-fx-info/30",
+  resolved: "bg-fx-pos/15 text-fx-pos border-fx-pos/30",
   closed: "bg-gray-500/15 text-fx-muted border-gray-500/30"
 };
 const STATUS_LABELS = {
@@ -40,10 +40,10 @@ const CATEGORY_LABELS = {
   other: "Otros"
 };
 const CATEGORY_STYLES = {
-  logistics: "bg-sky-500/15 text-sky-300 border-sky-500/30",
-  payment: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  account: "bg-purple-500/15 text-fx-faint border-fx-line-strong",
-  product_issue: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  logistics: "bg-fx-info/15 text-fx-info border-fx-info/30",
+  payment: "bg-fx-pos/15 text-fx-pos border-fx-pos/30",
+  account: "bg-fx-violet/15 text-fx-faint border-fx-line-strong",
+  product_issue: "bg-fx-warn/15 text-fx-warn border-fx-warn/30",
   other: "bg-gray-500/15 text-fx-muted border-gray-500/30"
 };
 
@@ -115,20 +115,20 @@ export default function SupportDeepTab() {
       </div>
 
       {/* Integridad */}
-      <div className="bg-rose-500/10 border border-rose-500/40 rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-rose-200 mb-2 uppercase tracking-wide">
+      <div className="bg-fx-neg/10 border border-fx-neg/40 rounded-xl p-5">
+        <h3 className="text-sm font-semibold text-fx-neg mb-2 uppercase tracking-wide">
           Integridad de la Medición de Soporte
         </h3>
         <ul className="space-y-1.5 text-xs text-fx-muted">
           {stamp.disjoint && (
             <li>
-              <span className="font-semibold text-rose-300">
+              <span className="font-semibold text-fx-neg">
                 El &quot;tiempo de primera respuesta&quot; del panel anterior no mide ninguna respuesta.
               </span>{" "}
               La columna <span className="font-mono">first_response_at</span> debería estamparla el primer mensaje de{" "}
               <span className="font-mono">owner</span>/<span className="font-mono">admin</span>. Si esto aparece, algo
               la está escribiendo por otra vía. Los {num(stamp.stamped)} tickets con esa marca no tienen{" "}
-              <span className="font-semibold text-rose-300">un solo mensaje</span>, mientras que las{" "}
+              <span className="font-semibold text-fx-neg">un solo mensaje</span>, mientras que las{" "}
               {num(stamp.conversationsUnstamped)} conversaciones que sí recibieron respuesta la tienen vacía. Son dos
               conjuntos que no se tocan: {horas(stamp.stampedAvgHours)} publicadas contra{" "}
               {horas(stamp.realAvgHours)} reales.
@@ -136,7 +136,7 @@ export default function SupportDeepTab() {
           )}
           {(fun.closedWithoutReply || 0) > 0 && (
             <li>
-              <span className="font-semibold text-rose-300">
+              <span className="font-semibold text-fx-neg">
                 {num(fun.closedWithoutReply)} de {num(fun.closedOut)} tickets cerrados
               </span>{" "}
               nunca recibieron una respuesta de soporte. Se marcaron como resueltos cambiando el estado, y ese mismo
@@ -145,7 +145,7 @@ export default function SupportDeepTab() {
           )}
           {(ins.orderLink?.filled || 0) === 0 && (ins.tickets || 0) > 0 && (
             <li>
-              <span className="font-semibold text-amber-300">Ningún ticket enlaza con una orden.</span> El campo{" "}
+              <span className="font-semibold text-fx-warn">Ningún ticket enlaza con una orden.</span> El campo{" "}
               <span className="font-mono">support_tickets.order_id</span> existe y está vacío en los {num(ins.tickets)}{" "}
               tickets, aunque varios asuntos citan el número de pedido como texto libre. Soporte no se puede cruzar con
               ventas ni con logística.
@@ -153,14 +153,14 @@ export default function SupportDeepTab() {
           )}
           {ins.inProgressUsed === 0 && (ins.tickets || 0) > 0 && (
             <li>
-              <span className="font-semibold text-amber-300">El estado &quot;en curso&quot; no se usa jamás.</span> Los
+              <span className="font-semibold text-fx-warn">El estado &quot;en curso&quot; no se usa jamás.</span> Los
               tickets saltan de abierto a resuelto sin fase de atención, así que no hay forma de distinguir un caso que
               se está trabajando de uno que nadie ha tocado.
             </li>
           )}
           {(unread.incoherent || 0) > 0 && (
             <li>
-              <span className="font-semibold text-amber-300">
+              <span className="font-semibold text-fx-warn">
                 {num(unread.incoherent)} banderas de &quot;no leído&quot; incoherentes
               </span>
               : {num(unread.adminUnreadEmpty)} encendidas en tickets sin un solo mensaje y{" "}
@@ -169,14 +169,14 @@ export default function SupportDeepTab() {
           )}
           {(ins.guestChannel?.filled || 0) === 0 && (ins.tickets || 0) > 0 && (
             <li>
-              <span className="font-semibold text-amber-300">El canal de invitado está muerto</span>:{" "}
+              <span className="font-semibold text-fx-warn">El canal de invitado está muerto</span>:{" "}
               <span className="font-mono">guest_name</span> y <span className="font-mono">guest_email</span> no
               registran un solo ticket. Quien no tiene cuenta no puede escribir, aunque el modelo lo contempla.
             </li>
           )}
           {res.approximation === "updated_at" && (
             <li>
-              <span className="font-semibold text-amber-300">No existe columna de cierre.</span> El tiempo de
+              <span className="font-semibold text-fx-warn">No existe columna de cierre.</span> El tiempo de
               resolución se aproxima con <span className="font-mono">updated_at</span>, que cualquier UPDATE posterior
               (marcar leído, por ejemplo) desplaza. Por eso abajo se separa el promedio de los tickets que sí tuvieron
               conversación.
@@ -184,7 +184,7 @@ export default function SupportDeepTab() {
           )}
           {skew.coherent === false && (
             <li>
-              <span className="font-semibold text-rose-300">
+              <span className="font-semibold text-fx-neg">
                 {num(skew.messagesBeforeTicket)} de {num(skew.pairs)} mensajes
               </span>{" "}
               están fechados antes del ticket que los contiene: las dos tablas no comparten reloj y los tiempos de
@@ -253,13 +253,13 @@ export default function SupportDeepTab() {
       >
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={funnelData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-            <XAxis dataKey="etapa" stroke="#7b6c99" fontSize={11} />
-            <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+            <XAxis dataKey="etapa" stroke="#877f92" fontSize={11} />
+            <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
             <Tooltip
-              contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
+              contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
             />
-            <Bar dataKey="valor" name="Tickets" fill="#c3ff00" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="valor" name="Tickets" fill="#6b1e96" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -276,12 +276,12 @@ export default function SupportDeepTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10 mb-5">
           <div
             className={`rounded-2xl p-4 border ${
-              fr.blocked ? "bg-rose-500/5 border-rose-500/30" : "bg-fx-panel border-fx-line"
+              fr.blocked ? "bg-fx-neg/5 border-fx-neg/30" : "bg-fx-panel border-fx-line"
             }`}
           >
             <p className="text-[10px] uppercase tracking-wider text-fx-muted font-bold mb-1">Media Real</p>
             {fr.blocked ? (
-              <p className="text-lg font-semibold text-rose-300">Retenida</p>
+              <p className="text-lg font-semibold text-fx-neg">Retenida</p>
             ) : (
               <p className="text-2xl font-semibold text-fx-text">{horas(fr.avgHours)}</p>
             )}
@@ -335,16 +335,16 @@ export default function SupportDeepTab() {
           />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="rounded-2xl p-4 border border-emerald-500/25 bg-emerald-500/5">
+          <div className="rounded-2xl p-4 border border-fx-pos/25 bg-fx-pos/5">
             <p className="text-[10px] uppercase tracking-wider text-fx-muted font-bold mb-1">Contestados en menos de 1 h</p>
-            <p className="text-2xl font-semibold text-emerald-300">{num(fr.under1h)}</p>
+            <p className="text-2xl font-semibold text-fx-pos">{num(fr.under1h)}</p>
             <p className="text-[10px] text-fx-muted mt-1">
               rango observado: {horas(fr.minHours)} a {horas(fr.maxHours)}
             </p>
           </div>
-          <div className="rounded-2xl p-4 border border-rose-500/25 bg-rose-500/5">
+          <div className="rounded-2xl p-4 border border-fx-neg/25 bg-fx-neg/5">
             <p className="text-[10px] uppercase tracking-wider text-fx-muted font-bold mb-1">Más de 24 h sin respuesta</p>
-            <p className="text-2xl font-semibold text-rose-300">{num(fr.over24h)}</p>
+            <p className="text-2xl font-semibold text-fx-neg">{num(fr.over24h)}</p>
             <p className="text-[10px] text-fx-muted mt-1">
               sobre {num(fr.measurable)} tickets con respuesta medible
             </p>
@@ -491,7 +491,7 @@ export default function SupportDeepTab() {
               header: "Con respuesta",
               accessor: "replyPct",
               render: (r) => (
-                <span className={r.replyPct === 0 ? "text-rose-400 font-bold" : "text-fx-muted"}>
+                <span className={r.replyPct === 0 ? "text-fx-neg font-bold" : "text-fx-muted"}>
                   {num(r.withStaffReply)} · {r.replyPct === null ? "—" : `${r.replyPct}%`}
                 </span>
               )
@@ -570,7 +570,7 @@ export default function SupportDeepTab() {
               header: "Antigüedad",
               accessor: "ageHours",
               render: (r) => (
-                <span className={r.ageHours > 24 ? "text-rose-400 font-bold" : "text-fx-muted"}>
+                <span className={r.ageHours > 24 ? "text-fx-neg font-bold" : "text-fx-muted"}>
                   {num(Math.round(r.ageHours))} h
                 </span>
               )
@@ -579,7 +579,7 @@ export default function SupportDeepTab() {
             {
               header: "Contestado",
               accessor: "staffMessages",
-              render: (r) => siNo(r.staffMessages > 0, "text-emerald-400", "text-rose-400")
+              render: (r) => siNo(r.staffMessages > 0, "text-fx-pos", "text-fx-neg")
             }
           ]}
           data={backlog}
@@ -609,7 +609,7 @@ export default function SupportDeepTab() {
               accessor: "firstReplyHours",
               render: (r) =>
                 r.firstReplyHours === null ? (
-                  <span className="text-rose-400 font-bold">Nunca</span>
+                  <span className="text-fx-neg font-bold">Nunca</span>
                 ) : (
                   horas(r.firstReplyHours)
                 )
@@ -646,7 +646,7 @@ export default function SupportDeepTab() {
         />
         <button
           onClick={() => drilldown.open("ticket_messages", { title: "Todos los mensajes", filters: { allTime: true } })}
-          className="w-full mt-4 text-[11px] font-bold text-fx-accent border border-fx-accent/30 rounded-xl py-2 hover:bg-[#c3ff00]/10 transition-colors"
+          className="w-full mt-4 text-[11px] font-bold text-fx-accent border border-fx-accent/30 rounded-xl py-2 hover:bg-[#6b1e96]/10 transition-colors"
         >
           Ver todos los mensajes
         </button>
@@ -657,15 +657,15 @@ export default function SupportDeepTab() {
         <ChartCard title="Actividad Diaria" subtitle="Entrada de tickets frente a actividad real de respuesta">
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="dia" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="dia" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} allowDecimals={false} />
               <Tooltip
-                contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
+                contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
               />
-              <Bar dataKey="tickets" name="Tickets" fill="#a855f7" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="mensajes" name="Mensajes" fill="#c3ff00" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="soporte" name="De soporte" fill="#38bdf8" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="tickets" name="Tickets" fill="#7c4f9e" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="mensajes" name="Mensajes" fill="#6b1e96" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="soporte" name="De soporte" fill="#3f7794" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>

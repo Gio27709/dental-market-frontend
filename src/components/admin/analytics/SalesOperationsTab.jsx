@@ -65,14 +65,14 @@ export default function SalesOperationsTab() {
   if (error) {
     return (
       <div className="fx-card-danger text-center my-6">
-        <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mx-auto mb-3 text-2xl">
+        <div className="w-12 h-12 rounded-2xl bg-fx-neg/10 border border-fx-neg/20 flex items-center justify-center text-fx-neg mx-auto mb-3 text-2xl">
           ⚠️
         </div>
         <h3 className="text-lg font-bold text-fx-text mb-1">Error al Cargar Ventas & Operaciones</h3>
         <p className="text-fx-muted text-xs mb-4">{error}</p>
         <button
           onClick={() => fetchSalesData(true)}
-          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-fx-text rounded-xl text-xs font-bold transition-all shadow-lg"
+          className="px-4 py-2 bg-[#6b1e96] hover:bg-[#531575] text-white rounded-xl text-xs font-bold transition-all shadow-lg"
         >
           🔄 Reintentar Cargar
         </button>
@@ -161,35 +161,35 @@ export default function SalesOperationsTab() {
         <ResponsiveContainer width="100%" height={260}>
           {chartMode === "bar" ? (
             <BarChart data={salesTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-              <Bar dataKey="sales_volume" name="Ventas ($)" fill="#c3ff00" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="units_sold" name="Unidades" fill="#a855f7" radius={[4, 4, 0, 0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <Bar dataKey="sales_volume" name="Ventas ($)" fill="#6b1e96" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="units_sold" name="Unidades" fill="#7c4f9e" radius={[4, 4, 0, 0]} />
             </BarChart>
           ) : chartMode === "line" ? (
             <LineChart data={salesTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-              <Line type="monotone" dataKey="sales_volume" name="Ventas ($)" stroke="#c3ff00" strokeWidth={3} dot={false} />
-              <Line type="monotone" dataKey="units_sold" name="Unidades" stroke="#a855f7" strokeWidth={2} dot={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <Line type="monotone" dataKey="sales_volume" name="Ventas ($)" stroke="#6b1e96" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="units_sold" name="Unidades" stroke="#7c4f9e" strokeWidth={2} dot={false} />
             </LineChart>
           ) : (
             <AreaChart data={salesTrend}>
               <defs>
                 <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#c3ff00" stopOpacity={0.5} />
-                  <stop offset="95%" stopColor="#c3ff00" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#6b1e96" stopOpacity={0.5} />
+                  <stop offset="95%" stopColor="#6b1e96" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
-              <Area type="monotone" dataKey="sales_volume" name="Ventas ($)" stroke="#c3ff00" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <Area type="monotone" dataKey="sales_volume" name="Ventas ($)" stroke="#6b1e96" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
             </AreaChart>
           )}
         </ResponsiveContainer>
@@ -219,8 +219,8 @@ export default function SalesOperationsTab() {
           },
           { header: "Ventas Brutas (GMV)", accessor: "total_gmv", render: (r) => `$${parseFloat(r.total_gmv || 0).toFixed(2)}` },
           { header: "Órdenes", accessor: "total_orders", render: (r) => parseInt(r.total_orders || 0).toLocaleString() },
-          { header: "Tasa Cancelación", accessor: "cancel_rate", render: (r) => <span className={`font-semibold ${parseFloat(r.cancel_rate) > 5 ? "text-rose-400" : "text-emerald-400"}`}>{parseFloat(r.cancel_rate || 0).toFixed(2)}%</span> },
-          { header: "Rating Promedio", accessor: "rating_avg", render: (r) => <span className="text-amber-300 font-bold">{r.rating_avg != null ? `★ ${parseFloat(r.rating_avg).toFixed(1)}` : "★ N/A"}</span> },
+          { header: "Tasa Cancelación", accessor: "cancel_rate", render: (r) => <span className={`font-semibold ${parseFloat(r.cancel_rate) > 5 ? "text-fx-neg" : "text-fx-pos"}`}>{parseFloat(r.cancel_rate || 0).toFixed(2)}%</span> },
+          { header: "Rating Promedio", accessor: "rating_avg", render: (r) => <span className="text-fx-warn font-bold">{r.rating_avg != null ? `★ ${parseFloat(r.rating_avg).toFixed(1)}` : "★ N/A"}</span> },
         ]}
         data={storePerformance}
       />
@@ -238,7 +238,7 @@ export default function SalesOperationsTab() {
           columns={[
             { header: "Producto", accessor: "product_name", render: (r) => <span className="font-semibold text-fx-muted">{r.product_name}</span> },
             { header: "SKU", accessor: "sku", render: (r) => <span className="font-mono text-[11px] text-fx-faint">{r.sku || "—"}</span> },
-            { header: "Stock Restante", accessor: "stock", render: (r) => <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">{r.stock} un.</span> },
+            { header: "Stock Restante", accessor: "stock", render: (r) => <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-fx-neg/20 text-fx-neg border border-fx-neg/30">{r.stock} un.</span> },
           ]}
           data={lowStock}
         />
@@ -294,7 +294,7 @@ export default function SalesOperationsTab() {
         />
       </div>
 
-      <DrilldownModal {...drilldown.props} period={period} />
+      <DrilldownModal {...drilldown.props} period={period} storeIds={selectedStoreIds} />
     </div>
   );
 }

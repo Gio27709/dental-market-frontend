@@ -21,7 +21,7 @@ export default function PriceAuditTimeline({ timeline = [] }) {
           return (
             <div key={idx} className="flex items-center justify-between bg-fx-inset p-3 rounded-2xl border border-fx-line text-xs">
               <div className="flex items-center gap-3">
-                <span className={`w-2.5 h-2.5 rounded-full ${isIncrease ? "bg-rose-400" : "bg-emerald-400"}`} />
+                <span className={`w-2.5 h-2.5 rounded-full ${isIncrease ? "bg-fx-neg" : "bg-fx-pos"}`} />
                 <div>
                   <span className="text-fx-text font-semibold block">{item.product_name}</span>
                   <span className="text-fx-muted text-[11px]">Origen: {item.change_source || "Manual Admin"}</span>
@@ -32,7 +32,7 @@ export default function PriceAuditTimeline({ timeline = [] }) {
                 <div className="flex items-center gap-2 font-bold">
                   <span className="line-through text-gray-500">${oldP.toFixed(2)}</span>
                   <span className="text-fx-muted">→</span>
-                  <span className={isIncrease ? "text-rose-400" : "text-emerald-400"}>${newP.toFixed(2)}</span>
+                  <span className={isIncrease ? "text-fx-neg" : "text-fx-pos"}>${newP.toFixed(2)}</span>
                 </div>
                 <span className="text-[10px] text-fx-muted">
                   {new Date(item.created_at).toLocaleDateString("es-VE", { hour: "2-digit", minute: "2-digit" })}

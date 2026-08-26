@@ -26,19 +26,19 @@ const LATENCY_LABELS = {
 };
 
 const LATENCY_COLORS = {
-  menos_1h: "#c3ff00",
-  de_1_a_6h: "#a3e635",
-  de_6_a_24h: "#facc15",
-  de_1_a_7d: "#fb923c",
-  mas_7d: "#f43f5e",
+  menos_1h: "#6b1e96",
+  de_1_a_6h: "#6b1e96",
+  de_6_a_24h: "#9a6a10",
+  de_1_a_7d: "#9a6a10",
+  mas_7d: "#b8482f",
   nunca: "#6b7280"
 };
 
 const readRateColor = (pct) => {
   const v = parseFloat(pct || 0);
-  if (v >= 70) return "text-emerald-400";
-  if (v >= 40) return "text-amber-400";
-  return "text-rose-400";
+  if (v >= 70) return "text-fx-pos";
+  if (v >= 40) return "text-fx-warn";
+  return "text-fx-neg";
 };
 
 export default function NotificationsTab() {
@@ -169,43 +169,43 @@ export default function NotificationsTab() {
         <ResponsiveContainer width="100%" height={260}>
           {chartMode === "bar" ? (
             <BarChart data={data?.dailyTrend || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="sent" name="Enviadas" fill="#a855f7" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="read" name="Leídas" fill="#c3ff00" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="sent" name="Enviadas" fill="#7c4f9e" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="read" name="Leídas" fill="#6b1e96" radius={[4, 4, 0, 0]} />
             </BarChart>
           ) : chartMode === "line" ? (
             <LineChart data={data?.dailyTrend || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Line type="monotone" dataKey="sent" name="Enviadas" stroke="#a855f7" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="read" name="Leídas" stroke="#c3ff00" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="sent" name="Enviadas" stroke="#7c4f9e" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="read" name="Leídas" stroke="#6b1e96" strokeWidth={3} dot={false} />
             </LineChart>
           ) : (
             <AreaChart data={data?.dailyTrend || []}>
               <defs>
                 <linearGradient id="colorNotifSent" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#7c4f9e" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#7c4f9e" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorNotifRead" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#c3ff00" stopOpacity={0.5} />
-                  <stop offset="95%" stopColor="#c3ff00" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#6b1e96" stopOpacity={0.5} />
+                  <stop offset="95%" stopColor="#6b1e96" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
-              <XAxis dataKey="date" stroke="#7b6c99" fontSize={11} />
-              <YAxis stroke="#7b6c99" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
+              <XAxis dataKey="date" stroke="#877f92" fontSize={11} />
+              <YAxis stroke="#877f92" fontSize={11} />
+              <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Area type="monotone" dataKey="sent" name="Enviadas" stroke="#a855f7" strokeWidth={2} fillOpacity={1} fill="url(#colorNotifSent)" />
-              <Area type="monotone" dataKey="read" name="Leídas" stroke="#c3ff00" strokeWidth={3} fillOpacity={1} fill="url(#colorNotifRead)" />
+              <Area type="monotone" dataKey="sent" name="Enviadas" stroke="#7c4f9e" strokeWidth={2} fillOpacity={1} fill="url(#colorNotifSent)" />
+              <Area type="monotone" dataKey="read" name="Leídas" stroke="#6b1e96" strokeWidth={3} fillOpacity={1} fill="url(#colorNotifRead)" />
             </AreaChart>
           )}
         </ResponsiveContainer>
@@ -220,11 +220,11 @@ export default function NotificationsTab() {
             <PieChart>
               <Pie data={latency} dataKey="total" nameKey="label" cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={3}>
                 {latency.map((entry) => (
-                  <Cell key={entry.bucket} fill={LATENCY_COLORS[entry.bucket] || "#a855f7"} />
+                  <Cell key={entry.bucket} fill={LATENCY_COLORS[entry.bucket] || "#7c4f9e"} />
                 ))}
               </Pie>
               <Tooltip
-                contentStyle={{ backgroundColor: "#0d0418", border: "1px solid #ffffff29", borderRadius: "10px", color: "#f4f1f8", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
+                contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }}
                 formatter={(value, name) => [`${value} notificaciones`, name]}
               />
               <Legend wrapperStyle={{ fontSize: 10 }} />
@@ -286,7 +286,7 @@ export default function NotificationsTab() {
       {(data?.silentTypes?.length || 0) > 0 && (
         <div className="fx-card-danger">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-rose-400 text-lg">🔕</span>
+            <span className="text-fx-neg text-lg">🔕</span>
             <h3 className="text-base font-bold text-fx-text">Tipos que Nadie Lee</h3>
           </div>
           <p className="text-xs text-fx-muted mb-4">
@@ -298,11 +298,11 @@ export default function NotificationsTab() {
               <button
                 key={t.type}
                 onClick={() => drilldown.open("notifications", { title: `Notificaciones "${t.type}"`, filters: { type: t.type } })}
-                className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-3 text-left hover:border-rose-500/50 transition-all"
+                className="bg-fx-neg/5 border border-fx-neg/20 rounded-2xl p-3 text-left hover:border-fx-neg/50 transition-all"
               >
-                <p className="font-mono text-[11px] font-bold text-rose-300 truncate">{t.type}</p>
+                <p className="font-mono text-[11px] font-bold text-fx-neg truncate">{t.type}</p>
                 <p className="text-[10px] text-fx-muted mt-1">
-                  {t.sent} enviadas · solo <span className="font-bold text-rose-400">{t.read_rate_pct}%</span> leídas
+                  {t.sent} enviadas · solo <span className="font-bold text-fx-neg">{t.read_rate_pct}%</span> leídas
                 </p>
               </button>
             ))}
@@ -323,7 +323,7 @@ export default function NotificationsTab() {
               render: (r) => (
                 <button
                   onClick={() => drilldown.open("notifications", { title: `Sin leer de ${r.user_name || r.email}`, filters: { user_id: r.user_id, is_read: false } })}
-                  className="font-semibold text-rose-400 hover:underline"
+                  className="font-semibold text-fx-neg hover:underline"
                 >
                   {Number(r.unread_count).toLocaleString("en-US")}
                 </button>
@@ -336,14 +336,14 @@ export default function NotificationsTab() {
         <DataTable
           title="Plantillas Configuradas Que Nunca se Usaron"
           columns={[
-            { header: "Tipo", accessor: "type", render: (r) => <span className="font-mono text-[11px] font-bold text-amber-300">{r.type}</span> },
+            { header: "Tipo", accessor: "type", render: (r) => <span className="font-mono text-[11px] font-bold text-fx-warn">{r.type}</span> },
             { header: "Plantilla", accessor: "title_template", render: (r) => <span className="text-fx-muted text-[11px]">{r.title_template}</span> },
             {
               header: "Estado",
               accessor: "is_active",
               render: (r) =>
                 r.is_active ? (
-                  <span className="text-amber-400 font-bold text-[10px] uppercase">Activa pero inerte</span>
+                  <span className="text-fx-warn font-bold text-[10px] uppercase">Activa pero inerte</span>
                 ) : (
                   <span className="text-gray-500 font-bold text-[10px] uppercase">Inactiva</span>
                 )

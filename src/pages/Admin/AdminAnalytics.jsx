@@ -77,7 +77,7 @@ export default function AdminAnalytics() {
   const ActiveTab = TAB_COMPONENTS[activeTab];
 
   return (
-    <div className="bg-fx-base border border-fx-line rounded-2xl p-4 md:p-6">
+    <div className="bg-fx-base border border-fx-line-outer rounded-2xl p-4 md:p-6">
       {/* ── Cabecera: sitúa dónde estás, sin robar alto vertical ── */}
       <header className="mb-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-fx-faint mb-1">

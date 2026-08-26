@@ -21,11 +21,11 @@ export default function CompareToggle({ isComparing, onToggle }) {
       onClick={handleToggle}
       className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 border ${
         isComparing
-          ? "bg-purple-600/40 text-fx-accent border-fx-accent/40"
+          ? "bg-fx-violet/40 text-fx-accent border-fx-accent/40"
           : "bg-fx-panel text-fx-muted hover:text-fx-text border-fx-line"
       }`}
     >
-      <span className={`w-2 h-2 rounded-full ${isComparing ? "bg-[#c3ff00] animate-pulse" : "bg-gray-500"}`} />
+      <span className={`w-2 h-2 rounded-full ${isComparing ? "bg-[#6b1e96] animate-pulse" : "bg-gray-500"}`} />
       <span>Comparar vs Período Previo</span>
     </button>
   );
