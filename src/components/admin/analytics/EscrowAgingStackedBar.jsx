@@ -23,40 +23,40 @@ export default function EscrowAgingStackedBar({ agingData = {} }) {
 
       {/* Stacked bar */}
       <div className="w-full h-6 bg-purple-950/80 rounded-xl overflow-hidden flex border border-fx-line-strong mb-4">
-        {p0 > 0 && <div style={{ width: `${p0}%` }} className="bg-emerald-500 h-full transition-all duration-300" title={`0-7 días: $${b0_7}`} />}
-        {p8 > 0 && <div style={{ width: `${p8}%` }} className="bg-cyan-500 h-full transition-all duration-300" title={`8-15 días: $${b8_15}`} />}
-        {p16 > 0 && <div style={{ width: `${p16}%` }} className="bg-amber-500 h-full transition-all duration-300" title={`16-30 días: $${b16_30}`} />}
-        {pOver > 0 && <div style={{ width: `${pOver}%` }} className="bg-rose-500 h-full transition-all duration-300" title={`>30 días: $${bOver30}`} />}
+        {p0 > 0 && <div style={{ width: `${p0}%` }} className="bg-fx-pos h-full transition-all duration-300" title={`0-7 días: $${b0_7}`} />}
+        {p8 > 0 && <div style={{ width: `${p8}%` }} className="bg-fx-info h-full transition-all duration-300" title={`8-15 días: $${b8_15}`} />}
+        {p16 > 0 && <div style={{ width: `${p16}%` }} className="bg-fx-warn h-full transition-all duration-300" title={`16-30 días: $${b16_30}`} />}
+        {pOver > 0 && <div style={{ width: `${pOver}%` }} className="bg-fx-neg h-full transition-all duration-300" title={`>30 días: $${bOver30}`} />}
       </div>
 
       {/* Legend Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
         <div className="flex items-center gap-2 bg-fx-inset p-2.5 rounded-xl border border-fx-line">
-          <span className="w-3 h-3 rounded-full bg-emerald-500" />
+          <span className="w-3 h-3 rounded-full bg-fx-pos" />
           <div>
             <span className="text-fx-muted block">0–7 Días</span>
             <span className="text-fx-text font-bold">${b0_7.toLocaleString()}</span>
           </div>
         </div>
         <div className="flex items-center gap-2 bg-fx-inset p-2.5 rounded-xl border border-fx-line">
-          <span className="w-3 h-3 rounded-full bg-cyan-500" />
+          <span className="w-3 h-3 rounded-full bg-fx-info" />
           <div>
             <span className="text-fx-muted block">8–15 Días</span>
             <span className="text-fx-text font-bold">${b8_15.toLocaleString()}</span>
           </div>
         </div>
         <div className="flex items-center gap-2 bg-fx-inset p-2.5 rounded-xl border border-fx-line">
-          <span className="w-3 h-3 rounded-full bg-amber-500" />
+          <span className="w-3 h-3 rounded-full bg-fx-warn" />
           <div>
             <span className="text-fx-muted block">16–30 Días</span>
             <span className="text-fx-text font-bold">${b16_30.toLocaleString()}</span>
           </div>
         </div>
-        <div className="flex items-center gap-2 bg-rose-500/10 p-2.5 rounded-xl border border-rose-500/30">
-          <span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse" />
+        <div className="flex items-center gap-2 bg-fx-neg/10 p-2.5 rounded-xl border border-fx-neg/30">
+          <span className="w-3 h-3 rounded-full bg-fx-neg animate-pulse" />
           <div>
-            <span className="text-rose-300 block font-semibold">&gt;30 Días (Crítico)</span>
-            <span className="text-rose-200 font-bold">${bOver30.toLocaleString()}</span>
+            <span className="text-fx-neg block font-semibold">&gt;30 Días (Crítico)</span>
+            <span className="text-fx-neg font-bold">${bOver30.toLocaleString()}</span>
           </div>
         </div>
       </div>

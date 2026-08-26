@@ -1,9 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { getAdminPayoutsAPI, processAdminPayoutAPI } from "../../services/api";
+import { getAdminPayoutsAPI, processAdminPayoutAPI, getEscrowByStoreAPI } from "../../services/api";
 import Pagination from "../../components/admin/Pagination";
+import EscrowByStoreSection from "../../components/admin/EscrowByStoreSection";
 import toast from "react-hot-toast";
 import { useAdminStats } from "../../context/AdminStatsContext";
+import SearchableSelect from "../../components/ui/SearchableSelect";
+import "../../components/ui/SearchableSelect.css";
+import { WalletIcon, ListBulletIcon, CalendarIcon, SearchIcon } from "../../components/ui/FilterIcons";
 
 const STATUS_CONFIG = {
   pending: { label: "Pendiente", bg: "bg-yellow-50 text-yellow-700 border-yellow-100", dot: "bg-yellow-500" },
@@ -41,15 +45,24 @@ const TABS = [
   { id: "completed", label: "Aprobados", icon: "✅" },
   { id: "rejected", label: "Rechazados", icon: "❌" },
   { id: "all", label: "Todos", icon: "📒" },
+  // La custodia no son solicitudes de retiro, es lo que aún no se ha pedido: por eso su
+  // contador es un importe y vive al final, después de las cuatro vistas de solicitudes.
+  { id: "escrow", label: "En custodia", icon: "🔒" },
 ];
 
-const PAYOUT_METHODS = [
-  { value: "pago_movil", label: "Pago Móvil" },
-  { value: "transferencia", label: "Transferencia" },
-  { value: "zelle", label: "Zelle" },
+const PAYOUT_METHOD_OPTIONS = [
+  { value: "", label: "Todos los Métodos" },
+  { value: "pago_movil", label: "📱 Pago Móvil" },
+  { value: "transferencia", label: "🏦 Transferencia" },
+  { value: "zelle", label: "💲 Zelle" },
 ];
 
-const PER_PAGE = 20;
+const PAGE_OPTIONS = [
+  { value: 10, label: "10 por página" },
+  { value: 20, label: "20 por página" },
+  { value: 30, label: "30 por página" },
+  { value: 50, label: "50 por página" },
+];
 
 const EMPTY_COUNTS = { all: 0, pending: 0, processing: 0, completed: 0, rejected: 0 };
 const EMPTY_SUMMARY = { pending_usd: 0, processing_usd: 0, completed_usd: 0, rejected_usd: 0 };
@@ -65,12 +78,34 @@ export default function AdminPayouts() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
 
+  // El escrow se carga aquí y no dentro de la vista de custodia porque la pestaña enseña
+  // el total retenido en su propio botón, antes de que nadie la abra.
+  const [escrow, setEscrow] = useState(null);
+  const [escrowLoading, setEscrowLoading] = useState(true);
+  const [escrowError, setEscrowError] = useState(null);
+
+  const fetchEscrow = useCallback(() => {
+    setEscrowLoading(true);
+    setEscrowError(null);
+    getEscrowByStoreAPI()
+      .then((res) => {
+        if (res.data?.success) setEscrow(res.data.data);
+      })
+      .catch((err) => setEscrowError(err.response?.data?.error || "No se pudo cargar el escrow."))
+      .finally(() => setEscrowLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetchEscrow();
+  }, [fetchEscrow]);
+
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [method, setMethod] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [perPage, setPerPage] = useState(20);
   const [page, setPage] = useState(1);
 
   // Modal control
@@ -90,6 +125,13 @@ export default function AdminPayouts() {
   }, [searchTerm]);
 
   const fetchPayouts = useCallback(async () => {
+    // La custodia no es un estado de solicitud: pedir `status=escrow` no devolvería nada y
+    // además machacaría con ceros los contadores de las otras pestañas.
+    if (activeTab === "escrow") {
+      setLoading(false);
+      return;
+    }
+
     // Cambiar de pestaña rápido deja que una respuesta lenta pise a la buena.
     const requestId = ++latestRequest.current;
     setLoading(true);
@@ -100,8 +142,8 @@ export default function AdminPayouts() {
         method: method || undefined,
         start_date: startDate || undefined,
         end_date: endDate || undefined,
-        limit: PER_PAGE,
-        offset: (page - 1) * PER_PAGE,
+        limit: perPage,
+        offset: (page - 1) * perPage,
       });
       if (requestId !== latestRequest.current) return;
       if (data?.success) {
@@ -117,7 +159,7 @@ export default function AdminPayouts() {
     } finally {
       if (requestId === latestRequest.current) setLoading(false);
     }
-  }, [activeTab, debouncedSearch, method, startDate, endDate, page]);
+  }, [activeTab, debouncedSearch, method, startDate, endDate, perPage, page]);
 
   useEffect(() => {
     fetchPayouts();
@@ -155,7 +197,7 @@ export default function AdminPayouts() {
   // Cualquier cambio de filtro invalida la página en la que estabas.
   useEffect(() => {
     setPage(1);
-  }, [activeTab, debouncedSearch, method, startDate, endDate]);
+  }, [activeTab, debouncedSearch, method, startDate, endDate, perPage]);
 
   // Las filas de la pestaña anterior no pueden quedarse en pantalla mientras carga
   // la nueva: la columna de acción se pinta según el estado de cada fila y se verían
@@ -172,6 +214,7 @@ export default function AdminPayouts() {
     setMethod("");
     setStartDate("");
     setEndDate("");
+    setPerPage(20);
   };
 
   const handleOpenDetails = (payout) => {
@@ -281,12 +324,23 @@ export default function AdminPayouts() {
                 activeTab === tab.id ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
               }`}
             >
-              {counts[tab.id] ?? 0}
+              {tab.id === "escrow"
+                ? `$${Number(escrow?.retainedUsd || 0).toFixed(0)}`
+                : counts[tab.id] ?? 0}
             </span>
           </button>
         ))}
       </div>
 
+      {activeTab === "escrow" ? (
+        <EscrowByStoreSection
+          data={escrow}
+          loading={escrowLoading}
+          error={escrowError}
+          onReload={fetchEscrow}
+        />
+      ) : (
+      <>
       {/* KPIs contables: sólo en el historial completo */}
       {activeTab === "all" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -309,61 +363,101 @@ export default function AdminPayouts() {
         </div>
       )}
 
-      {/* Filtros */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="lg:col-span-2">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Buscar tienda</label>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Nombre comercial o RIF…"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all"
+      {/* ── Buscador y Filtros ── */}
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: "16px",
+          border: "1px solid #f0f0f0",
+          padding: "16px 20px",
+          marginBottom: "24px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        }}
+      >
+        {/* Buscador */}
+        <div style={{ position: "relative", marginBottom: "16px" }}>
+          <SearchIcon style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#9ca3af" }} />
+          <input
+            type="text"
+            placeholder="Buscar por nombre comercial o RIF de la tienda..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "12px 14px 12px 42px",
+              borderRadius: "10px",
+              border: "1.5px solid #e5e7eb",
+              fontSize: "13px",
+              outline: "none",
+              transition: "border-color 0.2s, box-shadow 0.2s",
+              background: "#fafafa",
+              color: "#1f2937",
+              boxSizing: "border-box",
+            }}
+            onFocus={(e) => { e.target.style.borderColor = "#6b1e96"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(107,30,150,0.08)"; }}
+            onBlur={(e) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none"; }}
+          />
+        </div>
+
+        {/* Fila de filtros */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
+          {/* Método de pago */}
+          <div style={{ flex: "1 1 170px", minWidth: "160px" }}>
+            <SearchableSelect
+              options={PAYOUT_METHOD_OPTIONS}
+              value={method}
+              onChange={(val) => setMethod(val)}
+              placeholder="Todos los Métodos"
+              searchPlaceholder="Buscar método..."
+              icon={<WalletIcon className="h-4 w-4" />}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Desde</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Hasta</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all"
-              />
-            </div>
+
+          {/* Rango de fechas */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1 1 260px", minWidth: 0, background: "#f9fafb", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e5e7eb", transition: "all 0.2s" }} className="date-filter-container">
+            <CalendarIcon className="h-4 w-4" style={{ color: "#6b1e96", flexShrink: 0 }} />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              style={{ background: "transparent", border: "none", fontSize: "12px", color: startDate ? "#1f2937" : "#9ca3af", outline: "none", cursor: "pointer", fontWeight: 500, flex: "1 1 0", minWidth: 0 }}
+              title="Fecha desde"
+            />
+            <span style={{ fontSize: "12px", color: "#d1d5db", fontWeight: "bold", flexShrink: 0 }}>→</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              style={{ background: "transparent", border: "none", fontSize: "12px", color: endDate ? "#1f2937" : "#9ca3af", outline: "none", cursor: "pointer", fontWeight: 500, flex: "1 1 0", minWidth: 0 }}
+              title="Fecha hasta"
+            />
           </div>
-          <div>
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Método</label>
-            <select
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all"
+
+          {/* Resultados por página */}
+          <div style={{ flex: "0 0 155px" }}>
+            <SearchableSelect
+              options={PAGE_OPTIONS}
+              value={perPage}
+              onChange={(val) => setPerPage(Number(val))}
+              placeholder="20 por página"
+              searchPlaceholder="Buscar..."
+              icon={<ListBulletIcon className="h-4 w-4" />}
+            />
+          </div>
+
+          {/* Limpiar filtros */}
+          {hasFilters && (
+            <button
+              onClick={handleClearFilters}
+              style={{ flex: "0 0 auto", display: "flex", alignItems: "center", gap: "6px", padding: "10px 16px", borderRadius: "8px", border: "1.5px solid rgba(107,30,150,0.15)", background: "rgba(107,30,150,0.04)", color: "#6b1e96", fontSize: "12px", fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}
             >
-              <option value="">Todos los métodos</option>
-              {PAYOUT_METHODS.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
-          </div>
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Limpiar
+            </button>
+          )}
         </div>
-        {hasFilters && (
-          <button
-            onClick={handleClearFilters}
-            className="mt-3 text-xs font-semibold text-red-500 hover:text-red-700 transition-colors"
-          >
-            Limpiar filtros
-          </button>
-        )}
       </div>
 
       {/* Content */}
@@ -535,13 +629,15 @@ export default function AdminPayouts() {
           <div className="px-5 pb-5">
             <Pagination
               page={page}
-              totalPages={Math.max(1, Math.ceil(total / PER_PAGE))}
+              totalPages={Math.max(1, Math.ceil(total / perPage))}
               total={total}
-              limit={PER_PAGE}
+              limit={perPage}
               onPageChange={setPage}
             />
           </div>
         </div>
+      )}
+      </>
       )}
 
       {/* Details / Processing Modal */}

@@ -6,6 +6,35 @@ import PaymentReviewSlideOver from "../../components/admin/PaymentReviewSlideOve
 import Pagination from "../../components/admin/Pagination";
 import toast from "react-hot-toast";
 import PropTypes from "prop-types";
+import SearchableSelect from "../../components/ui/SearchableSelect";
+import "../../components/ui/SearchableSelect.css";
+import { CreditCardIcon, WalletIcon, StorefrontIcon, ListBulletIcon, CalendarIcon, SearchIcon } from "../../components/ui/FilterIcons";
+
+// ── Opciones de los filtros ──
+const PAGE_OPTIONS = [
+  { value: 10, label: "10 por página" },
+  { value: 20, label: "20 por página" },
+  { value: 30, label: "30 por página" },
+  { value: 50, label: "50 por página" },
+];
+
+const PAYMENT_STATUS_OPTIONS = [
+  { value: "", label: "Todos los Estados" },
+  { value: "approved", label: "✅ Aprobado" },
+  { value: "under_review", label: "🔍 En Revisión" },
+  { value: "pending", label: "⏳ Pendiente" },
+  { value: "rejected", label: "⛔ Rechazado" },
+  { value: "failed", label: "❌ Fallido" },
+];
+
+const PAYMENT_METHOD_OPTIONS = [
+  { value: "", label: "Todos los Métodos" },
+  { value: "pago_movil", label: "📱 Pago Móvil" },
+  { value: "transferencia", label: "🏦 Transferencia" },
+  { value: "zelle", label: "💲 Zelle" },
+  { value: "binance", label: "🪙 Binance" },
+  { value: "paypal", label: "🅿️ PayPal" },
+];
 
 // ── Status Badge Component ──
 function StatusBadge({ status }) {
@@ -88,6 +117,10 @@ function StoreChip({ name }) {
   );
 }
 
+StoreChip.propTypes = {
+  name: PropTypes.string.isRequired,
+};
+
 // ── CSV Export Helper ──
 function exportToCsv(orders, summary) {
   const headers = [
@@ -158,12 +191,24 @@ export default function PaymentHistory() {
   const [filters, setFilters] = useState({
     page: 1,
     limit: 20,
+    search: "",
     date_from: "",
     date_to: "",
     store_id: "",
     payment_status: "",
     payment_method: "",
   });
+
+  // El buscador se escribe en local y se vuelca a los filtros con debounce
+  const [searchInput, setSearchInput] = useState("");
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setFilters((prev) =>
+        prev.search === searchInput ? prev : { ...prev, search: searchInput, page: 1 },
+      );
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [searchInput]);
 
   // Fetch stores for dropdown (once)
   useEffect(() => {
@@ -207,12 +252,27 @@ export default function PaymentHistory() {
   };
 
   const handleClearFilters = () => {
-    setFilters({ page: 1, limit: 20, date_from: "", date_to: "", store_id: "", payment_status: "", payment_method: "" });
+    setSearchInput("");
+    setFilters({ page: 1, limit: 20, search: "", date_from: "", date_to: "", store_id: "", payment_status: "", payment_method: "" });
   };
 
   const hasActiveFilters = useMemo(() => {
-    return filters.date_from || filters.date_to || filters.store_id || filters.payment_status || filters.payment_method;
+    return (
+      filters.search ||
+      filters.date_from ||
+      filters.date_to ||
+      filters.store_id ||
+      filters.payment_status ||
+      filters.payment_method
+    );
   }, [filters]);
+
+  const storeOptions = useMemo(() => {
+    return [
+      { value: "", label: "Todas las Tiendas" },
+      ...stores.map((s) => ({ value: s.id, label: s.name || "Sin nombre" })),
+    ];
+  }, [stores]);
 
   // Export: Fetch ALL matching data (no pagination) then generate CSV
   const handleExport = async () => {
@@ -251,14 +311,6 @@ export default function PaymentHistory() {
   };
 
   // Payment method options derived from known methods
-  const paymentMethods = [
-    { value: "pago_movil", label: "Pago Móvil" },
-    { value: "transferencia", label: "Transferencia" },
-    { value: "zelle", label: "Zelle" },
-    { value: "paypal", label: "PayPal" },
-    { value: "binance", label: "Binance" },
-  ];
-
   return (
     <div className="space-y-6 animate-fade-in-up">
       {/* ── Header ── */}
@@ -352,95 +404,123 @@ export default function PaymentHistory() {
         />
       </div>
 
-      {/* ── Filters Panel ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-        <div className="flex items-center gap-2 mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
-          </svg>
-          <h3 className="text-sm font-bold text-gray-700">Filtros de Búsqueda</h3>
-          {hasActiveFilters && (
-            <button
-              onClick={handleClearFilters}
-              className="ml-auto text-xs text-red-500 hover:text-red-700 font-medium transition-colors flex items-center gap-1"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-              </svg>
-              Limpiar filtros
-            </button>
-          )}
+      {/* ── Buscador y Filtros ── */}
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: "16px",
+          border: "1px solid #f0f0f0",
+          padding: "16px 20px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        }}
+      >
+        {/* Buscador */}
+        <div style={{ position: "relative", marginBottom: "16px" }}>
+          <SearchIcon style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#9ca3af" }} />
+          <input
+            type="text"
+            placeholder="Buscar por número de orden, email o nombre del cliente..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "12px 14px 12px 42px",
+              borderRadius: "10px",
+              border: "1.5px solid #e5e7eb",
+              fontSize: "13px",
+              outline: "none",
+              transition: "border-color 0.2s, box-shadow 0.2s",
+              background: "#fafafa",
+              color: "#1f2937",
+              boxSizing: "border-box",
+            }}
+            onFocus={(e) => { e.target.style.borderColor = "#6b1e96"; e.target.style.background = "#fff"; e.target.style.boxShadow = "0 0 0 3px rgba(107,30,150,0.08)"; }}
+            onBlur={(e) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.background = "#fafafa"; e.target.style.boxShadow = "none"; }}
+          />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {/* Date From */}
-          <div>
-            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Desde</label>
+        {/* Fila de filtros */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
+          {/* Tienda */}
+          <div style={{ flex: "1 1 170px", minWidth: "160px" }}>
+            <SearchableSelect
+              options={storeOptions}
+              value={filters.store_id}
+              onChange={(val) => handleFilterChange("store_id", val)}
+              placeholder="Todas las Tiendas"
+              searchPlaceholder="Buscar tienda..."
+              icon={<StorefrontIcon className="h-4 w-4" />}
+            />
+          </div>
+
+          {/* Estado del pago */}
+          <div style={{ flex: "1 1 170px", minWidth: "160px" }}>
+            <SearchableSelect
+              options={PAYMENT_STATUS_OPTIONS}
+              value={filters.payment_status}
+              onChange={(val) => handleFilterChange("payment_status", val)}
+              placeholder="Todos los Estados"
+              searchPlaceholder="Buscar estado..."
+              icon={<CreditCardIcon className="h-4 w-4" />}
+            />
+          </div>
+
+          {/* Método de pago */}
+          <div style={{ flex: "1 1 170px", minWidth: "160px" }}>
+            <SearchableSelect
+              options={PAYMENT_METHOD_OPTIONS}
+              value={filters.payment_method}
+              onChange={(val) => handleFilterChange("payment_method", val)}
+              placeholder="Todos los Métodos"
+              searchPlaceholder="Buscar método..."
+              icon={<WalletIcon className="h-4 w-4" />}
+            />
+          </div>
+
+          {/* Rango de fechas */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1 1 260px", minWidth: 0, background: "#f9fafb", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e5e7eb", transition: "all 0.2s" }} className="date-filter-container">
+            <CalendarIcon className="h-4 w-4" style={{ color: "#6b1e96", flexShrink: 0 }} />
             <input
               type="date"
               value={filters.date_from}
               onChange={(e) => handleFilterChange("date_from", e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all bg-gray-50"
+              style={{ background: "transparent", border: "none", fontSize: "12px", color: filters.date_from ? "#1f2937" : "#9ca3af", outline: "none", cursor: "pointer", fontWeight: 500, flex: "1 1 0", minWidth: 0 }}
+              title="Fecha desde"
             />
-          </div>
-
-          {/* Date To */}
-          <div>
-            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Hasta</label>
+            <span style={{ fontSize: "12px", color: "#d1d5db", fontWeight: "bold", flexShrink: 0 }}>→</span>
             <input
               type="date"
               value={filters.date_to}
               onChange={(e) => handleFilterChange("date_to", e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all bg-gray-50"
+              style={{ background: "transparent", border: "none", fontSize: "12px", color: filters.date_to ? "#1f2937" : "#9ca3af", outline: "none", cursor: "pointer", fontWeight: 500, flex: "1 1 0", minWidth: 0 }}
+              title="Fecha hasta"
             />
           </div>
 
-          {/* Store Filter */}
-          <div>
-            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Tienda</label>
-            <select
-              value={filters.store_id}
-              onChange={(e) => handleFilterChange("store_id", e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all bg-gray-50"
-            >
-              <option value="">Todas las tiendas</option>
-              {stores.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
+          {/* Resultados por página */}
+          <div style={{ flex: "0 0 155px" }}>
+            <SearchableSelect
+              options={PAGE_OPTIONS}
+              value={filters.limit}
+              onChange={(val) => handleFilterChange("limit", Number(val))}
+              placeholder="20 por página"
+              searchPlaceholder="Buscar..."
+              icon={<ListBulletIcon className="h-4 w-4" />}
+            />
           </div>
 
-          {/* Payment Status */}
-          <div>
-            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Estado</label>
-            <select
-              value={filters.payment_status}
-              onChange={(e) => handleFilterChange("payment_status", e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all bg-gray-50"
+          {/* Limpiar filtros */}
+          {hasActiveFilters && (
+            <button
+              onClick={handleClearFilters}
+              style={{ flex: "0 0 auto", display: "flex", alignItems: "center", gap: "6px", padding: "10px 16px", borderRadius: "8px", border: "1.5px solid rgba(107,30,150,0.15)", background: "rgba(107,30,150,0.04)", color: "#6b1e96", fontSize: "12px", fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}
             >
-              <option value="">Todos los estados</option>
-              <option value="approved">Aprobado</option>
-              <option value="rejected">Rechazado</option>
-              <option value="under_review">En Revisión</option>
-              <option value="pending">Pendiente</option>
-              <option value="failed">Fallido</option>
-            </select>
-          </div>
-
-          {/* Payment Method */}
-          <div>
-            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Método</label>
-            <select
-              value={filters.payment_method}
-              onChange={(e) => handleFilterChange("payment_method", e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition-all bg-gray-50"
-            >
-              <option value="">Todos los métodos</option>
-              {paymentMethods.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
-          </div>
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Limpiar
+            </button>
+          )}
         </div>
       </div>
 

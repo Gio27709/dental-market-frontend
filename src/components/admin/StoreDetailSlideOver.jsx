@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { getStoreDetailsAPI, getPenaltiesAPI } from "../../services/api";
 import PropTypes from "prop-types";
+import StoreActivityPanel from "./StoreActivityPanel";
+import StoreEscrowPanel from "./StoreEscrowPanel";
 
 export default function StoreDetailSlideOver({ store, onClose }) {
   const [details, setDetails] = useState(null);
@@ -131,6 +133,8 @@ export default function StoreDetailSlideOver({ store, onClose }) {
               </div>
             </div>
 
+            <StoreEscrowPanel storeId={store.user_id} walletPending={w.balance_pending} />
+
             {/* Sanctions Summary (OMI-3) */}
             {penalties.length > 0 && (
               <div className="space-y-2">
@@ -165,22 +169,25 @@ export default function StoreDetailSlideOver({ store, onClose }) {
               </div>
             )}
 
+            {/* Inactividad y dedicación diaria */}
+            <StoreActivityPanel userId={store.user_id} />
+
             {/* Auth Info */}
-            {auth.last_sign_in_at && (
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Actividad</h4>
-                <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cuenta</h4>
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
+                {auth.last_sign_in_at && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Último Login</span>
+                    <span className="text-gray-500">Último Login (Auth)</span>
                     <span className="font-medium text-gray-900">{new Date(auth.last_sign_in_at).toLocaleDateString("es-VE")}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Registrado</span>
-                    <span className="font-medium text-gray-900">{new Date(p.created_at).toLocaleDateString("es-VE")}</span>
-                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Registrado</span>
+                  <span className="font-medium text-gray-900">{new Date(p.created_at).toLocaleDateString("es-VE")}</span>
                 </div>
               </div>
-            )}
+            </div>
 
             {/* Public Link */}
             <a
