@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useState, memo, useMemo } from "react";
 import ComparePricesModal from "./products/ComparePricesModal";
 import PriceDisplay from "./products/PriceDisplay";
+import StarRating from "./StarRating";
 import { useCurrency } from "../context/CurrencyContext";
 import { useProducts } from "../context/ProductContext";
 import { formatCurrencyUSD, formatCurrencyVES } from "../utils/formatters";
@@ -242,20 +243,16 @@ const ProductCardInner = memo(function ProductCardInner({
             </h2>
           </Link>
 
-          {/* Product Rating */}
-          <div className="flex items-center mb-2 text-[#facc15] gap-0.5">
-            {[...Array(5)].map((_, i) => (
-              <span
-                key={i}
-                className={`material-symbols-outlined text-[13px] ${i < Math.round(product.rating_avg || 0) ? "text-[#facc15]" : "text-slate-200"}`}
-              >
-                star
-              </span>
-            ))}
-            <span className="ml-1.5 text-[9px] font-medium text-slate-400">
-              {product.review_count || 0} valoraciones
-            </span>
-          </div>
+          {/* Product Rating — se puede calificar con un clic desde la tarjeta */}
+          <StarRating
+            className="mb-2"
+            productId={product.id}
+            average={Number(product.rating_avg) || 0}
+            count={product.review_count || 0}
+            size="xs"
+            interactive
+            disabled={isOwnProduct}
+          />
 
           {/* Precio */}
           <div className="min-h-[48px] mb-3 flex flex-col justify-center">

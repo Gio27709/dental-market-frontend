@@ -4,6 +4,7 @@ import { memo } from "react";
 import { formatCurrencyUSD, formatCurrencyVES } from "../utils/formatters";
 import { useCurrency } from "../context/CurrencyContext";
 import { useProducts } from "../context/ProductContext";
+import StarRating from "./StarRating";
 
 const RelatedProductCard = memo(function RelatedProductCard({ product, badge }) {
   const { isVES } = useCurrency();
@@ -82,21 +83,13 @@ const RelatedProductCard = memo(function RelatedProductCard({ product, badge }) 
           {product.name}
         </h3>
 
-        {/* Estrellas Mock */}
-        <div className="flex items-center gap-0.5 mb-2.5">
-          {[1, 2, 3, 4].map((star) => (
-            <svg
-              key={star}
-              className="w-3.5 h-3.5 text-[#facc15] fill-current"
-              viewBox="0 0 20 20"
-            >
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-            </svg>
-          ))}
-          <svg className="w-3.5 h-3.5 text-gray-400 fill-current" viewBox="0 0 20 20">
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-          </svg>
-        </div>
+        {/* Estrellas reales del producto (antes eran 4 fijas escritas a mano) */}
+        <StarRating
+          className="mb-2.5"
+          average={Number(product.rating_avg) || 0}
+          count={product.review_count || 0}
+          size="sm"
+        />
 
         {/* Precios ajustados a la imagen */}
         <div className="flex items-baseline gap-2 mt-auto">
@@ -123,6 +116,8 @@ RelatedProductCard.propTypes = {
     price: PropTypes.number.isRequired,
     compare_at_price: PropTypes.number,
     images: PropTypes.arrayOf(PropTypes.string),
+    rating_avg: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    review_count: PropTypes.number,
     active_discount: PropTypes.shape({
       final_price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       original_price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),

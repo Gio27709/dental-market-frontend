@@ -7,6 +7,7 @@ import { OrderProvider } from "./context/OrderContext";
 import { StoreProvider } from "./context/StoreContext";
 import { LocationProvider } from "./context/LocationContext";
 import { FavoriteProvider } from "./context/FavoriteContext";
+import { RatingProvider } from "./context/RatingContext";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { Toaster } from "react-hot-toast";
@@ -44,6 +45,7 @@ const AdminPosts = lazy(() => import("./pages/Admin/AdminPosts"));
 const AdminPostStats = lazy(() => import("./pages/Admin/AdminPostStats"));
 const CategoryManagement = lazy(() => import("./pages/Admin/CategoryManagement"));
 const PlatformSettings = lazy(() => import("./pages/Admin/PlatformSettings"));
+const AdminPaymentMethods = lazy(() => import("./pages/Admin/AdminPaymentMethods"));
 const AdminNewsletter = lazy(() => import("./pages/Admin/AdminNewsletter"));
 const AdminNotifications = lazy(() => import("./pages/Admin/AdminNotifications"));
 const HomeContentManager = lazy(() => import("./pages/Admin/HomeContentManager"));
@@ -150,6 +152,7 @@ export default function App() {
           <ProductProvider>
             <CurrencyProvider>
             <FavoriteProvider>
+              <RatingProvider>
               <CartProvider>
               <OrderProvider>
                 <StoreProvider>
@@ -189,6 +192,7 @@ export default function App() {
                         <Route path="posts" element={<AdminPosts />} />
                         <Route path="posts/:id/stats" element={<AdminPostStats />} />
                         <Route path="settings" element={<PlatformSettings />} />
+                        <Route path="payment-methods" element={<AdminPaymentMethods />} />
                         <Route path="newsletter" element={<AdminNewsletter />} />
                         <Route path="notifications" element={<AdminNotifications />} />
                         <Route path="home-content" element={<HomeContentManager />} />
@@ -343,6 +347,7 @@ export default function App() {
                 </StoreProvider>
               </OrderProvider>
               </CartProvider>
+              </RatingProvider>
             </FavoriteProvider>
             </CurrencyProvider>
           </ProductProvider>

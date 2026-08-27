@@ -334,6 +334,12 @@ export const checkFavoriteAPI = (productId) => api.get(`/wishlist/check/${produc
 
 // My Reviews API (Account Section)
 export const getMyReviewsAPI = (params) => api.get("/products/my-reviews", { params });
+// Mis calificaciones de varios productos de una vez (para las estrellas de las tarjetas)
+export const getMyProductRatingsAPI = (ids) =>
+  api.get("/products/my-ratings", { params: { ids: (ids || []).join(",") } });
+// Calificar con un clic: sin comentario, para no tocar el texto ya escrito
+export const rateProductAPI = (productId, rating) =>
+  api.post(`/products/${productId}/reviews`, { rating });
 export const getStoreProductReviewsAPI = (params) => api.get("/products/store-reviews", { params });
 export const updateMyReviewAPI = (reviewId, data) => api.put(`/products/reviews/${reviewId}`, data);
 export const deleteMyReviewAPI = (reviewId) => api.delete(`/products/reviews/${reviewId}`);
