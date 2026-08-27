@@ -21,6 +21,7 @@ export function AdminStatsProvider({ children }) {
     pendingTickets: 0,
     pendingDiscounts: 0,
     pendingPenalties: 0,
+    pendingClinicMemberships: 0,
   });
   const [loading, setLoading] = useState(false);
 

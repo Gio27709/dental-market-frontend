@@ -40,6 +40,8 @@ export default function AdminSidebar() {
         return stats.pendingDiscounts;
       case "/admin/penalties":
         return stats.pendingPenalties;
+      case "/admin/clinic-memberships":
+        return stats.pendingClinicMemberships;
       default:
         return 0;
     }

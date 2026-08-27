@@ -1,7 +1,53 @@
 import { Outlet, NavLink, Link } from "react-router-dom";
+import { ClinicMembershipProvider, useClinicMembership } from "../../context/ClinicMembershipContext";
+
+/**
+ * Enlace "Mi membresía" con el estado al lado: días restantes, "en revisión", "vencida".
+ * Lee el contexto que el propio layout provee más abajo.
+ */
+function MembershipNavLink() {
+  const { loading, membership } = useClinicMembership();
+  let pill = null;
+  if (!loading && membership) {
+    const { acceso, vigente } = membership;
+    if (acceso.ok && vigente) {
+      const d = vigente.dias_restantes;
+      pill = { text: `${d} ${d === 1 ? "día" : "días"}`, cls: d <= 7 ? "bg-amber-100 text-amber-800" : "bg-[#6bfe9c]/50 text-[#005228]" };
+    } else if (acceso.motivo === "cobro_desactivado") {
+      pill = { text: "incluida", cls: "bg-[#6bfe9c]/50 text-[#005228]" };
+    } else if (acceso.motivo === "en_revision") {
+      pill = { text: "en revisión", cls: "bg-amber-100 text-amber-800" };
+    } else {
+      pill = { text: "activar", cls: "bg-red-100 text-red-700" };
+    }
+  }
+  return (
+    <NavLink
+      to="/clinic/membership"
+      className={({ isActive }) =>
+        `flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+          isActive
+            ? "bg-[#541a97]/10 text-[#541a97] font-bold shadow-xs"
+            : "text-[#4b4452] hover:bg-[#f0f3ff] hover:text-[#111c2c]"
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
+            workspace_premium
+          </span>
+          <span className="flex-1">Mi Membresía</span>
+          {pill && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pill.cls}`}>{pill.text}</span>}
+        </>
+      )}
+    </NavLink>
+  );
+}
 
 export default function ClinicLayout() {
   return (
+    <ClinicMembershipProvider>
     <div className="min-h-screen font-sans" style={{ backgroundColor: "#f9f9ff", color: "#111c2c" }}>
       <div className="max-w-[1440px] mx-auto flex min-h-screen relative">
         
@@ -109,6 +155,10 @@ export default function ClinicLayout() {
                 </>
               )}
             </NavLink>
+
+            <div className="pt-2 mt-2 border-t border-[#cdc3d4]/20">
+              <MembershipNavLink />
+            </div>
           </nav>
 
           {/* Footer Actions */}
@@ -129,5 +179,6 @@ export default function ClinicLayout() {
         </main>
       </div>
     </div>
+    </ClinicMembershipProvider>
   );
 }

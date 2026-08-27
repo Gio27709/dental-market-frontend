@@ -193,7 +193,7 @@ export default function Register() {
                     </svg>
                   </div>
                   <span className="font-semibold text-sm text-gray-900">Comprador</span>
-                  <span className="text-xs text-gray-500">Clínicas e insumos</span>
+                  <span className="text-xs text-gray-500">Compra de insumos</span>
                 </div>
 
                 {/* Professional Dentist */}

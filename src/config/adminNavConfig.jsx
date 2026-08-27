@@ -133,6 +133,13 @@ export const navGroups = [
           <span className="material-symbols-outlined text-[20px]">verified_user</span>
         )
       },
+      {
+        name: 'Membresías Clínicas',
+        path: '/admin/clinic-memberships',
+        icon: (
+          <span className="material-symbols-outlined text-[20px]">medical_services</span>
+        )
+      },
     ]
   },
   {

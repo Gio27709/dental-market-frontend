@@ -509,3 +509,17 @@ export default api;
 
 
 
+
+// ── Membresía clínica (panel /clinic de pago, migración 072) ─────────────────
+// OJO: "membresía" ≠ "Suscripciones Recurrentes" (getClinicSubscriptionsAPI, productos).
+export const getMyClinicMembershipAPI = () => api.get("/clinic-membership/me");
+export const requestClinicMembershipAPI = (formData) =>
+  api.post("/clinic-membership", formData, { headers: { "Content-Type": "multipart/form-data" } });
+
+// Admin
+export const getAdminClinicMembershipsAPI = (params) => api.get("/admin/clinic-memberships", { params });
+export const getAdminClinicMembershipStatsAPI = () => api.get("/admin/clinic-memberships/stats");
+export const approveClinicMembershipAPI = (id) => api.put(`/admin/clinic-memberships/${id}/approve`);
+export const rejectClinicMembershipAPI = (id, reason) => api.put(`/admin/clinic-memberships/${id}/reject`, { reason });
+export const revokeClinicMembershipAPI = (id, reason) => api.put(`/admin/clinic-memberships/${id}/revoke`, { reason });
+export const updateClinicMembershipSettingsAPI = (data) => api.put("/admin/settings/clinic-membership", data);

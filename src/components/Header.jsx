@@ -488,7 +488,7 @@ export default function Header() {
             )}
 
             {/* Action Item: Gestión Clínica B2B (solo odontólogos/clínicas) */}
-            {(user?.role === "user" || user?.role === "professional") && (
+            {(user?.role === "professional" || user?.role === "student") && (
               <button
                 onClick={() => navigate("/clinic")}
                 className="relative flex items-center gap-1 lg:gap-2 justify-center outline-none bg-transparent border-none p-0 cursor-pointer hover:text-gray-200 transition-colors group"
@@ -814,7 +814,7 @@ export default function Header() {
                       Panel Admin
                     </Link>
                   )}
-                  {(user?.role === "user" || user?.role === "professional") && (
+                  {(user?.role === "professional" || user?.role === "student") && (
                     <Link to="/clinic" onClick={() => setMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#f3e8ff] text-[#6b1e96] text-sm font-bold hover:bg-[#e9d5ff] transition-colors">
                       <span className="material-symbols-outlined text-[20px]">local_hospital</span>
                       Gestión Clínica B2B

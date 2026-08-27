@@ -46,6 +46,7 @@ const AdminPostStats = lazy(() => import("./pages/Admin/AdminPostStats"));
 const CategoryManagement = lazy(() => import("./pages/Admin/CategoryManagement"));
 const PlatformSettings = lazy(() => import("./pages/Admin/PlatformSettings"));
 const AdminPaymentMethods = lazy(() => import("./pages/Admin/AdminPaymentMethods"));
+const AdminClinicMemberships = lazy(() => import("./pages/Admin/AdminClinicMemberships"));
 const AdminNewsletter = lazy(() => import("./pages/Admin/AdminNewsletter"));
 const AdminNotifications = lazy(() => import("./pages/Admin/AdminNotifications"));
 const HomeContentManager = lazy(() => import("./pages/Admin/HomeContentManager"));
@@ -106,6 +107,8 @@ const ClinicDashboard = lazy(() => import("./pages/Clinic/ClinicDashboard"));
 const ClinicInventory = lazy(() => import("./pages/Clinic/ClinicInventory"));
 const ClinicSubscriptions = lazy(() => import("./pages/Clinic/ClinicSubscriptions"));
 const ClinicProfitability = lazy(() => import("./pages/Clinic/ClinicProfitability"));
+const ClinicMembership = lazy(() => import("./pages/Clinic/ClinicMembership"));
+const ClinicMembershipGate = lazy(() => import("./components/clinic/ClinicMembershipGate"));
 
 
 /** Emite page_view en cada navegación. Sin render propio; vive dentro del Router. */
@@ -193,6 +196,7 @@ export default function App() {
                         <Route path="posts/:id/stats" element={<AdminPostStats />} />
                         <Route path="settings" element={<PlatformSettings />} />
                         <Route path="payment-methods" element={<AdminPaymentMethods />} />
+                        <Route path="clinic-memberships" element={<AdminClinicMemberships />} />
                         <Route path="newsletter" element={<AdminNewsletter />} />
                         <Route path="notifications" element={<AdminNotifications />} />
                         <Route path="home-content" element={<HomeContentManager />} />
@@ -252,15 +256,20 @@ export default function App() {
                       <Route
                         path="/clinic"
                         element={
-                          <ProtectedRoute redirectTo="/login" requiredRole={["user", "professional", "student"]}>
+                          <ProtectedRoute redirectTo="/login" requiredRole={["professional", "student"]}>
                             <ClinicLayout />
                           </ProtectedRoute>
                         }
                       >
-                        <Route index element={<ClinicDashboard />} />
-                        <Route path="inventory" element={<ClinicInventory />} />
-                        <Route path="subscriptions" element={<ClinicSubscriptions />} />
-                        <Route path="profitability" element={<ClinicProfitability />} />
+                        {/* La página de membresía es la única abierta sin pagar: es donde se paga. */}
+                        <Route path="membership" element={<ClinicMembership />} />
+                        {/* El resto exige membresía vigente (redirige a /clinic/membership). */}
+                        <Route element={<ClinicMembershipGate />}>
+                          <Route index element={<ClinicDashboard />} />
+                          <Route path="inventory" element={<ClinicInventory />} />
+                          <Route path="subscriptions" element={<ClinicSubscriptions />} />
+                          <Route path="profitability" element={<ClinicProfitability />} />
+                        </Route>
                       </Route>
 
 

@@ -80,9 +80,14 @@ export default function AccountLayout() {
 
   // Filtrar baseMenuItems para mostrar Métodos de Pago sólo a roles con billetera (tiendas, admin, repartidores)
   const isWalletRole = ["store", "store/owner", "delivery", "admin", "owner"].includes(user.role);
+  // Gestión Clínica es de pago y solo para odontólogos y estudiantes (migración 072).
+  const isClinicRole = ["professional", "student"].includes(user.role);
   const filteredBaseMenuItems = baseMenuItems.filter(item => {
     if (item.path === "/account/payment-methods") {
       return isWalletRole;
+    }
+    if (item.path === "/clinic") {
+      return isClinicRole;
     }
     return true;
   });
