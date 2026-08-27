@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import { getSalesAnalyticsAPI, getFinancialsAnalyticsAPI } from "../../../services/api";
+import usePaymentMethods from "../../../hooks/usePaymentMethods";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export default function GmvDrilldownModal({ isOpen, onClose, period = "30d" }) {
+  const { etiquetaDe } = usePaymentMethods();
   const [loading, setLoading] = useState(true);
   const [salesData, setSalesData] = useState(null);
   const [financialsData, setFinancialsData] = useState(null);
@@ -33,6 +35,12 @@ export default function GmvDrilldownModal({ isOpen, onClose, period = "30d" }) {
   if (!isOpen) return null;
 
   const paymentMix = financialsData?.paymentMethodMix || [];
+  // Se calcula una vez y sirve para las tarjetas y para el eje del gráfico, que antes leían
+  // la clave cruda y dejaban en blanco los pedidos sin método.
+  const mixConNombre = paymentMix.map((pm) => ({
+    ...pm,
+    metodo: pm.payment_method ? etiquetaDe(pm.payment_method) : "Sin método",
+  }));
   const salesByCategory = salesData?.salesByCategory || [];
   const storePerformance = salesData?.storePerformanceMatrix || [];
   const topProducts = salesData?.top10Products || [];
@@ -87,18 +95,21 @@ export default function GmvDrilldownModal({ isOpen, onClose, period = "30d" }) {
             </div>
 
             {/* Section 1: Distribución por Método de Pago */}
+            {/* El backend agrupa por la clave cruda (`pago_movil`). Aquí se traduce al nombre
+                que se le enseña a la gente, y el hueco de los pedidos sin método deja de salir
+                en blanco: se llama "Sin método", que es lo que es. */}
             <div className="bg-fx-panel border border-fx-line rounded-2xl p-5">
               <h4 className="text-xs font-bold text-fx-text uppercase tracking-wider mb-3">
                 1. Distribución de Ventas por Método de Pago
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-                {paymentMix.map((pm, idx) => {
+                {mixConNombre.map((pm, idx) => {
                   const pct = totalGmv > 0 ? Math.round((parseFloat(pm.total_usd || 0) / totalGmv) * 100) : 0;
                   return (
                     <div key={pm.payment_method || idx} className="bg-purple-950/70 border border-fx-line rounded-xl p-3.5 flex justify-between items-center">
                       <div>
                         <span className="text-[10px] font-semibold uppercase text-fx-accent block mb-0.5">
-                          {pm.payment_method}
+                          {pm.metodo}
                         </span>
                         <div className="text-lg font-semibold text-fx-text">
                           ${parseFloat(pm.total_usd || 0).toFixed(2)}
@@ -114,9 +125,9 @@ export default function GmvDrilldownModal({ isOpen, onClose, period = "30d" }) {
               </div>
 
               <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={paymentMix}>
+                <BarChart data={mixConNombre}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#00000010" />
-                  <XAxis dataKey="payment_method" stroke="#877f92" fontSize={11} />
+                  <XAxis dataKey="metodo" stroke="#877f92" fontSize={11} />
                   <YAxis stroke="#877f92" fontSize={11} />
                   <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
                   <Bar dataKey="total_usd" name="Monto Procesado ($)" fill="#6b1e96" radius={[4, 4, 0, 0]} />

@@ -20,7 +20,8 @@ import {
   formatCurrencyUSD,
   formatCurrencyVES,
 } from "../../utils/formatters";
-import { ORDER_STATUS, PAYMENT_METHODS } from "../../utils/constants";
+import { ORDER_STATUS } from "../../utils/constants";
+import usePaymentMethods from "../../hooks/usePaymentMethods";
 
 const STATUS_BADGE_STYLES = {
   yellow: { bg: "#fef9c3", text: "#ca8a04", dot: "#ca8a04" },
@@ -486,6 +487,7 @@ RefundRequestBox.propTypes = {
 export default function OrderDetail() {
   const { id } = useParams();
   const { fetchOrderById, confirmDelivery, loading: ctxLoading } = useOrder();
+  const { etiquetaDe } = usePaymentMethods();
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1019,7 +1021,7 @@ export default function OrderDetail() {
               </li>
               <li className="flex justify-between items-start gap-4">
                 <span style={{ color: "#727785" }}>Método Pago</span>
-                <span className="font-medium text-right capitalize" style={{ color: "#191c23" }}>{PAYMENT_METHODS[order.payment_method]?.label || order.payment_method || "—"}</span>
+                <span className="font-medium text-right capitalize" style={{ color: "#191c23" }}>{etiquetaDe(order.payment_method)}</span>
               </li>
               <li className="flex justify-between items-start gap-4">
                 <span style={{ color: "#727785" }}>Estado Pago</span>

@@ -642,7 +642,6 @@ export default function HomeContentManager() {
       const newsletter = d.newsletter || {};
       const socialLinks = d.social_links || {};
       const columns = d.columns || [];
-      const paymentMethods = d.payment_methods || [];
       return (
         <div className="p-4 overflow-y-auto flex-1 space-y-5">
           <SectionBox title="Newsletter">
@@ -659,15 +658,12 @@ export default function HomeContentManager() {
             </div>
           </SectionBox>
           <SectionBox title="Métodos de Pago">
-            <div className="flex flex-wrap gap-2 mb-2">
-              {paymentMethods.map((pm, i) => (
-                <div key={i} className="flex items-center gap-1 bg-white border border-gray-200 rounded px-2 py-1 text-xs">
-                  <input className="border-none outline-none w-16 text-xs" value={pm} onChange={e => { const arr = [...paymentMethods]; arr[i] = e.target.value; update({...d, payment_methods: arr}); }} />
-                  <button onClick={() => { const arr = [...paymentMethods]; arr.splice(i,1); update({...d, payment_methods: arr}); }} className="text-red-400 hover:text-red-600 font-bold">×</button>
-                </div>
-              ))}
-              <button onClick={() => update({...d, payment_methods: [...paymentMethods, '']})} className="text-xs text-[#6b1e96] border border-dashed border-[#6b1e96] rounded px-2 py-1 hover:bg-purple-50">+ Añadir</button>
-            </div>
+            <p className="text-xs text-gray-500">
+              Los métodos que aparecen en el pie de página se configuran en{' '}
+              <a href="/admin/payment-methods" className="text-[#6b1e96] font-bold hover:underline">Métodos de Pago</a>,
+              y son siempre los que están activos en el checkout. Antes se editaban aquí, pero
+              el pie de página nunca leyó ese dato.
+            </p>
           </SectionBox>
           <SectionBox title="Redes Sociales">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

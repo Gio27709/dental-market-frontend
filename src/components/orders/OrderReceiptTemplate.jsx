@@ -1,11 +1,13 @@
 import { forwardRef } from "react";
 import PropTypes from "prop-types";
 import { formatCurrencyUSD, formatCurrencyVES, formatOrderDate } from "../../utils/formatters";
-import { PAYMENT_METHODS } from "../../utils/constants";
+import usePaymentMethods from "../../hooks/usePaymentMethods";
 
 // This component is strictly designed for A4 paper proportions (approx 794x1123 pixels at 96DPI)
 // We use inline styles heavily to ensure perfect rendering in html2canvas.
 const OrderReceiptTemplate = forwardRef(({ order }, ref) => {
+  const { etiquetaDe } = usePaymentMethods();
+
   if (!order) return null;
 
   const totalItems = order.order_items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
@@ -85,7 +87,7 @@ const OrderReceiptTemplate = forwardRef(({ order }, ref) => {
             </div>
             <div style={{ marginBottom: "15px" }}>
               <p style={{ margin: "0 0 4px 0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", color: "#727785", fontWeight: 700 }}>Método de Pago</p>
-              <p style={{ margin: 0, fontSize: "14px", fontWeight: 600 }}>{PAYMENT_METHODS[order.payment_method]?.label || order.payment_method || "—"}</p>
+              <p style={{ margin: 0, fontSize: "14px", fontWeight: 600 }}>{etiquetaDe(order.payment_method)}</p>
             </div>
             <div>
               <p style={{ margin: "0 0 4px 0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", color: "#727785", fontWeight: 700 }}>Estado</p>

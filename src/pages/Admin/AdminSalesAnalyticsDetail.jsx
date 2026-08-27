@@ -6,6 +6,7 @@ import ChartCard from "../../components/admin/analytics/ChartCard";
 import DataTable from "../../components/admin/analytics/DataTable";
 import SkeletonLoader from "../../components/admin/analytics/SkeletonLoader";
 import FreshnessBadge from "../../components/admin/analytics/FreshnessBadge";
+import usePaymentMethods from "../../hooks/usePaymentMethods";
 import AnalyticsStoreFilter from "../../components/admin/analytics/AnalyticsStoreFilter";
 import StoreOrdersDrilldownModal from "../../components/admin/analytics/StoreOrdersDrilldownModal";
 import ProductSalesDrilldownModal from "../../components/admin/analytics/ProductSalesDrilldownModal";
@@ -29,6 +30,9 @@ const TOOLTIP_STYLE = {
 export default function AdminSalesAnalyticsDetail() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  // Incluye los métodos apagados: los pedidos históricos pagados con ellos siguen contando
+  // en las ventas y hay que poder filtrarlos.
+  const { metodos: metodosDePago } = usePaymentMethods();
 
   // State management for filters
   const initialPeriod = searchParams.get("period") || "30d";
@@ -352,10 +356,9 @@ export default function AdminSalesAnalyticsDetail() {
                 className="bg-transparent text-xs font-semibold text-fx-text outline-none cursor-pointer"
               >
                 <option value="all" className="bg-fx-panel">Todos</option>
-                <option value="binance" className="bg-fx-panel">Binance Pay</option>
-                <option value="zelle" className="bg-fx-panel">Zelle</option>
-                <option value="pago_movil" className="bg-fx-panel">Pago Móvil</option>
-                <option value="transferencia" className="bg-fx-panel">Transferencia</option>
+                {metodosDePago.map((m) => (
+                  <option key={m.key} value={m.key} className="bg-fx-panel">{m.label}</option>
+                ))}
               </select>
             </label>
           </div>

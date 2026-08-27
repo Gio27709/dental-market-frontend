@@ -4,12 +4,13 @@ import { useOrder } from "../../context/OrderContext";
 import { validateFile } from "../../utils/validators";
 import toast from "react-hot-toast";
 import PaymentInstructions from "./PaymentInstructions";
+import usePaymentMethods from "../../hooks/usePaymentMethods";
 
 /**
  * Payment Proof Uploader — captures complete payer details + file
- * Fields shown dynamically based on payment method:
- *   transferencia / pago_movil → name, phone, cedula, reference, file
- *   zelle                      → name, email, reference, date, file
+ * Los campos dependen del tipo de formulario que declara el método en su configuración:
+ *   formulario "banco"     → nombre, teléfono, cédula, referencia, archivo
+ *   formulario "billetera" → nombre, correo, referencia, fecha, archivo
  */
 export default function PaymentProofUploader({
   orderId,
@@ -32,9 +33,22 @@ export default function PaymentProofUploader({
   const [paymentDate, setPaymentDate] = useState("");
   const [formErrors, setFormErrors] = useState({});
 
+  const { activos, byKey } = usePaymentMethods();
+
   const [pm, setPm] = useState(paymentMethod || "transferencia");
-  const isZelle = pm === "zelle";
-  const isBank = pm === "transferencia" || pm === "pago_movil";
+  // Qué campos exigir lo declara cada método en su configuración, la misma que usa el backend
+  // para validar. Así un método dado de alta desde el panel ya sabe qué pedir sin que haya
+  // que volver a tocar este archivo.
+  const formulario = byKey[pm]?.formulario || "banco";
+  const isWallet = formulario === "billetera";
+  const isBank = formulario === "banco";
+
+  // Los métodos activos, MÁS aquel con el que se creó la orden aunque ya esté apagado: ese
+  // comprador ya mandó el dinero por ahí y tiene que poder acreditarlo. Es la misma unión que
+  // hace el backend al aceptar el comprobante.
+  const opciones = activos.some((m) => m.key === pm)
+    ? activos
+    : [...activos, byKey[pm] || { key: pm, label: pm, icon: "💳" }];
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -96,10 +110,10 @@ export default function PaymentProofUploader({
       }
     }
 
-    // Zelle-specific validations
-    if (isZelle) {
+    // Wallet-specific validations (zelle, zinli)
+    if (isWallet) {
       if (!payerEmail.trim()) {
-        errors.payerEmail = "El correo electrónico es obligatorio para Zelle.";
+        errors.payerEmail = "El correo electrónico es obligatorio para este método.";
       } else {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(payerEmail.trim())) {
@@ -137,7 +151,7 @@ export default function PaymentProofUploader({
       paymentDetails.payer_cedula = `${cedulaType}-${cedulaNumber.trim()}`.toUpperCase();
     }
 
-    if (isZelle) {
+    if (isWallet) {
       paymentDetails.payer_email = payerEmail.trim().toLowerCase();
       paymentDetails.payment_date = paymentDate;
     }
@@ -158,13 +172,7 @@ export default function PaymentProofUploader({
     }
   };
 
-  // Helper for method label
-  const methodLabel =
-    pm === "transferencia" ? "Transferencia Bancaria" :
-    pm === "pago_movil" ? "Pago Móvil" :
-    pm === "zelle" ? "Zelle" :
-    pm === "binance" ? "Binance Pay" :
-    pm === "paypal" ? "PayPal" : "Pago";
+  const methodLabel = byKey[pm]?.label || "Pago";
 
   return (
     <div className="bg-white border border-slate-100 shadow-[0_8px_30px_rgb(107,30,150,0.04)] rounded-2xl p-5 sm:p-6 max-w-lg mx-auto w-full transition-all duration-300">
@@ -200,11 +208,11 @@ export default function PaymentProofUploader({
           disabled={loading}
           className="w-full p-3 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-[#6b1e96]/15 focus:border-[#6b1e96] bg-white transition-all cursor-pointer"
         >
-          <option value="pago_movil">📱 Pago Móvil</option>
-          <option value="transferencia">🏦 Transferencia Bancaria</option>
-          <option value="zelle">🟩 Zelle</option>
-          <option value="binance">🟨 Binance (USDT)</option>
-          <option value="paypal">🟦 PayPal</option>
+          {opciones.map((m) => (
+            <option key={m.key} value={m.key}>
+              {m.icon ? `${m.icon} ` : ""}{m.label}
+            </option>
+          ))}
         </select>
         
         <div className="mt-4 border-t border-slate-200/60 pt-4">
@@ -309,8 +317,8 @@ export default function PaymentProofUploader({
           </div>
         )}
 
-        {/* ── Email del titular (Zelle) ── */}
-        {isZelle && (
+        {/* ── Email del titular (Zelle, Zinli) ── */}
+        {isWallet && (
           <div className="col-span-2 sm:col-span-1">
             <label htmlFor="payer_email" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
               Correo Electrónico <span className="text-red-500">*</span>
@@ -337,8 +345,8 @@ export default function PaymentProofUploader({
           </div>
         )}
 
-        {/* ── Fecha de la transacción (Zelle) ── */}
-        {isZelle && (
+        {/* ── Fecha de la transacción (Zelle, Zinli) ── */}
+        {isWallet && (
           <div className="col-span-2 sm:col-span-1">
             <label htmlFor="payment_date" className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
               Fecha Transacción <span className="text-red-500">*</span>

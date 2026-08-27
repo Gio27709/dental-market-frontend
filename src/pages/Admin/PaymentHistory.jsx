@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import PropTypes from "prop-types";
 import SearchableSelect from "../../components/ui/SearchableSelect";
 import "../../components/ui/SearchableSelect.css";
+import usePaymentMethods from "../../hooks/usePaymentMethods";
 import { CreditCardIcon, WalletIcon, StorefrontIcon, ListBulletIcon, CalendarIcon, SearchIcon } from "../../components/ui/FilterIcons";
 
 // ── Opciones de los filtros ──
@@ -25,15 +26,6 @@ const PAYMENT_STATUS_OPTIONS = [
   { value: "pending", label: "⏳ Pendiente" },
   { value: "rejected", label: "⛔ Rechazado" },
   { value: "failed", label: "❌ Fallido" },
-];
-
-const PAYMENT_METHOD_OPTIONS = [
-  { value: "", label: "Todos los Métodos" },
-  { value: "pago_movil", label: "📱 Pago Móvil" },
-  { value: "transferencia", label: "🏦 Transferencia" },
-  { value: "zelle", label: "💲 Zelle" },
-  { value: "binance", label: "🪙 Binance" },
-  { value: "paypal", label: "🅿️ PayPal" },
 ];
 
 // ── Status Badge Component ──
@@ -178,6 +170,18 @@ function exportToCsv(orders, summary) {
 // ██   MAIN COMPONENT
 // ══════════════════════════════════════════════════════════
 export default function PaymentHistory() {
+  const { metodos: metodosDePago } = usePaymentMethods();
+
+  // El filtro incluye los métodos APAGADOS: los pedidos que se pagaron con ellos siguen en
+  // la lista y hay que poder buscarlos. Por eso usa `metodos` y no `activos`.
+  const PAYMENT_METHOD_OPTIONS = useMemo(
+    () => [
+      { value: "", label: "Todos los Métodos" },
+      ...metodosDePago.map((m) => ({ value: m.key, label: `${m.icon || ""} ${m.label}`.trim() })),
+    ],
+    [metodosDePago]
+  );
+
   // Data state
   const [orders, setOrders] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });

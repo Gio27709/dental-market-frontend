@@ -7,31 +7,116 @@ export const API_ENDPOINTS = {
 
 export const BCV_RATE_KEY = "bcv_rate";
 
-export const PAYMENT_METHODS = {
-  transferencia: { label: "Transferencia Bancaria", icon: "🏦" },
-  pago_movil: { label: "Pago Móvil", icon: "📱" },
-  zelle: { label: "Zelle", icon: "💵" },
-  paypal: { label: "PayPal", icon: "🅿️" },
-  binance: { label: "Binance", icon: "🪙" },
-};
+/**
+ * COPIA DE RESPALDO de los métodos de cobro. NO es la fuente de verdad.
+ *
+ * La lista buena vive en `global_settings.payment_methods` (migración 070) y se edita desde
+ * /admin/payment-methods. Esta copia existe para dos cosas y solo dos:
+ *
+ *   1. El primer pintado, antes de que llegue la respuesta de `/admin/settings`.
+ *   2. Poner nombre a un pedido histórico pagado con un método que luego se apagó — un
+ *      método desactivado no viaja en la respuesta pública, pero el pedido sigue ahí.
+ *
+ * Si editas datos de cuenta aquí no cambia nada en producción: cámbialos en el panel.
+ * Se mantiene sincronizada con la siembra de la migración 070 por si alguien monta el
+ * proyecto desde cero y todavía no la ha aplicado.
+ */
+export const PAYMENT_METHODS_RESPALDO = [
+  {
+    key: "transferencia",
+    label: "Transferencia Bancaria",
+    icon: "🏦",
+    activo: true,
+    fijo: true,
+    formulario: "banco",
+    nota: "Transfiera el monto exacto a la siguiente cuenta:",
+    campos: [
+      { etiqueta: "Banco", valor: "Bancamiga", copiable: true },
+      { etiqueta: "Cuenta", valor: "0175-0000-00-0000000000", copiable: true },
+      { etiqueta: "RIF", valor: "J-00000000-0", copiable: true },
+      { etiqueta: "Titular", valor: "Forcepx C.A.", copiable: false },
+    ],
+  },
+  {
+    key: "pago_movil",
+    label: "Pago Móvil",
+    icon: "📱",
+    activo: true,
+    fijo: true,
+    formulario: "banco",
+    nota: "Realice su Pago Móvil con los siguientes datos:",
+    campos: [
+      { etiqueta: "Banco", valor: "Bancamiga", copiable: true },
+      { etiqueta: "Teléfono", valor: "0412-0000000", copiable: true },
+      { etiqueta: "RIF", valor: "J-00000000-0", copiable: true },
+      { etiqueta: "Titular", valor: "Forcepx C.A.", copiable: false },
+    ],
+  },
+  {
+    key: "zelle",
+    label: "Zelle",
+    icon: "💵",
+    activo: true,
+    fijo: false,
+    formulario: "billetera",
+    nota: "Envíe el pago exacto en dólares (USD) al siguiente correo:",
+    campos: [
+      { etiqueta: "Email", valor: "pagos@forcepx.com", copiable: true },
+      { etiqueta: "Nombre", valor: "Forcepx C.A.", copiable: false },
+    ],
+  },
+  {
+    key: "paypal",
+    label: "PayPal",
+    icon: "🅿️",
+    activo: true,
+    fijo: false,
+    formulario: "billetera",
+    nota: "Envíe el pago en dólares (USD) a la siguiente cuenta de PayPal:",
+    campos: [
+      { etiqueta: "Email", valor: "pagos@forcepx.com", copiable: true },
+      { etiqueta: "Titular", valor: "Forcepx C.A.", copiable: false },
+    ],
+  },
+  {
+    key: "binance",
+    label: "Binance",
+    icon: "🪙",
+    activo: true,
+    fijo: false,
+    formulario: "billetera",
+    nota: "Realice el envío de USDT a la siguiente cuenta de Binance (Binance Pay ID / Correo):",
+    campos: [
+      { etiqueta: "Pay ID", valor: "987654321", copiable: true },
+      { etiqueta: "Email", valor: "pagos@forcepx.com", copiable: true },
+      { etiqueta: "Titular", valor: "Forcepx C.A.", copiable: false },
+    ],
+  },
+  {
+    key: "zinli",
+    label: "Zinli",
+    icon: "💳",
+    activo: true,
+    fijo: false,
+    formulario: "billetera",
+    nota: "Envíe el pago en dólares (USD) desde su app Zinli a los siguientes datos:",
+    campos: [
+      { etiqueta: "Email", valor: "pagos@forcepx.com", copiable: true },
+      { etiqueta: "Zinli Tag", valor: "@forcepx", copiable: true },
+      { etiqueta: "Titular", valor: "Forcepx C.A.", copiable: false },
+    ],
+  },
+];
 
-export const BANK_DATA = {
-  transferencia: {
-    bank: "Bancamiga",
-    account: "0175-0000-00-0000000000",
-    rif: "J-00000000-0",
-    name: "Forcepx C.A.",
-  },
-  pago_movil: {
-    bank: "Bancamiga",
-    phone: "0412-0000000",
-    rif: "J-00000000-0",
-    name: "Forcepx C.A.",
-  },
-  zelle: { email: "pagos@forcepx.com", name: "Forcepx C.A." },
-  paypal: { email: "pagos@forcepx.com", name: "Forcepx C.A." },
-  binance: { pay_id: "987654321", email: "pagos@forcepx.com", name: "Forcepx C.A." },
-};
+/**
+ * Mapa clave → método del respaldo. Se conserva con este nombre porque varios sitios solo
+ * necesitan poner nombre a un pedido ya hecho (`PAYMENT_METHODS[x]?.label || x`) y no les
+ * hace falta el hook. Para el checkout usa siempre `usePaymentMethods`.
+ */
+export const PAYMENT_METHODS = PAYMENT_METHODS_RESPALDO.reduce((acc, m) => {
+  acc[m.key] = m;
+  return acc;
+}, {});
 
 export const ORDER_STATUS = {
   pending: { label: "Pendiente", color: "gray" },

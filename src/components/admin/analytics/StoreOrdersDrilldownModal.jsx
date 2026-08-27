@@ -2,9 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import { getStoreOrdersDetailAPI } from "../../../services/api";
+import usePaymentMethods from "../../../hooks/usePaymentMethods";
 
 export default function StoreOrdersDrilldownModal({ isOpen, onClose, storeId, period = "30d", fromDate, toDate }) {
   const navigate = useNavigate();
+  const { etiquetaDe } = usePaymentMethods();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -139,7 +141,7 @@ export default function StoreOrdersDrilldownModal({ isOpen, onClose, storeId, pe
                       <span className="text-[10px] text-fx-muted font-mono">{ord.client_email}</span>
                     </td>
                     <td className="py-3 px-3 font-semibold text-fx-faint uppercase">
-                      {ord.payment_method}
+                      {etiquetaDe(ord.payment_method)}
                     </td>
                     <td className="py-3 px-3 text-right font-semibold text-fx-text">
                       ${parseFloat(ord.store_total_usd || 0).toFixed(2)}

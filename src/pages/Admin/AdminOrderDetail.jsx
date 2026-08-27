@@ -5,11 +5,13 @@ import LoadingSkeleton from "../../components/LoadingSkeleton";
 import OrderItemDetail from "../../components/orders/OrderItemDetail";
 import ShippingEvidenceGallery from "../../components/orders/ShippingEvidenceGallery";
 import { formatOrderNumber, formatOrderDateTime, formatCurrencyUSD, formatCurrencyVES } from "../../utils/formatters";
-import { ORDER_STATUS, PAYMENT_METHODS } from "../../utils/constants";
+import { ORDER_STATUS } from "../../utils/constants";
+import usePaymentMethods from "../../hooks/usePaymentMethods";
 
 export default function AdminOrderDetail() {
   const { id } = useParams();
   const { fetchOrderById } = useOrder();
+  const { etiquetaDe } = usePaymentMethods();
   
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -213,7 +215,7 @@ export default function AdminOrderDetail() {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6b7280" }}>Método Pago</span>
-                <span style={{ fontWeight: 600, color: "#1f2937", textTransform: "capitalize" }}>{PAYMENT_METHODS[order.payment_method]?.label || order.payment_method || "—"}</span>
+                <span style={{ fontWeight: 600, color: "#1f2937", textTransform: "capitalize" }}>{etiquetaDe(order.payment_method)}</span>
               </div>
               <div style={{ height: "1px", background: "#e5e7eb", margin: "4px 0" }}></div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

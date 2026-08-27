@@ -7,6 +7,7 @@ const METHOD_LABELS = {
   efectivo: "Efectivo",
   punto_venta: "Punto de Venta",
   binance: "Binance Pay",
+  zinli: "Zinli",
   unknown: "Sin especificar",
 };
 

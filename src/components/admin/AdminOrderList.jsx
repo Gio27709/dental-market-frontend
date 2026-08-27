@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
+import usePaymentMethods from "../../hooks/usePaymentMethods";
 
 // Helper to format currency
 const formatCurrency = (amount) => `$${Number(amount || 0).toFixed(2)}`;
@@ -43,18 +44,16 @@ const getStatusBadge = (status) => {
   }
 };
 
-const getMethodIcon = (method) => {
-  switch (method) {
-    case "pago_movil": return "📱 pago móvil";
-    case "transferencia": return "🏦 transferencia";
-    case "zelle": return "🟩 zelle";
-    case "binance": return "🟨 binance";
-    case "paypal": return "🟦 paypal";
-    default: return "💳 " + method;
-  }
-};
-
 export default function AdminOrderList({ orders }) {
+  // `byKey` mezcla el respaldo por debajo de lo que manda el servidor, así que un pedido
+  // pagado con un método ya retirado sigue saliendo con su nombre y no con la clave cruda.
+  const { byKey } = usePaymentMethods();
+  const getMethodIcon = (method) => {
+    if (!method) return "💳 —";
+    const m = byKey[method];
+    return m ? `${m.icon || "💳"} ${m.label}` : `💳 ${method}`;
+  };
+
   if (!orders || orders.length === 0) return null; // Empty state handled by parent
 
   const thStyle = { padding: "12px 14px", fontSize: "11px", fontWeight: 600, color: "rgba(195,255,0,0.8)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" };

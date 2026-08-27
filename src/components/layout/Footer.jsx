@@ -3,9 +3,13 @@ import { Link } from "react-router-dom";
 import api, { getTrendingAPI, subscribeNewsletterAPI } from "../../services/api";
 import toast from "react-hot-toast";
 import useHomeSections from "../../hooks/useHomeSections";
+import usePaymentMethods from "../../hooks/usePaymentMethods";
 
 export default function Footer() {
   const { sections } = useHomeSections();
+  // Los chips salen de los métodos que hoy están activos. Antes estaban escritos a mano aquí,
+  // así que apagar un método dejaba el footer anunciando algo que el checkout ya no ofrecía.
+  const { activos: metodosDePago } = usePaymentMethods();
   const headerSection = sections?.header || {};
   const brandName = headerSection.brand_name || "Forcepx";
   const brandLogo = headerSection.brand_logo || "";
@@ -223,21 +227,15 @@ export default function Footer() {
 
           {/* Logos de Pago */}
           <div className="flex items-center flex-wrap gap-2 mb-8">
-            <div className="h-6 px-2.5 bg-gray-100 border border-gray-200 rounded flex items-center justify-center text-[9px] font-bold text-gray-700">
-              Transferencia
-            </div>
-            <div className="h-6 px-2.5 bg-gray-100 border border-gray-200 rounded flex items-center justify-center text-[9px] font-bold text-[#6b1e96]">
-              Pago Móvil
-            </div>
-            <div className="h-6 px-2.5 bg-gray-100 border border-gray-200 rounded flex items-center justify-center text-[9px] font-bold text-blue-600 italic">
-              PayPal
-            </div>
-            <div className="h-6 px-2.5 bg-gray-100 border border-gray-200 rounded flex items-center justify-center text-[9px] font-bold text-yellow-600">
-              Binance
-            </div>
-            <div className="h-6 px-2.5 bg-gray-100 border border-gray-200 rounded flex items-center justify-center text-[9px] font-bold text-purple-600">
-              Zelle
-            </div>
+            {metodosDePago.map((m) => (
+              <div
+                key={m.key}
+                className="h-6 px-2.5 bg-gray-100 border border-gray-200 rounded flex items-center justify-center gap-1 text-[9px] font-bold text-gray-700"
+              >
+                {m.icon && <span aria-hidden="true">{m.icon}</span>}
+                {m.label}
+              </div>
+            ))}
           </div>
 
           {/* Redes Sociales */}

@@ -5,6 +5,7 @@ import SearchableSelect from "../../components/ui/SearchableSelect";
 import "../../components/ui/SearchableSelect.css";
 import { CreditCardIcon, TruckIcon, WalletIcon, StorefrontIcon, ListBulletIcon, CalendarIcon } from "../../components/ui/FilterIcons";
 import { supabase } from "../../lib/supabaseClient";
+import usePaymentMethods from "../../hooks/usePaymentMethods";
 
 const PAGE_OPTIONS = [
   { value: 10, label: "10 por página" },
@@ -31,17 +32,19 @@ const DELIVERY_STATUS_OPTIONS = [
   { value: "cancelled", label: "🚫 Cancelado" },
 ];
 
-const PAYMENT_METHOD_OPTIONS = [
-  { value: "", label: "Todos los Métodos" },
-  { value: "pago_movil", label: "📱 Pago Móvil" },
-  { value: "transferencia", label: "🏦 Transferencia" },
-  { value: "zelle", label: "💲 Zelle" },
-  { value: "binance", label: "🪙 Binance" },
-  { value: "paypal", label: "🅿️ PayPal" },
-];
-
 export default function AllOrders() {
   const { orders, pagination, summary, fetchOrders, loading } = useOrder();
+  const { metodos: metodosDePago } = usePaymentMethods();
+
+  // El filtro incluye los métodos APAGADOS: los pedidos que se pagaron con ellos siguen en
+  // la lista y hay que poder buscarlos. Por eso usa `metodos` y no `activos`.
+  const PAYMENT_METHOD_OPTIONS = useMemo(
+    () => [
+      { value: "", label: "Todos los Métodos" },
+      ...metodosDePago.map((m) => ({ value: m.key, label: `${m.icon || ""} ${m.label}`.trim() })),
+    ],
+    [metodosDePago]
+  );
 
   // Local state for filters
   const [searchTerm, setSearchTerm] = useState("");
