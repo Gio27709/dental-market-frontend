@@ -37,7 +37,6 @@ export default function ProfessionalVerifications() {
   
   // Filtros Avanzados
   const [emailFilter, setEmailFilter] = useState("");
-  const [licenseFilter, setLicenseFilter] = useState("");
   const [specialtyFilter, setSpecialtyFilter] = useState("all");
   
   const [stats, setStats] = useState({ total: 0, pending: 0, verified: 0, rejected: 0 });
@@ -76,25 +75,20 @@ export default function ProfessionalVerifications() {
       const term = searchTerm.toLowerCase();
       const name = (item.full_name || "").toLowerCase();
       const email = (item.email || "").toLowerCase();
-      const licenseNum = (item.license_number || "").toLowerCase();
       const specialty = (item.specialty || "").toLowerCase();
       
       const matchesSearch = !searchTerm || 
         name.includes(term) || 
         email.includes(term) || 
-        licenseNum.includes(term) || 
         specialty.includes(term);
 
       // 2. Filtro Avanzado por Correo Electrónico
       const matchesEmail = !emailFilter || email.includes(emailFilter.toLowerCase());
 
-      // 3. Filtro Avanzado por Matrícula
-      const matchesLicense = !licenseFilter || licenseNum.includes(licenseFilter.toLowerCase());
-
-      // 4. Filtro por Especialidad / Profesión en la industria
+      // 3. Filtro por Especialidad / Profesión en la industria
       const matchesSpecialty = specialtyFilter === "all" || item.specialty === specialtyFilter;
 
-      // 5. Filtro por Estado (Tab activa)
+      // 4. Filtro por Estado (Tab activa)
       let matchesTab = true;
       const hasDoc = !!item.license_image_url;
       const isVerified = item.is_verified === true;
@@ -107,9 +101,9 @@ export default function ProfessionalVerifications() {
       else if (activeTab === "rejected") matchesTab = isRejected;
       else if (activeTab === "no_document") matchesTab = noDoc;
 
-      return matchesSearch && matchesEmail && matchesLicense && matchesSpecialty && matchesTab;
+      return matchesSearch && matchesEmail && matchesSpecialty && matchesTab;
     });
-  }, [licenses, searchTerm, emailFilter, licenseFilter, specialtyFilter, activeTab]);
+  }, [licenses, searchTerm, emailFilter, specialtyFilter, activeTab]);
 
   const handleApprove = (id, name) => {
     setApproveModal({ open: true, id, name });
@@ -265,7 +259,7 @@ export default function ProfessionalVerifications() {
           <h3 className="font-bold text-gray-900 text-sm">Filtros de Búsqueda</h3>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Buscador Rápido (Nombre) */}
           <div className="relative">
             <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nombre / Búsqueda</label>
@@ -296,21 +290,6 @@ export default function ProfessionalVerifications() {
             </div>
           </div>
 
-          {/* Campo Matrícula */}
-          <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Matrícula / Licencia</label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-[20px]">badge</span>
-              <input
-                type="text"
-                placeholder="Ej. 23432423"
-                value={licenseFilter}
-                onChange={(e) => setLicenseFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm text-gray-900 bg-gray-50/20"
-              />
-            </div>
-          </div>
-
           {/* Campo Especialidad / Profesión */}
           <div>
             <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Especialidad / Profesión</label>
@@ -336,13 +315,12 @@ export default function ProfessionalVerifications() {
         </div>
 
         {/* Limpiar Filtros */}
-        {(searchTerm || emailFilter || licenseFilter || specialtyFilter !== "all") && (
+        {(searchTerm || emailFilter || specialtyFilter !== "all") && (
           <div className="flex justify-end pt-1">
             <button
               onClick={() => {
                 setSearchTerm("");
                 setEmailFilter("");
-                setLicenseFilter("");
                 setSpecialtyFilter("all");
               }}
               className="text-xs font-bold text-primary-600 hover:text-primary-800 transition-colors flex items-center gap-1 hover:underline"
@@ -417,7 +395,6 @@ export default function ProfessionalVerifications() {
                 <tr className="bg-gray-50/50 border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider">
                   <th className="px-6 py-4">Profesional</th>
                   <th className="px-6 py-4">Especialidad</th>
-                  <th className="px-6 py-4">Matrícula</th>
                   <th className="px-6 py-4">Estado</th>
                   <th className="px-6 py-4">Documento</th>
                   <th className="px-6 py-4 text-right">Acciones</th>
@@ -455,18 +432,6 @@ export default function ProfessionalVerifications() {
                           <span className="material-symbols-outlined text-[14px]">medical_services</span>
                           <span>{item.specialty || "General"}</span>
                         </span>
-                      </td>
-                      
-                      {/* Matrícula (Tag Monospaciado con Icono) */}
-                      <td className="px-6 py-4">
-                        {item.license_number ? (
-                          <span className="inline-flex items-center gap-1 font-mono font-bold text-xs bg-slate-50 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-sm">
-                            <span className="material-symbols-outlined text-[13px] text-slate-400">badge</span>
-                            {item.license_number}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 italic text-xs">No registrada</span>
-                        )}
                       </td>
 
                       {/* Estado (Glow Badge) */}
@@ -560,7 +525,7 @@ export default function ProfessionalVerifications() {
             <div className="px-6 py-4 border-b border-gray-150 flex justify-between items-center bg-gray-50">
               <div>
                 <h3 className="font-bold text-gray-900 text-base">Visualizando Licencia</h3>
-                <p className="text-xs text-gray-500 mt-0.5">{previewDoc.full_name} | Matrícula: {previewDoc.license_number}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{previewDoc.full_name} | {previewDoc.specialty || "Odontología General"}</p>
               </div>
               <button
                 onClick={() => setPreviewDoc(null)}
@@ -650,7 +615,7 @@ export default function ProfessionalVerifications() {
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
             <h3 className="text-lg font-bold text-gray-900 mb-2">Aprobar Verificación</h3>
             <p className="text-sm text-gray-600 mb-6">
-              ¿Estás seguro de que deseas aprobar la matrícula profesional de <strong>{approveModal.name}</strong>? 
+              ¿Estás seguro de que deseas aprobar la verificación profesional de <strong>{approveModal.name}</strong>? 
               Esto habilitará su perfil como odontólogo certificado en la plataforma de manera inmediata.
             </p>
             <div className="flex justify-end gap-3">
@@ -687,7 +652,7 @@ export default function ProfessionalVerifications() {
               rows={4}
               value={rejectModal.notes}
               onChange={(e) => setRejectModal((prev) => ({ ...prev, notes: e.target.value }))}
-              placeholder="Ej. La imagen de la credencial no es legible, o el número de matrícula no coincide con el registro oficial..."
+              placeholder="Ej. La imagen de la credencial no es legible..."
               className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-900 bg-white mb-6 resize-none"
               required
             ></textarea>

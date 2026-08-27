@@ -248,7 +248,7 @@ export default function App() {
                       <Route
                         path="/clinic"
                         element={
-                          <ProtectedRoute redirectTo="/login" requiredRole={["user", "professional"]}>
+                          <ProtectedRoute redirectTo="/login" requiredRole={["user", "professional", "student"]}>
                             <ClinicLayout />
                           </ProtectedRoute>
                         }

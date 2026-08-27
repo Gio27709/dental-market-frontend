@@ -31,6 +31,7 @@ const ROLE_OPTIONS = [
   { value: "", label: "Todos los Roles" },
   { value: "user", label: "Usuario (Comprador)" },
   { value: "professional", label: "Profesional Dental" },
+  { value: "student", label: "Estudiante" },
   { value: "delivery", label: "Delivery (Repartidor)" },
   { value: "store", label: "Store (Tienda)" },
   { value: "admin", label: "Admin (Staff)" },
@@ -40,6 +41,7 @@ const ROLE_OPTIONS = [
 const ROLE_BADGES = {
   user:     { label: "User",     color: "#6b7280", bg: "rgba(107,114,128,0.10)" },
   professional: { label: "Professional", color: "#0ea5e9", bg: "rgba(14,165,233,0.10)" },
+  student:  { label: "Student",  color: "#d97706", bg: "rgba(217,119,6,0.10)" },
   delivery: { label: "Delivery", color: "#7c3aed", bg: "rgba(124,58,237,0.10)" },
   store:    { label: "Store",    color: "#2563eb", bg: "rgba(37,99,235,0.10)" },
   admin:    { label: "Admin",    color: "#059669", bg: "rgba(16,185,129,0.10)" },
@@ -49,6 +51,7 @@ const ROLE_BADGES = {
 const ROLE_SELECT_OPTIONS_ALL = [
   { value: "user", label: "Usuario (Comprador)" },
   { value: "professional", label: "Profesional Dental" },
+  { value: "student", label: "Estudiante" },
   { value: "delivery", label: "Delivery (Repartidor)" },
   { value: "store", label: "Store (Tienda)" },
   { value: "admin", label: "Admin (Staff)" },
@@ -59,6 +62,7 @@ const ROLE_SELECT_OPTIONS_ALL = [
 const ROLE_SELECT_OPTIONS_ADMIN = [
   { value: "user", label: "Usuario (Comprador)" },
   { value: "professional", label: "Profesional Dental" },
+  { value: "student", label: "Estudiante" },
   { value: "delivery", label: "Delivery (Repartidor)" },
   { value: "store", label: "Store (Tienda)" },
 ];

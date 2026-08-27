@@ -134,7 +134,7 @@ export default function AccountLayout() {
                     {user.firstName ? `${user.firstName} ${user.lastName || ""}` : "Usuario"}
                   </h2>
                   <p className="text-xs text-white/70 mt-0.5">
-                    {user.role === 'user' ? 'Usuario' : user.role === 'delivery' ? 'Repartidor 🛵' : user.role === 'admin' ? 'Administrador' : user.role === 'owner' ? 'Owner 👑' : user.role === 'professional' ? 'Odontólogo 🦷' : (user.role === 'store' || user.role === 'store/owner') ? 'Tienda' : user.role}
+                    {user.role === 'user' ? 'Usuario' : user.role === 'delivery' ? 'Repartidor 🛵' : user.role === 'admin' ? 'Administrador' : user.role === 'owner' ? 'Owner 👑' : user.role === 'professional' ? 'Odontólogo 🦷' : user.role === 'student' ? 'Estudiante 🎓' : (user.role === 'store' || user.role === 'store/owner') ? 'Tienda' : user.role}
                   </p>
                 </div>
               </div>

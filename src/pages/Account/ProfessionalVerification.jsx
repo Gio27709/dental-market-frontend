@@ -143,7 +143,7 @@ export default function ProfessionalVerification() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Verificación de Odontólogo</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Valida tu matrícula profesional para acceder a tarifas preferenciales.</p>
+          <p className="text-gray-500 text-sm mt-0.5">Consigue el sello de profesional verificado. Es opcional.</p>
         </div>
       </div>
 
@@ -152,10 +152,6 @@ export default function ProfessionalVerification() {
         <div>
           <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Especialidad Registrada</p>
           <p className="text-gray-900 font-semibold text-lg">{status?.specialty || "Odontología General"}</p>
-        </div>
-        <div>
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Matrícula / Licencia</p>
-          <p className="text-gray-900 font-mono font-bold text-lg">{status?.license_number || "No registrada"}</p>
         </div>
       </div>
 
@@ -237,7 +233,7 @@ export default function ProfessionalVerification() {
       {(notUploaded || isRejected) && (
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="text-gray-700 text-sm leading-relaxed mb-4">
-            Para validar tu cuenta profesional, debes subir una copia digital de tu **Licencia, Diploma o Credencial de Matrícula Profesional** en donde sea perfectamente visible tu nombre y número de identificación médico.
+            Si quieres el sello de <strong>profesional verificado</strong>, sube una copia digital de tu licencia, diploma o credencial donde se vea con claridad tu nombre. Es opcional: tu cuenta funciona con normalidad sin subirlo.
           </div>
 
           {/* Drag & Drop Area */}

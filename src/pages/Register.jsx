@@ -10,7 +10,6 @@ export default function Register() {
     confirmPassword: "",
     role: "user",
     specialty: "Odontología General",
-    license_number: "",
   });
 
   const [passwordValidations, setPasswordValidations] = useState({
@@ -85,9 +84,6 @@ export default function Register() {
         "Por favor cumple con todos los requisitos de la contraseña",
       );
     }
-    if (formData.role === "professional" && !formData.license_number.trim()) {
-      return setError("El número de licencia/matrícula es obligatorio para profesionales dentales");
-    }
     try {
       setLoading(true);
       setError(null);
@@ -101,7 +97,6 @@ export default function Register() {
 
       if (formData.role === "professional") {
         registerData.specialty = formData.specialty;
-        registerData.license_number = formData.license_number;
       }
 
       await register(registerData);
@@ -177,7 +172,7 @@ export default function Register() {
               <label className="block text-sm font-semibold text-gray-900 mb-3">
                 Tipo de Cuenta
               </label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {/* Regular Buyer */}
                 <div
                   onClick={() => setFormData(prev => ({ ...prev, role: "user" }))}
@@ -223,6 +218,30 @@ export default function Register() {
                   <span className="font-semibold text-sm text-gray-900">Odontólogo</span>
                   <span className="text-xs text-gray-500">Precios de distribuidor</span>
                 </div>
+
+                {/* Dental Student */}
+                <div
+                  onClick={() => setFormData(prev => ({ ...prev, role: "student" }))}
+                  className={`cursor-pointer p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center text-center gap-2 group relative overflow-hidden ${
+                    formData.role === "student"
+                      ? "border-primary-600 bg-primary-50/30 shadow-sm ring-1 ring-primary-600/30"
+                      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50/50"
+                  }`}
+                >
+                  {formData.role === "student" && (
+                    <div className="absolute top-2 right-2 w-4 h-4 bg-primary-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
+                      ✓
+                    </div>
+                  )}
+                  <div className={`p-2 rounded-lg transition-colors ${formData.role === "student" ? "bg-primary-100 text-primary-700" : "bg-gray-100 text-gray-500 group-hover:bg-gray-200"}`}>
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                    </svg>
+                  </div>
+                  <span className="font-semibold text-sm text-gray-900">Estudiante</span>
+                  <span className="text-xs text-gray-500">De odontología</span>
+                </div>
               </div>
             </div>
 
@@ -247,25 +266,6 @@ export default function Register() {
                     <option value="Cirugía Maxilofacial">Cirugía Maxilofacial</option>
                     <option value="Rehabilitación Oral">Rehabilitación Oral</option>
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-2">
-                    Número de Licencia / Matrícula Profesional *
-                  </label>
-                  <input
-                    type="text"
-                    name="license_number"
-                    value={formData.license_number}
-                    onChange={handleChange}
-                    required={formData.role === "professional"}
-                    disabled={loading}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-900"
-                    placeholder="Ej. MP-12345"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Obligatorio para validar tu acceso como profesional de la salud dental.
-                  </p>
                 </div>
               </div>
             )}

@@ -37,7 +37,7 @@ export default function TermsConditions() {
           </p>
           <ul className="list-disc pl-6 space-y-2 text-gray-600 text-sm">
             <li>
-              Debes registrarte con datos reales y proporcionar una copia legible de tu licencia profesional odontológica durante el registro.
+              Debes registrarte con datos reales. Si eres odontólogo y quieres el sello de profesional verificado, puedes subir una copia legible de tu licencia: es opcional y no condiciona el uso de tu cuenta.
             </li>
             <li>
               Forcepx se reserva el derecho de rechazar temporal o definitivamente cuentas cuyas credenciales profesionales no puedan ser validadas.

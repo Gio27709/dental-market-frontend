@@ -20,7 +20,7 @@ export default function PrivacyPolicy() {
               <strong>Información de la Cuenta:</strong> Nombre completo, correo electrónico, dirección, teléfono y credenciales de acceso cuando te registras.
             </li>
             <li>
-              <strong>Documentación Profesional:</strong> Licencias y credenciales de odontólogo necesarias para validar las compras de insumos clínicos regulados.
+              <strong>Documentación Profesional:</strong> Licencias y credenciales de odontólogo que subes de forma voluntaria si quieres obtener el sello de profesional verificado.
             </li>
             <li>
               <strong>Ubicación Geográfica:</strong> Coordenadas GPS y estado de residencia para calcular costos de delivery y priorizar productos de tiendas cercanas.
@@ -105,7 +105,7 @@ export default function PrivacyPolicy() {
     },
     {
       q: "¿Es seguro cargar mi licencia profesional?",
-      a: "Sí. Tu licencia se almacena de forma encriptada en un bucket privado de Supabase Storage. Solo es visible para los administradores que validan el registro inicial para certificar que eres un profesional de la salud oral.",
+      a: "Sí. Subirla es opcional. Si decides hacerlo, tu licencia se almacena de forma encriptada en un bucket privado de Supabase Storage y solo es visible para los administradores que otorgan el sello de profesional verificado.",
     },
   ];
 
