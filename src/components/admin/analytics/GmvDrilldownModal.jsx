@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { getSalesAnalyticsAPI, getFinancialsAnalyticsAPI } from "../../../services/api";
 import usePaymentMethods from "../../../hooks/usePaymentMethods";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import ModalOverlay from "./ModalOverlay";
 
 export default function GmvDrilldownModal({ isOpen, onClose, period = "30d" }) {
   const { etiquetaDe } = usePaymentMethods();
@@ -51,7 +52,7 @@ export default function GmvDrilldownModal({ isOpen, onClose, period = "30d" }) {
   const aov = totalOrders > 0 ? totalGmv / totalOrders : 0;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#33243d]/45 animate-fadeIn">
+    <ModalOverlay zIndexClass="z-[200]">
       <div className="bg-fx-panel border border-fx-line-strong rounded-xl p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto relative">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-fx-line mb-5">
@@ -221,7 +222,7 @@ export default function GmvDrilldownModal({ isOpen, onClose, period = "30d" }) {
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 

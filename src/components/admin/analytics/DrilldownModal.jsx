@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
 import { getDrilldownAPI } from "../../../services/api";
+import ModalOverlay from "./ModalOverlay";
 
 /**
  * Modal genérico de drill-down.
@@ -138,7 +139,7 @@ export default function DrilldownModal({ isOpen, onClose, dataset, title, subtit
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-[#33243d]/45 animate-fadeIn">
+    <ModalOverlay>
       <div className="bg-fx-panel border border-fx-line-strong rounded-xl p-6 max-w-7xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-fx-line mb-4 gap-3">
@@ -269,7 +270,7 @@ export default function DrilldownModal({ isOpen, onClose, dataset, title, subtit
           </div>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 

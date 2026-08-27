@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import { getCategoryProductsDetailAPI } from "../../../services/api";
+import ModalOverlay from "./ModalOverlay";
 
 export default function CategorySalesDrilldownModal({ isOpen, onClose, categoryName, period = "30d", fromDate, toDate, onSelectProduct }) {
   const [loading, setLoading] = useState(true);
@@ -45,7 +46,7 @@ export default function CategorySalesDrilldownModal({ isOpen, onClose, categoryN
   });
 
   return (
-    <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-[#33243d]/45 animate-fadeIn">
+    <ModalOverlay>
       <div className="bg-fx-panel border border-fx-line-strong rounded-xl p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto relative">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-fx-line mb-5 gap-3">
@@ -177,7 +178,7 @@ export default function CategorySalesDrilldownModal({ isOpen, onClose, categoryN
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 

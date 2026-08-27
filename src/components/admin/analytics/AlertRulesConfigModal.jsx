@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { getAlertRulesAPI, updateAlertRuleAPI } from "../../../services/api";
 import toast from "react-hot-toast";
+import ModalOverlay from "./ModalOverlay";
 
 export default function AlertRulesConfigModal({ isOpen, onClose }) {
   const [rules, setRules] = useState([]);
@@ -83,7 +84,7 @@ export default function AlertRulesConfigModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#33243d]/45 animate-fadeIn">
+    <ModalOverlay zIndexClass="z-[200]">
       <div className="bg-fx-panel border border-fx-line-strong rounded-xl p-6 max-w-2xl w-full relative overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-fx-line mb-4">
@@ -176,7 +177,7 @@ export default function AlertRulesConfigModal({ isOpen, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
