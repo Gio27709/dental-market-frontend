@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { recargarSiBuildViejo, recargaPendiente } from '../lib/staleBuildReload';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -13,13 +14,16 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // También puedes registrar el error en un servicio de reporte de errores
+    // Si el fallo es porque hay un build nuevo desplegado, recargamos una vez en vez de
+    // mostrar la pantalla de error.
+    if (recargarSiBuildViejo(error)) return;
     console.error("ErrorBoundary atrapó un error detectado en la UI:", error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
-      // Puedes renderizar cualquier UI de repuesto personalizada
+      // Mientras se recarga por build nuevo, no mostramos el cartel de error.
+      if (recargaPendiente(this.state.error)) return null;
       return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-center p-6 font-sans">
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-red-100 max-w-md w-full">
