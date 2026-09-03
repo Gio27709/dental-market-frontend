@@ -4,6 +4,7 @@ import { createContext, useState, useEffect, useContext, useMemo, useCallback } 
 import {
   supabase,
   signInWithGoogle,
+  signInWithGoogleCredential,
   signInWithEmail,
   signUpWithEmail,
   signOut as authSignOut,
@@ -96,6 +97,10 @@ export const AuthProvider = ({ children }) => {
     return await signInWithGoogle();
   }, []);
 
+  const loginWithGoogleCredential = useCallback(async (credential, nonce) => {
+    return await signInWithGoogleCredential(credential, nonce);
+  }, []);
+
   const login = useCallback(async ({ email, password }) => {
     const { data, error } = await signInWithEmail(email, password);
     if (error) throw error;
@@ -158,6 +163,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     loginWithGoogle,
+    loginWithGoogleCredential,
     register,
     logout,
     resetPassword,
@@ -169,6 +175,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     loginWithGoogle,
+    loginWithGoogleCredential,
     register,
     logout,
     resetPassword,

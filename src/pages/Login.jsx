@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
+import GoogleSignInButton from "../components/auth/GoogleSignInButton";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -9,7 +10,7 @@ export default function Login() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const { login, loginWithGoogle, user, resetPassword } = useAuth();
+  const { login, user, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -35,19 +36,6 @@ export default function Login() {
       setError(err.message || "Error al iniciar sesión");
     } finally {
       if (!user) setLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const { error } = await loginWithGoogle();
-      if (error) throw error;
-      // Google redirects, so wait
-    } catch (err) {
-      setError(err.message || "Error conectando con Google");
-      setLoading(false);
     }
   };
 
@@ -112,19 +100,9 @@ export default function Login() {
 
           {!isForgotPassword && (
             <>
-              <button
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 rounded-lg text-gray-800 font-medium hover:bg-gray-50 transition-colors mb-6 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                <img
-                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                  alt="Google"
-                  loading="lazy"
-                  className="w-5 h-5"
-                />
-                <span>Iniciar sesión con Google</span>
-              </button>
+              <div className="mb-6">
+                <GoogleSignInButton text="signin_with" disabled={loading} onError={setError} />
+              </div>
 
               <div className="flex items-center text-center mb-6 text-gray-400">
                 <div className="flex-1 border-b border-gray-200" />

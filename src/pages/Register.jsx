@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import GoogleSignInButton from "../components/auth/GoogleSignInButton";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -24,7 +25,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [showPasswordRequirements, setShowPasswordRequirements] =
     useState(false);
-  const { register, loginWithGoogle, user } = useAuth();
+  const { register, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -60,19 +61,6 @@ export default function Register() {
   };
 
   const isPasswordValid = Object.values(passwordValidations).every(Boolean);
-
-  const handleGoogleRegister = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const { error } = await loginWithGoogle();
-      if (error) throw error;
-      // Google Auth redirects the browser
-    } catch (err) {
-      setError(err.message || "Error al conectar con Google");
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -140,19 +128,9 @@ export default function Register() {
             </p>
           </div>
 
-          <button
-            onClick={handleGoogleRegister}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 rounded-lg text-gray-800 font-medium hover:bg-gray-50 transition-colors mb-6 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            <img
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="Google"
-              loading="lazy"
-              className="w-5 h-5"
-            />
-            <span>Registrarse con Google</span>
-          </button>
+          <div className="mb-6">
+            <GoogleSignInButton text="signup_with" disabled={loading} onError={setError} />
+          </div>
 
           <div className="flex items-center text-center mb-6 text-gray-400">
             <div className="flex-1 border-b border-gray-200" />

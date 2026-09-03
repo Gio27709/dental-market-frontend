@@ -19,6 +19,17 @@ export const signInWithGoogle = async () => {
   return { data, error };
 };
 
+// Inicio con el botón oficial de Google: Google entrega un id_token en el
+// navegador y Supabase lo valida contra el Client ID configurado en el proveedor.
+export const signInWithGoogleCredential = async (credential, nonce) => {
+  const { data, error } = await supabase.auth.signInWithIdToken({
+    provider: "google",
+    token: credential,
+    nonce,
+  });
+  return { data, error };
+};
+
 export const signInWithEmail = async (email, password) => {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
