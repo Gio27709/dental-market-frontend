@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import api from "../services/api";
+import { getPlatformSettingsShared } from "../services/sharedRequests";
 import { PAYMENT_METHODS_RESPALDO } from "../utils/constants";
 
 /**
@@ -55,7 +55,7 @@ const fetchMetodos = async (force = false) => {
   notify();
 
   try {
-    const { data } = await api.get("/admin/settings");
+    const { data } = await getPlatformSettingsShared();
     const bloque = data?.data?.payment_methods;
     const metodos = Array.isArray(bloque?.metodos) ? bloque.metodos : null;
 

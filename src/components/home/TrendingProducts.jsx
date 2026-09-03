@@ -1,6 +1,6 @@
 import ProductCard from "../ProductCard";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { getTrendingAPI } from "../../services/api";
+import { getTrendingShared } from "../../services/sharedRequests";
 import useHomeSections from "../../hooks/useHomeSections";
 import useDragScroll from "../../hooks/useDragScroll";
 import { useLocationContext } from "../../hooks/useLocationContext";
@@ -21,7 +21,7 @@ export default function TrendingProducts() {
 
   // Fetch trending products with geo-boost (Phase 3)
   useEffect(() => {
-    getTrendingAPI({ prod_limit: 8, buyer_state: buyerState || "" })
+    getTrendingShared(buyerState || "")
       .then((res) => {
         const products = res.data?.data?.trending_products || [];
         setTrendingProducts(products);

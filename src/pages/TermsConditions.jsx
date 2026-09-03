@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import api from "../services/api";
+import { getPlatformSettingsShared } from "../services/sharedRequests";
 import { FileText, Scale, CreditCard, Truck, AlertTriangle, Gavel, Users, Info } from "lucide-react";
 
 export default function TermsConditions() {
@@ -18,7 +18,7 @@ export default function TermsConditions() {
   const [slaHoras, setSlaHoras] = useState(24);
 
   useEffect(() => {
-    api.get("/admin/settings")
+    getPlatformSettingsShared()
       .then(({ data }) => {
         const h = Number(data?.data?.shipping_sla_hours?.hours);
         if (Number.isFinite(h) && h > 0) setSlaHoras(h);

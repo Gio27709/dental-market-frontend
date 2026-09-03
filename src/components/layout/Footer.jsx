@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import api, { getTrendingAPI, subscribeNewsletterAPI } from "../../services/api";
+import { subscribeNewsletterAPI } from "../../services/api";
+import { getPlatformSettingsShared, getTrendingShared } from "../../services/sharedRequests";
 import toast from "react-hot-toast";
 import useHomeSections from "../../hooks/useHomeSections";
 import usePaymentMethods from "../../hooks/usePaymentMethods";
@@ -66,11 +67,11 @@ export default function Footer() {
 
   useEffect(() => {
     let isMounted = true;
-    getTrendingAPI({ cat_limit: 5 })
+    getTrendingShared()
       .then((res) => {
         if (isMounted && res.data?.success) {
-          // Tomar categorías destacadas de la respuesta
-          const fetchedCats = res.data.data?.trending_categories || [];
+          // Tomar categorías destacadas de la respuesta (compartida con Inicio; aquí van 5)
+          const fetchedCats = (res.data.data?.trending_categories || []).slice(0, 5);
           setCategories(fetchedCats);
         }
       })
@@ -82,7 +83,7 @@ export default function Footer() {
       });
 
     // Cargar la configuración del boletín (descuento y visibilidad) configurados dinámicamente
-    api.get("/admin/settings")
+    getPlatformSettingsShared()
       .then((res) => {
         if (isMounted && res.data?.success) {
           const discountVal = res.data.data?.newsletter_discount;

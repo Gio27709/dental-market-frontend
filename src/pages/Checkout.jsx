@@ -5,7 +5,7 @@ import { useOrder } from "../context/OrderContext";
 import CheckoutForm from "../components/orders/CheckoutForm";
 import CheckoutSummary from "../components/orders/CheckoutSummary";
 import PaymentProofUploader from "../components/orders/PaymentProofUploader";
-import api from "../services/api";
+import { getPlatformSettingsShared } from "../services/sharedRequests";
 import toast from "react-hot-toast";
 import { track } from "../services/tracking";
 
@@ -38,7 +38,7 @@ export default function Checkout() {
 
   // Fetch buyer_fee from platform settings
   useEffect(() => {
-    api.get("/admin/settings")
+    getPlatformSettingsShared()
       .then((res) => {
         const fee = res.data?.data?.buyer_fee?.percentage;
         if (fee !== undefined) setBuyerFeePercentage(Number(fee));

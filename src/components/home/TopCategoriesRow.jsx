@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { getTrendingAPI } from "../../services/api";
+import { getTrendingShared } from "../../services/sharedRequests";
 import useHomeSections from "../../hooks/useHomeSections";
 
 export default function TopCategoriesRow() {
@@ -27,7 +27,7 @@ export default function TopCategoriesRow() {
   };
 
   useEffect(() => {
-    getTrendingAPI({ cat_limit: 7 })
+    getTrendingShared()
       .then((res) => {
         const trending = res.data?.data?.trending_categories || [];
         setCategories(trending);

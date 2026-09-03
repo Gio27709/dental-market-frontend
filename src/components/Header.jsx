@@ -8,7 +8,7 @@ import CartDrawer from "./cart/CartDrawer";
 import LocationModal from "./LocationModal";
 import NotificationBell from "./notifications/NotificationBell";
 import useHomeSections from "../hooks/useHomeSections";
-import { getCategoriesAPI } from "../services/api";
+import { getCategoriesShared } from "../services/sharedRequests";
 
 // FALLBACKS: Static config used while useHomeSections() is loading or if API fails
 const HEADER_TOP_BAR = {
@@ -88,7 +88,7 @@ export default function Header() {
         console.warn("Error parsing cached categories in Header:", err);
       }
     }
-    getCategoriesAPI()
+    getCategoriesShared()
       .then((res) => {
         const data = res.data?.data || [];
         setCategoriesData(data);

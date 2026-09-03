@@ -8,7 +8,7 @@ import {
   createPostCommentAPI,
   togglePostSaveAPI
 } from "../../services/api";
-import api from "../../services/api";
+import { getPlatformSettingsShared } from "../../services/sharedRequests";
 import { useAuth } from "../../context/AuthContext";
 import { track, trackPostOnce } from "../../services/tracking";
 import { usePostImpressions } from "../../hooks/usePostImpressions";
@@ -118,7 +118,7 @@ export default function Blog() {
   const fetchSettings = useCallback(async () => {
     try {
       setLoadingSettings(true);
-      const res = await api.get("/admin/settings");
+      const res = await getPlatformSettingsShared();
       const setting = res.data.data?.allow_user_posts;
       if (setting) {
         const mode = setting.mode || (setting.enabled ? "moderated" : "disabled");

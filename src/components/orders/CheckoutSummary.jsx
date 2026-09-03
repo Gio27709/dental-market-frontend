@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
 import { formatCurrencyVES, formatCurrencyUSD } from "../../utils/formatters";
-import api from "../../services/api";
+import { getPlatformSettingsShared } from "../../services/sharedRequests";
 import toast from "react-hot-toast";
 
 // Parse variation display name from the variation object
@@ -33,7 +33,7 @@ export default function CheckoutSummary({ cartItems, total_usd, total_ves, deliv
 
   useEffect(() => {
     let isMounted = true;
-    api.get("/admin/settings")
+    getPlatformSettingsShared()
       .then((res) => {
         if (isMounted && res.data?.success) {
           const discountVal = res.data.data?.newsletter_discount;

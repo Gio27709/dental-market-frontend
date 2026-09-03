@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import ProductCard from "../ProductCard";
 import useHomeSections from "../../hooks/useHomeSections";
 import useDragScroll from "../../hooks/useDragScroll";
-import api from "../../services/api";
+import { getCategoriesShared } from "../../services/sharedRequests";
 
 const DEFAULT_TABS = [
   { id: "all", label: "Todos" },
@@ -32,7 +32,7 @@ export default function TopSelling({ products }) {
 
   // Fetch categories on mount
   useEffect(() => {
-    api.get("/categories")
+    getCategoriesShared()
       .then((res) => {
         if (res.data?.success) {
           setCategories(res.data.data || []);

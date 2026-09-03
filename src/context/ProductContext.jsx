@@ -8,7 +8,8 @@ import {
   useMemo,
 } from "react";
 import PropTypes from "prop-types";
-import api, { getProducts, getTrendingAPI } from "../services/api";
+import api, { getProducts } from "../services/api";
+import { getPlatformSettingsShared, getTrendingShared } from "../services/sharedRequests";
 import { BCV_RATE_KEY } from "../utils/constants";
 import { useLocationContext } from "../hooks/useLocationContext";
 
@@ -65,8 +66,8 @@ export const ProductProvider = ({ children }) => {
       // Phase 3: Pass buyer_state to trending API for geo-boosted trending
       const [productsRes, settingsRes, trendingRes] = await Promise.all([
         getProducts({ buyer_state: buyerState, limit: 20 }),
-        api.get("/admin/settings").catch(() => ({ data: { data: {} } })), // Fallback if settings fail
-        getTrendingAPI({ prod_limit: 8, buyer_state: buyerState }).catch(() => ({ data: { data: { trending_products: [] } } }))
+        getPlatformSettingsShared().catch(() => ({ data: { data: {} } })), // Fallback if settings fail
+        getTrendingShared(buyerState).catch(() => ({ data: { data: { trending_products: [] } } }))
       ]);
 
       const rawData = productsRes.data.data || productsRes.data;
