@@ -224,14 +224,14 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }) {
           {/* Right: Price */}
           <div className="text-right flex-shrink-0 hidden sm:block">
             <p className="text-base font-bold text-gray-900">
-              ${item.price_usd.toFixed(2)}
+              ${Number(item.price_usd).toFixed(2)}
             </p>
           </div>
         </div>
 
         {/* Mobile price */}
         <div className="sm:hidden mt-2">
-          <span className="text-sm font-bold text-gray-900">${item.price_usd.toFixed(2)}</span>
+          <span className="text-sm font-bold text-gray-900">${Number(item.price_usd).toFixed(2)}</span>
         </div>
       </div>
     </div>
@@ -244,8 +244,8 @@ CartItem.propTypes = {
     product_id: PropTypes.string.isRequired,
     variation_id: PropTypes.string,
     name: PropTypes.string.isRequired,
-    price_usd: PropTypes.number.isRequired,
-    quantity: PropTypes.number.isRequired,
+    price_usd: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+    quantity: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
     image: PropTypes.string,
     store_is_suspended: PropTypes.bool,
     max_stock: PropTypes.number,

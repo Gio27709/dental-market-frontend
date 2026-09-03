@@ -6,6 +6,8 @@ import { useProducts } from "./ProductContext";
 import {
   generateCartItemUniqueId,
   validateCartItemQuantity,
+  toMoney,
+  normalizeCartItem,
 } from "../utils/cartHelpers";
 import toast from "react-hot-toast";
 import { track } from "../services/tracking";
@@ -85,11 +87,13 @@ export const CartProvider = ({ children }) => {
     try {
       const { data } = await fetchCart();
       // Remap and deduplicate by frontend_id
-      const mapped = data.map((item) => ({
-        ...item,
-        id: item.frontend_id || item.id,
-        db_id: item.id,
-      }));
+      const mapped = data.map((item) =>
+        normalizeCartItem({
+          ...item,
+          id: item.frontend_id || item.id,
+          db_id: item.id,
+        }),
+      );
 
       // Deduplicate: merge items with same frontend_id (same product+variation)
       const deduped = [];
@@ -121,7 +125,7 @@ export const CartProvider = ({ children }) => {
           // Verify if we have a lingering local cart that needs to be merged into the DB
           const savedLocal = localStorage.getItem(CART_STORAGE_KEY);
           if (savedLocal) {
-            const localItems = JSON.parse(savedLocal);
+            const localItems = JSON.parse(savedLocal).map(normalizeCartItem);
             // Even if authenticated, we might have freshly logged in or reloaded the tab
 
             // Filter local items that don't have a db_id (meaning they were added while logged out)
@@ -156,7 +160,7 @@ export const CartProvider = ({ children }) => {
           // Anonymous User Flow
           const savedLocal = localStorage.getItem(CART_STORAGE_KEY);
           if (savedLocal) {
-            setItems(JSON.parse(savedLocal));
+            setItems(JSON.parse(savedLocal).map(normalizeCartItem));
           } else {
             setItems([]);
           }
@@ -180,7 +184,7 @@ export const CartProvider = ({ children }) => {
 
     const calculateTotals = () => {
       const calculatedUsd = items.reduce(
-        (acc, item) => acc + item.price_usd * item.quantity,
+        (acc, item) => acc + toMoney(item.price_usd) * Number(item.quantity),
         0,
       );
 
@@ -280,7 +284,8 @@ export const CartProvider = ({ children }) => {
 
       // Resolve discount locally if present on the product
       const discount = product.active_discount;
-      const basePrice = product.price + (variation?.price_modifier || 0);
+      const basePrice =
+        Math.round((toMoney(product.price) + toMoney(variation?.price_modifier)) * 100) / 100;
       let finalPrice = basePrice;
       let resolvedDiscount = null;
 
@@ -492,9 +497,11 @@ export const CartProvider = ({ children }) => {
       maxStock,
     );
     const newPriceUsd =
-      itemToUpdate.price_usd -
-      (itemToUpdate.variation?.price_modifier || 0) +
-      (newVariation.price_modifier || 0);
+      Math.round(
+        (toMoney(itemToUpdate.price_usd) -
+          toMoney(itemToUpdate.variation?.price_modifier) +
+          toMoney(newVariation.price_modifier)) * 100,
+      ) / 100;
 
     if (user) {
       if (itemToUpdate.db_id) {
