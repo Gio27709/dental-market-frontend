@@ -37,6 +37,7 @@ export const AuthProvider = ({ children }) => {
         createdAt: sessionUser.created_at,
         lastNameChange: metadata.last_name_change || null,
         phone: metadata.phone || null,
+        buyerState: metadata.buyer_state || null,
         avatarUrl: metadata.custom_avatar_url || metadata.avatar_url || null,
         firstName: metadata.first_name || metadata.full_name?.split(" ")[0],
         lastName:

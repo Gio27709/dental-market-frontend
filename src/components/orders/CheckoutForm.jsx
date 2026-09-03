@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import PropTypes from "prop-types";
 import { validatePhone, validateAddress } from "../../utils/validators";
 import PaymentMethodSelector from "./PaymentMethodSelector";
@@ -8,6 +8,9 @@ import { VENEZUELA_STATES } from "../../utils/venezuelaStates";
 import { useAuth } from "../../context/AuthContext";
 import MapAddressPicker from "../common/MapAddressPicker";
 import { getMyAddressesAPI, createAddressAPI, reverseGeocodeAPI, getShippingOfficesAPI } from "../../services/api";
+import { useLocationContext } from "../../hooks/useLocationContext";
+import LocationModal from "../LocationModal";
+import { getCanonicalStateName } from "../../utils/stateProximity";
 
 // Transportistas con listado de oficinas sembrado (tabla shipping_offices).
 // Si mañana se suma otro, basta añadirlo aquí y sembrar sus datos.
@@ -25,6 +28,10 @@ export default function CheckoutForm({
   onDeliveryTypeChange
 }) {
   const { user } = useAuth();
+  const { buyerState } = useLocationContext();
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+  // Estado en el que cae el pin del mapa (lo devuelve el reverse geocode)
+  const [pinState, setPinState] = useState(null);
 
   const [formData, setFormData] = useState(() => {
     const saved = sessionStorage.getItem("checkout_form_data");
@@ -97,6 +104,32 @@ export default function CheckoutForm({
 
   const isMultiStore = storeGroups.length > 1;
 
+  // ── Delivery local = mismo estado que la tienda ──
+  // Sin estado elegido no se puede saber si aplica; con estado distinto, no aplica.
+  // El backend repite esta regla contra el pin real al crear la orden.
+  const getLocalDeliveryStatus = useCallback((group) => {
+    if (!group.offers_local_delivery) {
+      return { allowed: false, needsLocation: false, reason: "Esta tienda no ofrece delivery local." };
+    }
+    const storeState = getCanonicalStateName(group.store_state);
+    if (!storeState) return { allowed: true, needsLocation: false, reason: null };
+    if (!buyerState) {
+      return {
+        allowed: false,
+        needsLocation: true,
+        reason: `Elige tu estado para saber si aplica: esta tienda solo reparte en ${storeState}.`,
+      };
+    }
+    if (getCanonicalStateName(buyerState) !== storeState) {
+      return {
+        allowed: false,
+        needsLocation: false,
+        reason: `Esta tienda solo hace delivery local en ${storeState} y tú estás en ${buyerState}.`,
+      };
+    }
+    return { allowed: true, needsLocation: false, reason: null };
+  }, [buyerState]);
+
   // ── Per-store delivery types (only for multi-store) ──
   const [perStoreDelivery, setPerStoreDelivery] = useState(() => {
     const saved = sessionStorage.getItem("checkout_per_store_delivery");
@@ -114,11 +147,11 @@ export default function CheckoutForm({
         let changed = false;
         storeGroups.forEach(g => {
           if (!(g.store_id in updated)) {
-            updated[g.store_id] = g.offers_local_delivery ? "local_delivery" : "shipping";
+            updated[g.store_id] = getLocalDeliveryStatus(g).allowed ? "local_delivery" : "shipping";
             changed = true;
           }
-          // Force shipping if store doesn't offer delivery
-          if (!g.offers_local_delivery && updated[g.store_id] === "local_delivery") {
+          // Force shipping if store doesn't offer delivery (or doesn't reach the buyer's state)
+          if (!getLocalDeliveryStatus(g).allowed && updated[g.store_id] === "local_delivery") {
             updated[g.store_id] = "shipping";
             changed = true;
           }
@@ -130,7 +163,7 @@ export default function CheckoutForm({
         return changed ? updated : prev;
       });
     }
-  }, [isMultiStore, storeGroups]);
+  }, [isMultiStore, storeGroups, getLocalDeliveryStatus]);
 
   // Persist per-store delivery
   useEffect(() => {
@@ -138,20 +171,23 @@ export default function CheckoutForm({
   }, [perStoreDelivery]);
 
   // Single-store delivery logic (backward compat)
-  const canUseLocalDelivery = !isMultiStore && storeGroups.length === 1 && storeGroups[0].offers_local_delivery;
+  const singleStoreDeliveryStatus = !isMultiStore && storeGroups.length === 1
+    ? getLocalDeliveryStatus(storeGroups[0])
+    : { allowed: false, needsLocation: false, reason: null };
+  const canUseLocalDelivery = singleStoreDeliveryStatus.allowed;
   const canUsePickup = !isMultiStore && storeGroups.length === 1 && storeGroups[0].offers_pickup;
 
   // If user had local_delivery saved but the single store doesn't support it
   useEffect(() => {
     if (!isMultiStore && formData.delivery_type === "local_delivery" && !canUseLocalDelivery) {
       setFormData(prev => ({ ...prev, delivery_type: "shipping" }));
-      toast('Tu carrito cambió y contiene tiendas sin Delivery Local. Hemos ajustado tu método a Encomienda Nacional.', { icon: '📦' });
+      toast(`Delivery Local no disponible. ${singleStoreDeliveryStatus.reason || ""} Hemos ajustado tu método a Encomienda Nacional.`, { icon: '📦' });
     }
     if (!isMultiStore && formData.delivery_type === "pickup" && !canUsePickup) {
       setFormData(prev => ({ ...prev, delivery_type: "shipping" }));
       toast('Tu carrito cambió y contiene tiendas sin Retiro en Tienda. Hemos ajustado tu método a Encomienda Nacional.', { icon: '📦' });
     }
-  }, [canUseLocalDelivery, canUsePickup, formData.delivery_type, isMultiStore]);
+  }, [canUseLocalDelivery, canUsePickup, formData.delivery_type, isMultiStore, singleStoreDeliveryStatus.reason]);
 
   // Persist form data to survive tab switching or HMR
   useEffect(() => {
@@ -264,6 +300,7 @@ export default function CheckoutForm({
       delivery_lng: addr.lng ?? null,
     }));
     setFormErrors((prev) => ({ ...prev, address: null, location: null, destination_state: null }));
+    setPinState(addr.lat != null && addr.lng != null ? getCanonicalStateName(addr.state) : null);
   };
 
   useEffect(() => {
@@ -291,6 +328,7 @@ export default function CheckoutForm({
   // Pin del mapa: fija coordenadas y autocompleta estado/ciudad (best effort)
   const handleMapChange = (lat, lng) => {
     setFormData((prev) => ({ ...prev, delivery_lat: lat, delivery_lng: lng }));
+    setPinState(null);
     setSelectedAddressId(null);
     if (formErrors.location) setFormErrors((prev) => ({ ...prev, location: null }));
     if (reverseTimer.current) clearTimeout(reverseTimer.current);
@@ -299,6 +337,7 @@ export default function CheckoutForm({
         const res = await reverseGeocodeAPI(lat, lng);
         const d = res.data?.data;
         if (!d) return;
+        setPinState(d.state || null);
         setFormData((prev) => ({
           ...prev,
           destination_state: d.state || prev.destination_state,
@@ -396,6 +435,21 @@ export default function CheckoutForm({
     ? storeGroups.filter(g => (isMultiStore ? perStoreDelivery[g.store_id] === "pickup" : true))
     : [];
 
+  // Tiendas que van por delivery local cuyo estado no coincide con el del pin
+  const pinStateMismatch = useMemo(() => {
+    if (!hasAnyLocalDelivery) return null;
+    const pin = getCanonicalStateName(pinState);
+    if (!pin) return null;
+    const bad = storeGroups.filter((g) => {
+      const usesLocal = isMultiStore ? perStoreDelivery[g.store_id] === "local_delivery" : true;
+      const storeState = getCanonicalStateName(g.store_state);
+      return usesLocal && storeState && storeState !== pin;
+    });
+    if (bad.length === 0) return null;
+    const names = bad.map((g) => `${g.store_name} (solo ${getCanonicalStateName(g.store_state)})`).join(", ");
+    return `El pin está en ${pin}, fuera de la zona de delivery de: ${names}. Muévelo o elige encomienda nacional para esa tienda.`;
+  }, [hasAnyLocalDelivery, pinState, storeGroups, isMultiStore, perStoreDelivery]);
+
   const validate = () => {
     const errors = {};
     if (hasAnyLocalDelivery) {
@@ -404,6 +458,8 @@ export default function CheckoutForm({
       }
       if (!formData.delivery_lat || !formData.delivery_lng) {
         errors.location = "Para usar Delivery Local necesitamos tu ubicación: coloca el pin en el mapa.";
+      } else if (pinStateMismatch) {
+        errors.location = pinStateMismatch;
       }
     } else if (!allPickup) {
       if (!validateAddress(formData.address)) {
@@ -490,6 +546,7 @@ export default function CheckoutForm({
     : formData.delivery_type === "shipping";
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="w-full space-y-6">
       {/* ── CARD 1: TIPO DE ENTREGA ── */}
       <div className="bg-white rounded-2xl border border-slate-100/80 shadow-xs p-5 sm:p-6 transition-all duration-300">
@@ -513,6 +570,7 @@ export default function CheckoutForm({
           <div className="flex flex-col gap-4">
             {storeGroups.map((group) => {
               const selectedType = perStoreDelivery[group.store_id] || "shipping";
+              const localStatus = getLocalDeliveryStatus(group);
               return (
                 <div key={group.store_id} className="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
                   {/* Store header */}
@@ -554,8 +612,10 @@ export default function CheckoutForm({
                     </label>
 
                     <label className={`flex items-center gap-3 flex-1 p-3.5 border rounded-xl transition-all duration-200 text-sm ${
-                      !group.offers_local_delivery
-                        ? 'opacity-45 cursor-not-allowed bg-slate-50 border-slate-200'
+                      !localStatus.allowed
+                        ? localStatus.needsLocation
+                          ? 'cursor-not-allowed bg-amber-50/40 border-amber-200'
+                          : 'opacity-45 cursor-not-allowed bg-slate-50 border-slate-200'
                         : selectedType === 'local_delivery'
                         ? 'border-[#6b1e96] bg-purple-50/20 ring-1 ring-[#6b1e96] cursor-pointer'
                         : 'border-slate-200 bg-white hover:bg-slate-50 cursor-pointer'
@@ -566,7 +626,7 @@ export default function CheckoutForm({
                         value="local_delivery"
                         checked={selectedType === "local_delivery"}
                         onChange={() => handleStoreDeliveryChange(group.store_id, "local_delivery")}
-                        disabled={!group.offers_local_delivery}
+                        disabled={!localStatus.allowed}
                         className="sr-only"
                       />
                       <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
@@ -577,8 +637,19 @@ export default function CheckoutForm({
                       <span className="material-symbols-outlined text-[18px] text-slate-500">two_wheeler</span>
                       <div className="flex flex-col">
                         <span className="font-bold text-slate-800">Delivery Local</span>
-                        {!group.offers_local_delivery && (
-                          <span className="text-[10px] text-rose-500 font-extrabold mt-0.5">No disponible en esta tienda</span>
+                        {!localStatus.allowed && (
+                          <span className={`text-[10px] font-extrabold mt-0.5 ${localStatus.needsLocation ? "text-amber-700" : "text-rose-500"}`}>
+                            {localStatus.reason}
+                          </span>
+                        )}
+                        {localStatus.needsLocation && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setLocationModalOpen(true); }}
+                            className="mt-1 self-start text-[11px] font-black text-[#6b1e96] underline underline-offset-2 cursor-pointer"
+                          >
+                            Elegir mi estado
+                          </button>
                         )}
                       </div>
                     </label>
@@ -648,7 +719,9 @@ export default function CheckoutForm({
 
             <label className={`flex items-start gap-4.5 p-4.5 border rounded-2xl transition-all duration-200 ${
               !canUseLocalDelivery
-                ? 'opacity-45 cursor-not-allowed bg-slate-50 border-slate-200'
+                ? singleStoreDeliveryStatus.needsLocation
+                  ? 'cursor-not-allowed bg-amber-50/40 border-amber-200'
+                  : 'opacity-45 cursor-not-allowed bg-slate-50 border-slate-200'
                 : formData.delivery_type === 'local_delivery'
                 ? 'border-[#6b1e96] bg-purple-50/20 ring-1 ring-[#6b1e96] cursor-pointer'
                 : 'border-slate-200 bg-white hover:bg-slate-50/80 cursor-pointer shadow-xs'
@@ -675,7 +748,19 @@ export default function CheckoutForm({
                 <span className="text-xs font-semibold text-slate-400 block mt-1 leading-relaxed">
                   La tienda le enviará su pedido directamente.
                   {!canUseLocalDelivery && (
-                    <strong className="text-rose-500 block mt-1 font-bold">No disponible porque esta tienda no ofrece envíos directos.</strong>
+                    <strong className={`block mt-1 font-bold ${singleStoreDeliveryStatus.needsLocation ? "text-amber-700" : "text-rose-500"}`}>
+                      {singleStoreDeliveryStatus.reason || "No disponible porque esta tienda no ofrece envíos directos."}
+                    </strong>
+                  )}
+                  {singleStoreDeliveryStatus.needsLocation && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setLocationModalOpen(true); }}
+                      className="mt-1.5 inline-flex items-center gap-1 text-xs font-black text-[#6b1e96] underline underline-offset-2 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">location_on</span>
+                      Elegir mi estado
+                    </button>
                   )}
                 </span>
               </div>
@@ -1004,10 +1089,10 @@ export default function CheckoutForm({
                     ¡Ubicación fijada! ({formData.delivery_lat.toFixed(4)}, {formData.delivery_lng.toFixed(4)})
                   </span>
                 )}
-                {formErrors.location && (
+                {(formErrors.location || pinStateMismatch) && (
                   <p className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1">
                     <span className="material-symbols-outlined text-sm">error</span>
-                    {formErrors.location}
+                    {formErrors.location || pinStateMismatch}
                   </p>
                 )}
                 <p className="text-[11px] text-slate-400 mt-2.5 font-medium italic">
@@ -1254,6 +1339,9 @@ export default function CheckoutForm({
         </button>
       </div>
     </form>
+    {/* Fuera del <form>: el modal tiene botones sin type="button" */}
+    <LocationModal isOpen={locationModalOpen} onClose={() => setLocationModalOpen(false)} />
+    </>
   );
 }
 

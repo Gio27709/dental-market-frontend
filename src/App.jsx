@@ -6,6 +6,7 @@ import { CartProvider } from "./context/CartContext";
 import { OrderProvider } from "./context/OrderContext";
 import { StoreProvider } from "./context/StoreContext";
 import { LocationProvider } from "./context/LocationContext";
+import BuyerStateSync from "./components/BuyerStateSync";
 import { FavoriteProvider } from "./context/FavoriteContext";
 import { RatingProvider } from "./context/RatingContext";
 import { CurrencyProvider } from "./context/CurrencyContext";
@@ -152,6 +153,7 @@ export default function App() {
       <PageTracker />
       <LocationProvider>
         <AuthProvider>
+          <BuyerStateSync />
           <ProductProvider>
             <CurrencyProvider>
             <FavoriteProvider>
