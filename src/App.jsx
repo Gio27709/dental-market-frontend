@@ -17,6 +17,7 @@ import Header from "./components/Header";
 import Footer from "./components/layout/Footer";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ScrollToTop from "./components/ScrollToTop";
+import { RouteMeta } from "./lib/seo";
 import AccountLayout from "./components/layout/account/AccountLayout";
 import AdminLayout from "./components/layout/admin/AdminLayout";
 import StoreLayout from "./components/layout/store/StoreLayout";
@@ -151,6 +152,7 @@ export default function App() {
     <Router>
       <ScrollToTop />
       <PageTracker />
+      <RouteMeta />
       <LocationProvider>
         <AuthProvider>
           <BuyerStateSync />

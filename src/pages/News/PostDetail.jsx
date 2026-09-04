@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { getPostByIdAPI, togglePostSaveAPI } from "../../services/api";
 import { track, trackPostOnce } from "../../services/tracking";
+import { useSeo, stripHtml, SITE_URL } from "../../lib/seo";
 import { 
   ArrowLeft, 
   Calendar, 
@@ -19,6 +20,29 @@ export default function PostDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [post, setPost] = useState(null);
+
+  // SEO del artículo (título, resumen, portada y ficha Article).
+  useSeo(
+    post
+      ? {
+          title: post.title,
+          description: stripHtml(post.content),
+          image: post.thumbnail_url || undefined,
+          path: `/news/${post.id}`,
+          type: "article",
+          jsonLd: {
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: post.title,
+            ...(post.thumbnail_url ? { image: [post.thumbnail_url] } : {}),
+            datePublished: post.created_at,
+            dateModified: post.updated_at || post.created_at,
+            mainEntityOfPage: `${SITE_URL}/news/${post.id}`,
+            publisher: { "@type": "Organization", name: "Forcepx", url: SITE_URL },
+          },
+        }
+      : null,
+  );
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   // El efecto se re-ejecuta al resolverse `user`; esto evita contar la vista dos veces.

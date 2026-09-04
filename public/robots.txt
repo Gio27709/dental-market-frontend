@@ -1,0 +1,30 @@
+# Forcepx — marketplace odontológico
+User-agent: *
+Allow: /
+
+# Zonas privadas (requieren sesión) — no aportan nada al índice
+Disallow: /admin
+Disallow: /account
+Disallow: /clinic
+Disallow: /rider
+Disallow: /cart
+Disallow: /checkout
+Disallow: /order-success
+Disallow: /login
+Disallow: /register
+Disallow: /update-password
+# Panel del vendedor. OJO: /store/<uuid> es el perfil público de la tienda y SÍ se indexa.
+Disallow: /store$
+Disallow: /store/products
+Disallow: /store/orders
+Disallow: /store/wallet
+Disallow: /store/analytics
+Disallow: /store/riders
+Disallow: /store/profile
+Disallow: /store/penalties
+Disallow: /store/discounts
+# La API no es contenido
+Disallow: /api/
+Allow: /api/sitemap.xml
+
+Sitemap: https://forcepx.com/api/sitemap.xml

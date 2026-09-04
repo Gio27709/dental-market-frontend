@@ -15,6 +15,7 @@ import ProductReviews from "../components/products/ProductReviews";
 import ProductQA from "../components/products/ProductQA";
 import toast from "react-hot-toast";
 import { track } from "../services/tracking";
+import { useSeo, stripHtml, SITE_URL } from "../lib/seo";
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -41,6 +42,42 @@ export default function ProductDetail() {
   const [isAdding, setIsAdding] = useState(false);
 
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+
+  // SEO: título, descripción, imagen y ficha Product (precio) para Google.
+  const storeName = product?.store?.business_name || product?.store_profiles?.business_name || null;
+  useSeo(
+    product
+      ? {
+          title: product.name,
+          description:
+            stripHtml(product.description) ||
+            `${product.name}${storeName ? ` de ${storeName}` : ""}. Insumo odontológico en Forcepx con compra protegida y envío a toda Venezuela.`,
+          image: Array.isArray(product.images) && product.images[0] ? product.images[0] : undefined,
+          path: `/product/${product.id}`,
+          type: "product",
+          jsonLd: {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: product.name,
+            image: Array.isArray(product.images) ? product.images.filter(Boolean) : [],
+            description: stripHtml(product.description).slice(0, 500),
+            sku: product.id,
+            ...(storeName ? { brand: { "@type": "Brand", name: storeName } } : {}),
+            offers: {
+              "@type": "Offer",
+              url: `${SITE_URL}/product/${product.id}`,
+              priceCurrency: "USD",
+              price: Number(product.price || 0).toFixed(2),
+              availability:
+                product.stock_status === "Agotado" || Number(product.stock) === 0
+                  ? "https://schema.org/OutOfStock"
+                  : "https://schema.org/InStock",
+              ...(storeName ? { seller: { "@type": "Organization", name: storeName } } : {}),
+            },
+          },
+        }
+      : null,
+  );
 
   useEffect(() => {
     if (globalLoading) return;

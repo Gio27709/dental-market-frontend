@@ -2,11 +2,32 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCourseByIdAPI } from "../../services/api";
 import { track } from "../../services/tracking";
+import { useSeo, stripHtml, SITE_URL } from "../../lib/seo";
 
 export default function CourseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
+
+  // SEO del curso (título, descripción, portada y ficha Course).
+  useSeo(
+    course
+      ? {
+          title: course.title,
+          description: stripHtml(course.description),
+          image: course.thumbnail_url || undefined,
+          path: `/courses/${course.id}`,
+          jsonLd: {
+            "@context": "https://schema.org",
+            "@type": "Course",
+            name: course.title,
+            description: stripHtml(course.description).slice(0, 500),
+            url: `${SITE_URL}/courses/${course.id}`,
+            provider: { "@type": "Organization", name: "Forcepx", url: SITE_URL },
+          },
+        }
+      : null,
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

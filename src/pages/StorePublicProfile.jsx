@@ -4,6 +4,7 @@ import api from "../services/api";
 import ProductCard from "../components/ProductCard";
 import StoreRatingBreakdown from "../components/store/StoreRatingBreakdown";
 import StoreReviewsList from "../components/store/StoreReviewsList";
+import { useSeo, stripHtml, SITE_URL } from "../lib/seo";
 
 export default function StorePublicProfile() {
   const { id } = useParams();
@@ -14,6 +15,31 @@ export default function StorePublicProfile() {
   // Panel state
   const [activePanel, setActivePanel] = useState(null); // null | 'reputation' | 'reviews'
   const [reviewsData, setReviewsData] = useState(null);
+
+  // SEO de la tienda pública (nombre, descripción, logo y ficha Store).
+  const seoStore = storeData?.store;
+  useSeo(
+    seoStore
+      ? {
+          title: `${seoStore.business_name}, tienda dental`,
+          description:
+            stripHtml(seoStore.description) ||
+            `Productos odontológicos de ${seoStore.business_name} en Forcepx. Compra protegida y envío a toda Venezuela.`,
+          image: seoStore.logo_url || undefined,
+          path: `/store/${id}`,
+          type: "profile",
+          jsonLd: {
+            "@context": "https://schema.org",
+            "@type": "Store",
+            name: seoStore.business_name,
+            url: `${SITE_URL}/store/${id}`,
+            ...(seoStore.logo_url ? { image: seoStore.logo_url } : {}),
+            ...(stripHtml(seoStore.description) ? { description: stripHtml(seoStore.description).slice(0, 500) } : {}),
+            parentOrganization: { "@type": "Organization", name: "Forcepx", url: SITE_URL },
+          },
+        }
+      : null,
+  );
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const panelRef = useRef(null);
 
