@@ -128,7 +128,24 @@ export default function PlatformSettings() {
 
     try {
       setSavingBcv(true);
-      await api.put("/admin/settings/bcv-rate", { rate: numericRate });
+      try {
+        await api.put("/admin/settings/bcv-rate", { rate: numericRate });
+      } catch (err) {
+        // El backend no aplica un salto grande (más del 50 %) sin que alguien lo confirme:
+        // es la red contra el dedazo de escribir 80481 en vez de 804,81.
+        const detalle = err?.response?.data;
+        if (err?.response?.status !== 409 || detalle?.code !== "BCV_RATE_ANOMALY") throw err;
+        const seguir = window.confirm(
+          `${detalle.error}\n\nTasa vigente: ${Number(detalle.current_rate).toFixed(2)} Bs/$\nTasa nueva: ${Number(detalle.new_rate).toFixed(2)} Bs/$\n\n¿Aplicar de todos modos?`
+        );
+        if (!seguir) {
+          setBcvRate(previousRate);
+          setBcvInput(previousRate);
+          toast("Tasa sin cambios.");
+          return;
+        }
+        await api.put("/admin/settings/bcv-rate", { rate: numericRate, confirm: true });
+      }
       const nowStr = new Date().toISOString();
       setBcvLastUpdated(nowStr);
       setBcvLastChecked(nowStr);
