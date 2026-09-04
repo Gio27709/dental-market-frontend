@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getWalletBalanceAPI, getWalletTransactionsAPI, getStorePayoutsAPI, requestPayoutAPI } from "../../services/api";
+import { useProducts } from "../../context/ProductContext";
 import toast from "react-hot-toast";
 
 const TX_TYPE_CONFIG = {
@@ -44,6 +45,13 @@ const VENEZUELAN_BANKS = [
 ];
 
 export default function StoreWallet() {
+  // Tasa BCV para el equivalente en bolívares del retiro. Sale del mismo sitio que el
+  // resto de la app (global_settings.bcv_rate vía ProductContext). Antes se leía
+  // localStorage a pelo con 45,12 como respaldo: si la clave aún no estaba, la tienda veía
+  // «Tasa BCV oficial: 45.12» con la tasa real en cientos de bolívares.
+  const { bcvRate } = useProducts();
+  const tasaBcv = Number(bcvRate) > 1 ? Number(bcvRate) : 0;
+
   // `escrow` viene desglosado del backend (v_escrow_items, la misma fuente que ve el
   // administrador). Antes esta pantalla pintaba `balance_pending`, una columna que nadie
   // mantenía: le decía $0.00 a tiendas con cientos de dólares retenidos de verdad.
@@ -720,10 +728,14 @@ export default function StoreWallet() {
                   </div>
                   {/* Live VES Equivalency Banner based on BCV rate */}
                   {withdrawAmount && !isNaN(parseFloat(withdrawAmount)) && parseFloat(withdrawAmount) > 0 && (
-                    <p className="text-xs text-[#6b1e96] font-bold mt-2 flex flex-wrap items-center gap-1.5 bg-purple-50 p-2.5 rounded-xl border border-purple-100/50">
-                      💵 Equivalente a liquidar: {(parseFloat(withdrawAmount) * Number(localStorage.getItem("bcv_rate") || 45.12)).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES 
-                      <span className="text-gray-400 font-medium font-mono text-[9px] ml-1">(Tasa BCV oficial: {localStorage.getItem("bcv_rate") || "45.12"} VES/USD)</span>
-                    </p>
+                    tasaBcv > 0 ? (
+                      <p className="text-xs text-[#6b1e96] font-bold mt-2 flex flex-wrap items-center gap-1.5 bg-purple-50 p-2.5 rounded-xl border border-purple-100/50">
+                        💵 Equivalente aproximado: {(parseFloat(withdrawAmount) * tasaBcv).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES
+                        <span className="text-gray-400 font-medium font-mono text-[9px] ml-1">(Tasa BCV: {tasaBcv.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} VES/USD; la tasa que se congela es la del momento de la solicitud)</span>
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-gray-400 mt-2">Tasa BCV no disponible en este momento; el equivalente en bolívares se calcula al registrar la solicitud.</p>
+                    )
                   )}
                   {errors.amount ? (
                     <p className="text-xs text-red-500 mt-1 font-semibold">{errors.amount}</p>

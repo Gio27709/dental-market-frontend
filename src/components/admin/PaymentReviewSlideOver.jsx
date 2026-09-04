@@ -31,6 +31,12 @@ export default function PaymentReviewSlideOver({
   if (!order) return null;
 
   const isGroup = groupOrders.length > 1;
+
+  // El comprador puede subir PDF (el formulario y el backend lo admiten) y este visor solo
+  // sabía pintar <img>: el PDF salía como imagen rota y el admin aprobaba a ciegas. La URL
+  // llega firmada (lleva ?token=…), por eso la extensión se mira antes del signo de pregunta.
+  const proofUrl = order.payment_proof_url || null;
+  const proofIsPdf = /\.pdf($|\?)/i.test(proofUrl || "");
   const groupTotalUsd = groupOrders.reduce((acc, o) => acc + (o.total_usd || 0), 0);
   const groupTotalVes = groupOrders.reduce((acc, o) => acc + (o.total_ves || 0), 0);
 
@@ -77,9 +83,15 @@ export default function PaymentReviewSlideOver({
 
         {/* LEFT PANEL: Image Viewer */}
         <div className="w-full sm:w-3/5 h-56 shrink-0 sm:h-full sm:shrink bg-black relative flex items-center justify-center border-b sm:border-b-0 sm:border-r border-gray-200">
-          {order.payment_proof_url ? (
+          {proofUrl && proofIsPdf ? (
+            <iframe
+              src={proofUrl}
+              title="Comprobante de pago (PDF)"
+              className="w-full h-full bg-white"
+            />
+          ) : proofUrl ? (
             <img
-              src={order.payment_proof_url}
+              src={proofUrl}
               alt="Comprobante de pago"
               className={`transition-all duration-300 ease-in-out cursor-pointer ${
                 isZoomed ? "object-contain w-full h-full scale-150" : "object-contain w-full h-full max-h-screen p-4"
@@ -94,14 +106,28 @@ export default function PaymentReviewSlideOver({
               <span>Sin comprobante</span>
             </div>
           )}
-          {/* Zoom hint */}
-          {order.payment_proof_url && (
+          {/* Zoom hint (solo imágenes) */}
+          {proofUrl && !proofIsPdf && (
             <div className="absolute bottom-4 left-4 bg-black/50 text-white text-xs px-3 py-1.5 rounded-full pointer-events-none flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
               </svg>
               Clic para {isZoomed ? "alejar" : "acercar"}
             </div>
+          )}
+          {/* Abrir aparte: útil para el PDF y para ver la imagen a tamaño completo */}
+          {proofUrl && (
+            <a
+              href={proofUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="absolute bottom-4 right-4 bg-white/90 hover:bg-white text-gray-800 text-xs font-bold px-3 py-1.5 rounded-full shadow flex items-center gap-1.5"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              {proofIsPdf ? "Abrir PDF" : "Abrir aparte"}
+            </a>
           )}
         </div>
 
