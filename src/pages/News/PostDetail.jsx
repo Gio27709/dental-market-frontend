@@ -3,12 +3,12 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { getPostByIdAPI, togglePostSaveAPI } from "../../services/api";
 import { track, trackPostOnce } from "../../services/tracking";
 import { useSeo, stripHtml, SITE_URL } from "../../lib/seo";
+import ShareButton from "../../components/common/ShareButton";
 import { 
   ArrowLeft, 
   Calendar, 
   Globe, 
-  Sparkles, 
-  Share2, 
+  Sparkles,
   FileText,
   Bookmark
 } from "lucide-react";
@@ -91,18 +91,6 @@ export default function PostDetail() {
       setIsSaved(!nextSavedState);
       toast.error("Error al registrar guardado");
     }
-  };
-
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href)
-      .then(() => {
-        toast.success("Enlace de publicación copiado al portapapeles", {
-          icon: '🔗'
-        });
-      })
-      .catch(() => {
-        toast.error("Error al copiar el enlace");
-      });
   };
 
   if (loading) {
@@ -293,13 +281,13 @@ export default function PostDetail() {
                   <span>{isSaved ? "Guardado" : "Guardar"}</span>
                 </button>
 
-                <button 
-                  onClick={handleShare}
+                <ShareButton
+                  title={post.title}
+                  text={`${post.title} — Forcepx`}
+                  url={`${SITE_URL}/news/${post.id}`}
                   className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-gray-650 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-sm"
-                >
-                  <Share2 className="w-4 h-4 text-gray-500" />
-                  <span>Copiar Enlace</span>
-                </button>
+                  iconClassName="w-4 h-4 text-gray-500"
+                />
               </div>
             </div>
             

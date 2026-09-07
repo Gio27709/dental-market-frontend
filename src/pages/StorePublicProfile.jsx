@@ -5,6 +5,7 @@ import ProductCard from "../components/ProductCard";
 import StoreRatingBreakdown from "../components/store/StoreRatingBreakdown";
 import StoreReviewsList from "../components/store/StoreReviewsList";
 import { useSeo, stripHtml, SITE_URL } from "../lib/seo";
+import ShareButton from "../components/common/ShareButton";
 
 export default function StorePublicProfile() {
   const { id } = useParams();
@@ -176,10 +177,20 @@ export default function StorePublicProfile() {
                 </div>
               </div>
 
-              {/* Action Button */}
-              <Link to={`/store-catalog?store=${store.business_name}`} className="bg-[#c3ff00] text-[#4d6600] px-6 py-2.5 rounded-xl font-bold shadow-sm hover:shadow-md transition flex items-center gap-2 whitespace-nowrap">
-                Ver Catálogo
-              </Link>
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                <ShareButton
+                  title={store.business_name}
+                  text={`${store.business_name}, tienda dental en Forcepx`}
+                  url={`${SITE_URL}/store/${id}`}
+                  label=""
+                  className="h-11 w-11 flex items-center justify-center rounded-xl border border-gray-200 text-gray-600 hover:text-[#6b1e96] hover:border-[#6b1e96]/40 transition"
+                  iconClassName="w-5 h-5"
+                />
+                <Link to={`/store-catalog?store=${store.business_name}`} className="bg-[#c3ff00] text-[#4d6600] px-6 py-2.5 rounded-xl font-bold shadow-sm hover:shadow-md transition flex items-center gap-2 whitespace-nowrap">
+                  Ver Catálogo
+                </Link>
+              </div>
             </div>
 
             <p className="mt-4 text-gray-600 max-w-2xl leading-relaxed text-sm">
