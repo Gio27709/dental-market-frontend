@@ -18,6 +18,7 @@ import Footer from "./components/layout/Footer";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ScrollToTop from "./components/ScrollToTop";
 import { RouteMeta } from "./lib/seo";
+import WhatsAppButton from "./components/common/WhatsAppButton";
 import AccountLayout from "./components/layout/account/AccountLayout";
 import AdminLayout from "./components/layout/admin/AdminLayout";
 import StoreLayout from "./components/layout/store/StoreLayout";
@@ -127,6 +128,7 @@ function EcommerceLayout() {
         <Outlet />
       </main>
       <Footer />
+      <WhatsAppButton />
     </div>
   );
 }
