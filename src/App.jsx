@@ -30,6 +30,7 @@ const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
+const AuthConfirm = lazy(() => import("./pages/AuthConfirm"));
 const Cart = lazy(() => import("./pages/Cart"));
 const Account = lazy(() => import("./pages/Account"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
@@ -287,6 +288,7 @@ export default function App() {
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
                         <Route path="/update-password" element={<UpdatePassword />} />
+                        <Route path="/auth/confirm" element={<AuthConfirm />} />
                         <Route path="/afiliate" element={<AffiliateLanding />} />
                         <Route path="/cart" element={<Cart />} />
                         <Route path="/contacto" element={<Contact />} />

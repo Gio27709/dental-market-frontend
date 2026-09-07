@@ -123,6 +123,7 @@ const ROUTE_META = [
   { path: "/login", title: "Iniciar sesión", noindex: true },
   { path: "/register", title: "Crear cuenta", noindex: true },
   { path: "/update-password", title: "Cambiar contraseña", noindex: true },
+  { path: "/auth/confirm", title: "Verificando enlace", noindex: true },
   { path: "/cart", title: "Tu bolsa", noindex: true },
   { path: "/checkout/*", title: "Pagar", noindex: true },
   { path: "/order-success/*", title: "Pedido confirmado", noindex: true },
