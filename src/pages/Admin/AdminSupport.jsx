@@ -9,6 +9,8 @@ import {
 import { useAdminStats } from "../../context/AdminStatsContext";
 import toast from "react-hot-toast";
 import { socket } from "../../lib/socket";
+import { AttachmentPicker, AttachmentList } from "../../components/support/TicketAttachments";
+import { subirAdjuntos } from "../../lib/ticketAttachments";
 
 const CATEGORIES = {
   order_issue: "Problema con un Pedido",
@@ -16,6 +18,16 @@ const CATEGORIES = {
   account: "Mi Cuenta",
   payment: "Pagos o Facturación",
   other: "Otro Asunto",
+};
+
+const ROLE_LABELS = {
+  user: "Comprador",
+  professional: "Odontólogo",
+  student: "Estudiante",
+  store: "Tienda",
+  delivery: "Repartidor",
+  admin: "Admin",
+  owner: "Owner",
 };
 
 const STATUSES = {
@@ -35,6 +47,7 @@ export default function AdminSupport() {
   const [replyText, setReplyText] = useState("");
   const [replying, setReplying] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [replyFiles, setReplyFiles] = useState([]);
 
   // Filters
   const [filterStatus, setFilterStatus] = useState("");
@@ -186,13 +199,15 @@ export default function AdminSupport() {
 
   const handleSendReply = async (e) => {
     e.preventDefault();
-    if (!replyText.trim() || !activeTicket) return;
+    if ((!replyText.trim() && replyFiles.length === 0) || !activeTicket) return;
 
     try {
       setReplying(true);
-      const res = await addTicketMessageAPI(activeTicket.id, { message: replyText.trim() });
+      const attachments = replyFiles.length ? await subirAdjuntos(replyFiles) : [];
+      const res = await addTicketMessageAPI(activeTicket.id, { message: replyText.trim(), attachments });
       if (res.data && res.data.success) {
         setReplyText("");
+        setReplyFiles([]);
         // Refresh details
         const detailsRes = await getTicketDetailsAPI(activeTicket.id);
         if (detailsRes.data && detailsRes.data.success) {
@@ -208,7 +223,7 @@ export default function AdminSupport() {
       }
     } catch (error) {
       console.error(error);
-      toast.error("Error al enviar la respuesta.");
+      toast.error(error.response?.data?.error || "Error al enviar la respuesta.");
     } finally {
       setReplying(false);
     }
@@ -400,8 +415,10 @@ export default function AdminSupport() {
                         <span className="font-bold truncate">{senderName}</span>
                         {!t.user_id ? (
                           <span className="px-1.5 py-0.2 text-[8px] font-black uppercase rounded bg-slate-100 text-slate-600">Invitado</span>
-                        ) : t.users?.role === "store" ? (
-                          <span className="px-1.5 py-0.2 text-[8px] font-black uppercase rounded bg-purple-100 text-purple-700">Tienda</span>
+                        ) : (t.author_role || t.users?.role) === "store" ? (
+                          <span className="px-1.5 py-0.2 text-[8px] font-black uppercase rounded bg-purple-100 text-purple-700 truncate max-w-[140px]" title={t.store?.business_name || "Tienda"}>
+                            Tienda{t.store?.business_name ? ` · ${t.store.business_name}` : ""}
+                          </span>
                         ) : (
                           <span className="px-1.5 py-0.2 text-[8px] font-black uppercase rounded bg-green-100 text-green-700">Comprador</span>
                         )}
@@ -477,6 +494,23 @@ export default function AdminSupport() {
                   {!ticketDetails?.ticket.user_id && (
                     <span className="px-1.5 py-0.2 text-[8px] font-black uppercase rounded bg-[#dbeafe] text-[#2563eb]">Visitante Invitado</span>
                   )}
+                  {ticketDetails?.ticket.user_id && (
+                    <span className="px-1.5 py-0.2 text-[8px] font-black uppercase rounded bg-slate-100 text-slate-600">
+                      {ROLE_LABELS[ticketDetails.ticket.author_role || ticketDetails.ticket.users?.role] || ticketDetails.ticket.author_role || "Usuario"}
+                    </span>
+                  )}
+                  {ticketDetails?.ticket.store && (
+                    <Link
+                      to={`/admin/store-applications?tab=approved&search=${encodeURIComponent(ticketDetails.ticket.store.store_code || ticketDetails.ticket.store.business_name || "")}`}
+                      title="Abrir en Tiendas"
+                      className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-[10px] flex items-center gap-1 hover:bg-purple-100"
+                    >
+                      <span className="material-symbols-outlined text-[13px]">storefront</span>
+                      {ticketDetails.ticket.store.business_name}
+                      {ticketDetails.ticket.store.store_code ? <span className="opacity-60">#{ticketDetails.ticket.store.store_code}</span> : null}
+                      {ticketDetails.ticket.store.is_suspended ? <span className="text-red-600">· suspendida</span> : null}
+                    </Link>
+                  )}
                 </div>
                 {ticketDetails?.ticket.order_id && (
                   <Link
@@ -522,7 +556,8 @@ export default function AdminSupport() {
                                 : "bg-white text-slate-800 rounded-tl-none border border-slate-100 shadow-3xs"
                             }`}
                           >
-                            <p className="whitespace-pre-line">{m.message}</p>
+                            {m.message ? <p className="whitespace-pre-line">{m.message}</p> : null}
+                            <AttachmentList items={m.attachments} onDark={!isClient} />
                           </div>
                           <span className="text-[9px] text-slate-400 mt-1">
                             {formatDate(m.created_at)}
@@ -538,9 +573,9 @@ export default function AdminSupport() {
               {activeTicket.status !== "closed" ? (
                 <form onSubmit={handleSendReply} className="p-4 border-t border-slate-100 bg-white">
                   <div className="flex gap-3 items-end">
+                    <AttachmentPicker files={replyFiles} onChange={setReplyFiles} disabled={replying} compact />
                     <textarea
                       rows="2"
-                      required
                       placeholder="Escribe tu respuesta técnica aquí..."
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
@@ -554,7 +589,7 @@ export default function AdminSupport() {
                     />
                     <button
                       type="submit"
-                      disabled={replying || !replyText.trim()}
+                      disabled={replying || (!replyText.trim() && replyFiles.length === 0)}
                       className="px-5 py-3 rounded-xl text-white font-bold text-xs md:text-sm flex items-center gap-1.5 shadow-sm active:scale-98 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       style={{ background: "#6b1e96" }}
                     >

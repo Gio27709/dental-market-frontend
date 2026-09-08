@@ -9,6 +9,8 @@ import {
 import toast from "react-hot-toast";
 import { socket } from "../../lib/socket";
 import { useAuth } from "../../context/AuthContext";
+import { AttachmentPicker, AttachmentList } from "../../components/support/TicketAttachments";
+import { subirAdjuntos } from "../../lib/ticketAttachments";
 
 const CATEGORIES = {
   order_issue: "Problema con un Pedido",
@@ -17,6 +19,15 @@ const CATEGORIES = {
   payment: "Pagos o Facturación",
   other: "Otro Asunto",
 };
+
+const infoDelDispositivo = () => ({
+  ua: navigator.userAgent,
+  screen: `${window.screen?.width || 0}x${window.screen?.height || 0}`,
+  viewport: `${window.innerWidth}x${window.innerHeight}`,
+  path: window.location.pathname,
+  lang: navigator.language,
+  tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+});
 
 const STATUSES = {
   open: { label: "Abierto", color: "#2563eb", bg: "#dbeafe" },
@@ -43,6 +54,8 @@ export default function Support() {
   const [category, setCategory] = useState("other");
   const [message, setMessage] = useState("");
   const [orderId, setOrderId] = useState("");
+  const [files, setFiles] = useState([]); // adjuntos del ticket nuevo
+  const [replyFiles, setReplyFiles] = useState([]); // adjuntos de la respuesta
 
   const chatContainerRef = useRef(null);
   const lastTicketIdRef = useRef(null);
@@ -208,11 +221,14 @@ export default function Support() {
 
     try {
       setSubmitting(true);
+      const attachments = files.length ? await subirAdjuntos(files) : [];
       const payload = {
         subject: subject.trim(),
         category,
         message: message.trim(),
         order_id: orderId || null,
+        attachments,
+        device_info: infoDelDispositivo(),
       };
 
       const res = await createTicketAPI(payload);
@@ -222,12 +238,13 @@ export default function Support() {
         setCategory("other");
         setMessage("");
         setOrderId("");
+        setFiles([]);
         setShowCreateForm(false);
         fetchTickets();
       }
     } catch (error) {
       console.error(error);
-      toast.error(error.message || "Error al crear el ticket.");
+      toast.error(error.response?.data?.error || error.message || "Error al crear el ticket.");
     } finally {
       setSubmitting(false);
     }
@@ -235,13 +252,15 @@ export default function Support() {
 
   const handleSendReply = async (e) => {
     e.preventDefault();
-    if (!replyText.trim() || !activeTicket) return;
+    if ((!replyText.trim() && replyFiles.length === 0) || !activeTicket) return;
 
     try {
       setReplying(true);
-      const res = await addTicketMessageAPI(activeTicket.id, { message: replyText.trim() });
+      const attachments = replyFiles.length ? await subirAdjuntos(replyFiles) : [];
+      const res = await addTicketMessageAPI(activeTicket.id, { message: replyText.trim(), attachments });
       if (res.data && res.data.success) {
         setReplyText("");
+        setReplyFiles([]);
         // Refresh details
         const detailsRes = await getTicketDetailsAPI(activeTicket.id);
         if (detailsRes.data && detailsRes.data.success) {
@@ -252,7 +271,7 @@ export default function Support() {
       }
     } catch (error) {
       console.error(error);
-      toast.error("Error al enviar el mensaje.");
+      toast.error(error.response?.data?.error || "Error al enviar el mensaje.");
     } finally {
       setReplying(false);
     }
@@ -466,6 +485,15 @@ export default function Support() {
                   />
                 </div>
 
+                {/* Adjuntos */}
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#727785" }}>
+                    Capturas o documentos (opcional)
+                  </label>
+                  <AttachmentPicker files={files} onChange={setFiles} disabled={submitting} />
+                  <p className="text-[10px] text-slate-400 mt-1.5">Una captura de pantalla del problema nos ayuda a resolverlo mucho más rápido.</p>
+                </div>
+
                 <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
                   <button
                     type="button"
@@ -567,7 +595,8 @@ export default function Support() {
                                 : "bg-white text-slate-800 rounded-tl-none border border-slate-100 shadow-3xs"
                             }`}
                           >
-                            <p className="whitespace-pre-line">{m.message}</p>
+                            {m.message ? <p className="whitespace-pre-line">{m.message}</p> : null}
+                            <AttachmentList items={m.attachments} onDark={isMe} />
                           </div>
                           <span className="text-[9px] text-slate-400 mt-1">
                             {formatDate(m.created_at)}
@@ -583,9 +612,9 @@ export default function Support() {
               {activeTicket.status !== "closed" ? (
                 <form onSubmit={handleSendReply} className="p-4 border-t border-gray-100 bg-white">
                   <div className="flex gap-3 items-end">
+                    <AttachmentPicker files={replyFiles} onChange={setReplyFiles} disabled={replying} compact />
                     <textarea
                       rows="2"
-                      required
                       placeholder="Escribe tu respuesta aquí..."
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
@@ -599,7 +628,7 @@ export default function Support() {
                     />
                     <button
                       type="submit"
-                      disabled={replying || !replyText.trim()}
+                      disabled={replying || (!replyText.trim() && replyFiles.length === 0)}
                       className="px-5 py-3 rounded-xl text-white font-bold text-xs md:text-sm flex items-center gap-1.5 shadow-sm active:scale-98 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       style={{ background: "#6b1e96" }}
                     >
