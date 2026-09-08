@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
 import NotificationBell from "../../notifications/NotificationBell";
@@ -47,8 +47,14 @@ const ROUTE_WIDTHS = [
 function AdminLayoutContent() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, refreshSession } = useAuth();
   const { stats } = useAdminStats();
+  // Al abrir el panel se renueva el JWT una vez: si el dueño cambió las áreas de esta cuenta
+  // mientras estaba fuera, el menú sale ya actualizado (el token es una copia de app_metadata).
+  useEffect(() => {
+    refreshSession?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const visibleGroups = navGroups
     .map((g) => ({ ...g, links: g.links.filter((l) => canAccess(user, permissionForPath(l.path))) }))
     .filter((g) => g.links.length > 0);

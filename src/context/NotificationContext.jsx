@@ -69,7 +69,7 @@ const NOTIFICATION_ICONS = {
 };
 
 export function NotificationProvider({ children }) {
-  const { user, token } = useAuth();
+  const { user, token, refreshSession } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -309,8 +309,17 @@ export function NotificationProvider({ children }) {
 
     socket.on("notification", handleNotification);
 
+    // El dueño cambió el rol o las áreas de esta cuenta: renovar el JWT (lleva una copia
+    // de app_metadata) para que el menú y el backend vean el cambio sin salir y entrar.
+    const handlePermissionsUpdated = async () => {
+      const r = await refreshSession?.();
+      if (r?.success) toast("Tus permisos en el panel cambiaron. Ya están aplicados.", { icon: "🔑" });
+    };
+    socket.on("permissions_updated", handlePermissionsUpdated);
+
     return () => {
       socket.off("notification", handleNotification);
+      socket.off("permissions_updated", handlePermissionsUpdated);
     };
   }, [user, fetchUnreadCount, getNotificationUrl, markAsRead]);
 

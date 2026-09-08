@@ -67,6 +67,14 @@ export default function AdminUsers() {
   
   // Owners see all role options, admins only see non-privileged roles
   const ROLE_SELECT_OPTIONS = isOwner ? ROLE_SELECT_OPTIONS_ALL : ROLE_SELECT_OPTIONS_ADMIN;
+  // Un admin no ve las opciones admin/owner, pero el selector tiene que MOSTRAR el rol real
+  // del usuario (antes caía en «Usuario (Comprador)» para un admin). Se añade el rol actual
+  // como opción y el selector queda bloqueado: un admin no cambia a otros admins.
+  const roleOptionsFor = (role) =>
+    ROLE_SELECT_OPTIONS.some((o) => o.value === role)
+      ? ROLE_SELECT_OPTIONS
+      : [ROLE_SELECT_OPTIONS_ALL.find((o) => o.value === role) || { value: role, label: role }, ...ROLE_SELECT_OPTIONS];
+  const roleLocked = (role) => !isOwner && (role === "admin" || role === "owner");
 
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, totalPages: 0 });
@@ -483,7 +491,8 @@ export default function AdminUsers() {
       ) : (
         <>
           {/* Mobile cards */}
-          <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {/* Sin display en línea: pisaba al md:hidden y en escritorio salían tarjetas Y tabla (doble scroll). */}
+          <div className="md:hidden flex flex-col gap-2.5">
             {users.map((user) => {
               const badge = ROLE_BADGES[user.role] || ROLE_BADGES.user;
               const isTargetOwner = user.role === "owner";
@@ -528,12 +537,12 @@ export default function AdminUsers() {
 
                   <div style={{ display: "flex", gap: "8px", marginTop: "12px", alignItems: "center" }}>
                     <select
-                      disabled={isTargetOwner || isUpdating}
+                      disabled={isTargetOwner || isUpdating || roleLocked(user.role)}
                       value={user.role}
                       onChange={(e) => handleRoleChange(user.id, e.target.value, user.email)}
                       style={{ flex: 1, minWidth: 0, padding: "9px 10px", borderRadius: "8px", border: "1.5px solid #e5e7eb", fontSize: "12px", fontWeight: 600, color: "#1f2937", background: isTargetOwner ? "#f9fafb" : "#fff", cursor: isTargetOwner || isUpdating ? "not-allowed" : "pointer", outline: "none", opacity: isTargetOwner || isUpdating ? 0.5 : 1 }}
                     >
-                      {ROLE_SELECT_OPTIONS.map((r) => (
+                      {roleOptionsFor(user.role).map((r) => (
                         <option key={r.value} value={r.value}>{r.label}</option>
                       ))}
                     </select>
@@ -642,7 +651,7 @@ export default function AdminUsers() {
                               </svg>
                             )}
                             <select
-                              disabled={isTargetOwner || isUpdating}
+                              disabled={isTargetOwner || isUpdating || roleLocked(user.role)}
                               value={user.role}
                               onChange={(e) => handleRoleChange(user.id, e.target.value, user.email)}
                               style={{
@@ -654,7 +663,7 @@ export default function AdminUsers() {
                                 minWidth: "140px", transition: "all 0.2s",
                               }}
                             >
-                              {ROLE_SELECT_OPTIONS.map((r) => (
+                              {roleOptionsFor(user.role).map((r) => (
                                   <option key={r.value} value={r.value}>{r.label}</option>
                               ))}
                             </select>
