@@ -8,6 +8,7 @@ import { AdminStatsProvider, useAdminStats } from "../../../context/AdminStatsCo
 import useHomeSections from "../../../hooks/useHomeSections";
 import { useAuth } from "../../../context/AuthContext";
 import { canAccess, permissionForPath, PERMISSIONS_LIST } from "../../../config/adminPermissions";
+import MfaGate from "../../auth/MfaGate";
 
 // Bloquea la página si la cuenta no tiene el área de esa ruta. El backend también lo
 // rechaza (requirePermission), esto solo evita pantallas a medio cargar con errores 403.
@@ -311,8 +312,12 @@ function AdminLayoutContent() {
 
 export default function AdminLayout() {
   return (
-    <AdminStatsProvider>
-      <AdminLayoutContent />
-    </AdminStatsProvider>
+    // MfaGate va fuera del proveedor de estadísticas: hasta pasar el segundo factor no se
+    // hace ninguna llamada de administración (el backend las rechazaría con MFA_REQUIRED).
+    <MfaGate>
+      <AdminStatsProvider>
+        <AdminLayoutContent />
+      </AdminStatsProvider>
+    </MfaGate>
   );
 }

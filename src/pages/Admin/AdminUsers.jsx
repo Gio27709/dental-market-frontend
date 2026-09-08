@@ -887,6 +887,31 @@ export default function AdminUsers() {
                 ))}
               </div>
 
+              {isOwner && (
+                <div style={{ borderTop: "1px solid #f0f0f0", paddingTop: "12px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap" }}>
+                  <div style={{ fontSize: "11px", color: "#6b7280" }}>¿Perdió el teléfono? Quita su doble factor; lo vinculará de nuevo al entrar.</div>
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={async () => {
+                      if (!window.confirm(`¿Restablecer el doble factor de ${selectedUser.email}?`)) return;
+                      try {
+                        setSubmitting(true);
+                        const res = await api.delete(`/admin/users/${selectedUser.id}/mfa`);
+                        toast.success(res.data?.message || "Doble factor restablecido.");
+                      } catch (error) {
+                        toast.error(error.response?.data?.error || "No se pudo restablecer el doble factor.");
+                      } finally {
+                        setSubmitting(false);
+                      }
+                    }}
+                    style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #fecaca", background: "#fff5f5", color: "#b91c1c", fontSize: "11px", fontWeight: 700, cursor: "pointer" }}
+                  >
+                    Restablecer doble factor
+                  </button>
+                </div>
+              )}
+
               <div style={{ display: "flex", justifyContent: "end", gap: "10px" }}>
                 <button type="button" onClick={() => setPermissionsModalOpen(false)} style={{ padding: "10px 16px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", color: "#374151", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>Cancelar</button>
                 <button onClick={handleUpdatePermissions} disabled={submitting} style={{ padding: "10px 20px", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, #531575 0%, #6b1e96 100%)", color: "#c3ff00", fontSize: "12px", fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.7 : 1 }}>

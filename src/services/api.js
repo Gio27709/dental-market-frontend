@@ -28,6 +28,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // El backend exige el segundo factor a admin/owner: si la sesión bajó a aal1 (p. ej.
+    // tras renovarse), se vuelve al tablero para que MfaGate pida el código.
+    if (error.response?.status === 403 && error.response?.data?.code === "MFA_REQUIRED") {
+      if (window.location.pathname !== "/admin") window.location.assign("/admin");
+      return Promise.reject(error);
+    }
     // Automatic session refresh on 401 (expired token)
     if (error.response?.status === 401 && !error.config._retry) {
       error.config._retry = true;
