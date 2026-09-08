@@ -6,6 +6,27 @@ import PanelNotificationBell from "../../notifications/PanelNotificationBell";
 import { navGroups, backToStoreIcon } from "../../../config/adminNavConfig";
 import { AdminStatsProvider, useAdminStats } from "../../../context/AdminStatsContext";
 import useHomeSections from "../../../hooks/useHomeSections";
+import { useAuth } from "../../../context/AuthContext";
+import { canAccess, permissionForPath, PERMISSIONS_LIST } from "../../../config/adminPermissions";
+
+// Bloquea la página si la cuenta no tiene el área de esa ruta. El backend también lo
+// rechaza (requirePermission), esto solo evita pantallas a medio cargar con errores 403.
+function AdminPermissionGate({ children }) {
+  const { user } = useAuth();
+  const location = useLocation();
+  const needed = permissionForPath(location.pathname);
+  if (canAccess(user, needed)) return children;
+  const area = PERMISSIONS_LIST.find((p) => p.key === needed)?.label || "esta sección";
+  return (
+    <div className="min-h-[50vh] flex items-center justify-center">
+      <div className="text-center max-w-md p-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Sin acceso a {area}</h2>
+        <p className="text-gray-600 mb-6">Tu cuenta de administrador no tiene habilitada esta área. Pide al dueño que la active en Usuarios → Permisos.</p>
+        <Link to="/admin" className="inline-block bg-[#6b1e96] text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-[#531575] transition">Volver al tablero</Link>
+      </div>
+    </div>
+  );
+}
 
 // Rutas que se ahogan con el max-w-6xl por defecto.
 const ROUTE_WIDTHS = [
@@ -26,7 +47,11 @@ const ROUTE_WIDTHS = [
 function AdminLayoutContent() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
   const { stats } = useAdminStats();
+  const visibleGroups = navGroups
+    .map((g) => ({ ...g, links: g.links.filter((l) => canAccess(user, permissionForPath(l.path))) }))
+    .filter((g) => g.links.length > 0);
   const { sections } = useHomeSections();
   const headerSection = sections?.header || {};
   const brandName = headerSection.brand_name || "Forcepx";
@@ -174,7 +199,7 @@ function AdminLayoutContent() {
 
             {/* Navigation (Grouped ─ same source as desktop sidebar) */}
             <nav className="flex-1 overflow-y-auto py-3 px-2 admin-scrollbar">
-              {navGroups.map((group, groupIndex) => (
+              {visibleGroups.map((group, groupIndex) => (
                 <div key={group.label}>
                   {/* Group divider (between groups) */}
                   {groupIndex > 0 && (
@@ -269,7 +294,9 @@ function AdminLayoutContent() {
         <div className={`${contentWidth} mx-auto`}>
           {/* En escritorio no hay barra superior: la campana va sobre el contenido */}
           <PanelNotificationBell className="hidden md:flex mb-4" />
-          <Outlet />
+          <AdminPermissionGate>
+            <Outlet />
+          </AdminPermissionGate>
         </div>
       </div>
     </div>

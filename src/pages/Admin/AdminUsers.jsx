@@ -15,15 +15,9 @@ const timeConnected = (iso) => {
   return `hace ${Math.floor(hours / 24)} d`;
 };
 
-const PERMISSIONS_LIST = [
-  { key: "manage_users", label: "Gestión de Usuarios", desc: "Crear cuentas, asignar roles y modificar permisos de usuarios." },
-  { key: "manage_products", label: "Moderar Productos", desc: "Aprobar, rechazar y moderar productos de tiendas." },
-  { key: "manage_orders", label: "Gestión de Pedidos", desc: "Monitorear, reembolsar y actualizar envíos globales." },
-  { key: "manage_payouts", label: "Gestión de Retiros", desc: "Aprobar y transferir retiros solicitados por tiendas." },
-  { key: "manage_support", label: "Tickets de Soporte", desc: "Responder y resolver solicitudes de ayuda y reclamos." },
-  { key: "manage_settings", label: "Ajustes del Sistema", desc: "Modificar variables y configuraciones de la plataforma." },
-  { key: "manage_content", label: "Gestión de Contenido", desc: "Administrar cursos, blog, categorías y marcas de productos." },
-];
+// Las áreas del panel viven en config/adminPermissions.js (misma lista que el backend).
+// Solo las cuentas con rol Admin tienen permisos: el owner lo ve todo y el resto no entra.
+import { PERMISSIONS_LIST } from "../../config/adminPermissions";
 
 const PAGE_OPTIONS = [10, 25, 50];
 
@@ -494,7 +488,7 @@ export default function AdminUsers() {
               const badge = ROLE_BADGES[user.role] || ROLE_BADGES.user;
               const isTargetOwner = user.role === "owner";
               const isUpdating = updatingId === user.id;
-              const permissionsDisabled = (isTargetOwner && !isOwner) || user.id === currentUser?.id;
+              const permissionsDisabled = user.role !== "admin" || (isTargetOwner && !isOwner) || user.id === currentUser?.id;
 
               const createdDate = user.created_at ? new Date(user.created_at).toLocaleDateString("es-VE", { day: "2-digit", month: "short", year: "numeric" }) : "—";
               const lastLogin = user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString("es-VE", { day: "2-digit", month: "short", year: "numeric" }) : "Nunca";
@@ -579,6 +573,8 @@ export default function AdminUsers() {
                     const isTargetOwner = user.role === "owner";
                     const isUpdating = updatingId === user.id;
                     const borderBottom = idx !== users.length - 1 ? "1px solid #f3f4f6" : "none";
+                    // Solo un Admin tiene áreas que marcar; el owner lo ve todo y los demás roles no tienen panel.
+                    const permissionsDisabled = user.role !== "admin" || (isTargetOwner && !isOwner) || user.id === currentUser?.id;
 
                     const createdDate = user.created_at ? new Date(user.created_at).toLocaleDateString("es-VE", { day: "2-digit", month: "short", year: "numeric" }) : "—";
                     const lastLogin = user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString("es-VE", { day: "2-digit", month: "short", year: "numeric" }) : "Nunca";
@@ -668,7 +664,8 @@ export default function AdminUsers() {
                         {/* PERMISSIONS BUTTON */}
                         <td style={{ padding: "10px 14px", verticalAlign: "middle", textAlign: "center" }}>
                           <button
-                            disabled={(isTargetOwner && !isOwner) || (user.id === currentUser?.id)}
+                            disabled={permissionsDisabled}
+                            title={user.role !== "admin" ? "Solo las cuentas Admin tienen áreas del panel" : "Elegir las áreas del panel"}
                             onClick={() => handleOpenPermissionsModal(user)}
                             style={{
                               padding: "6px 12px", borderRadius: "8px",
@@ -676,8 +673,8 @@ export default function AdminUsers() {
                               background: "rgba(107,30,150,0.04)",
                               color: "#6b1e96",
                               fontSize: "11px", fontWeight: 600,
-                              cursor: ((isTargetOwner && !isOwner) || (user.id === currentUser?.id)) ? "not-allowed" : "pointer",
-                              opacity: ((isTargetOwner && !isOwner) || (user.id === currentUser?.id)) ? 0.4 : 1,
+                              cursor: permissionsDisabled ? "not-allowed" : "pointer",
+                              opacity: permissionsDisabled ? 0.4 : 1,
                               display: "inline-flex", alignItems: "center", gap: "4px",
                               transition: "all 0.2s"
                             }}
@@ -817,9 +814,11 @@ export default function AdminUsers() {
                 </select>
               </div>
 
+              {/* Las áreas del panel solo existen para el rol Admin: con otro rol no se muestran ni se envían. */}
+              {createForm.role === "admin" && (
               <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#374151", textTransform: "uppercase", marginBottom: "8px" }}>Permisos Específicos</label>
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "180px", overflowY: "auto", border: "1.5px solid #e5e7eb", borderRadius: "8px", padding: "12px", background: "#f9fafb" }}>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#374151", textTransform: "uppercase", marginBottom: "8px" }}>Áreas del panel que podrá usar</label>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "220px", overflowY: "auto", border: "1.5px solid #e5e7eb", borderRadius: "8px", padding: "12px", background: "#f9fafb" }}>
                   {PERMISSIONS_LIST.map(p => (
                     <label key={p.key} style={{ display: "flex", alignItems: "start", gap: "8px", cursor: "pointer", fontSize: "12px", color: "#374151" }}>
                       <input
@@ -835,7 +834,9 @@ export default function AdminUsers() {
                     </label>
                   ))}
                 </div>
+                <p style={{ margin: "6px 0 0", fontSize: "10px", color: "#6b7280" }}>Sin ninguna marcada, el admin entra al panel pero no ve ningún área.</p>
               </div>
+              )}
 
               <div style={{ display: "flex", justifyContent: "end", gap: "10px", marginTop: "8px" }}>
                 <button type="button" onClick={() => setCreateModalOpen(false)} style={{ padding: "10px 16px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", color: "#374151", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>Cancelar</button>
@@ -854,7 +855,7 @@ export default function AdminUsers() {
           <div style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "520px", maxHeight: "90vh", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)", overflowY: "auto", border: "1px solid rgba(107,30,150,0.1)", display: "flex", flexDirection: "column" }}>
             <div style={{ background: "linear-gradient(135deg, #1a0a2e, #2d1248)", padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "#fff" }}>Gestionar Permisos Granulares</h3>
+                <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "#fff" }}>Áreas del panel para este Admin</h3>
                 <p style={{ margin: "4px 0 0 0", fontSize: "11px", color: "rgba(255,255,255,0.6)" }}>{selectedUser.full_name || selectedUser.email} ({selectedUser.role?.toUpperCase()})</p>
               </div>
               <button onClick={() => setPermissionsModalOpen(false)} style={{ background: "transparent", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: "22px", fontWeight: 300, lineHeight: 1 }}>&times;</button>

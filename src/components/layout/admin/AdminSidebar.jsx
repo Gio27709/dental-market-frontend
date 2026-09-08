@@ -2,10 +2,17 @@ import { Link, useLocation } from 'react-router-dom';
 import { navGroups, backToStoreIcon } from '../../../config/adminNavConfig';
 import { useAdminStats } from '../../../context/AdminStatsContext';
 import useHomeSections from '../../../hooks/useHomeSections';
+import { useAuth } from '../../../context/AuthContext';
+import { canAccess, permissionForPath } from '../../../config/adminPermissions';
 
 export default function AdminSidebar() {
   const location = useLocation();
+  const { user } = useAuth();
   const { stats } = useAdminStats();
+  // Solo las áreas que la cuenta tiene permitidas; un grupo sin enlaces no se pinta.
+  const visibleGroups = navGroups
+    .map((g) => ({ ...g, links: g.links.filter((l) => canAccess(user, permissionForPath(l.path))) }))
+    .filter((g) => g.links.length > 0);
   const { sections } = useHomeSections();
   const headerSection = sections?.header || {};
   const brandName = headerSection.brand_name || "Forcepx";
@@ -114,7 +121,7 @@ export default function AdminSidebar() {
 
       {/* ── Navigation Menu (Grouped) ── */}
       <nav className="flex-1 px-3 overflow-y-auto relative z-10 admin-scrollbar" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent' }}>
-        {navGroups.map((group, groupIndex) => (
+        {visibleGroups.map((group, groupIndex) => (
           <div key={group.label}>
             {/* Group divider (between groups) */}
             {groupIndex > 0 && (

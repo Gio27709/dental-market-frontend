@@ -33,6 +33,9 @@ export const AuthProvider = ({ children }) => {
       setUser({
         ...sessionUser,
         role: appMeta.role || metadata.role || "user",
+        // Áreas del panel de admin permitidas (solo cuentas admin; el owner lo ve todo).
+        // Vive en app_metadata, que el usuario no puede editar. Ver config/adminPermissions.js.
+        permissions: appMeta.permissions || {},
         status: metadata.status || "active",
         createdAt: sessionUser.created_at,
         lastNameChange: metadata.last_name_change || null,
