@@ -86,7 +86,12 @@ function EstadoCard({ membership }) {
   } else if (acceso.motivo === "vencida" && ultima) {
     icon = "event_busy";
     titulo = "Membresía vencida";
-    detalle = `Tu acceso terminó el ${fecha(ultima.ends_at)}. Renueva para volver a entrar.`;
+    // Si la fila más reciente aún no ha empezado (renovación en cola sin una vigente que la
+    // preceda), «terminó el [fecha futura]» sería absurdo.
+    const terminada = ultima.ends_at && new Date(ultima.ends_at) <= new Date();
+    detalle = terminada
+      ? `Tu acceso terminó el ${fecha(ultima.ends_at)}. Renueva para volver a entrar.`
+      : "No tienes una membresía vigente en este momento. Si crees que es un error, contacta a soporte.";
     tono = { bg: "#475569", fg: "#ffffff" };
   }
 
