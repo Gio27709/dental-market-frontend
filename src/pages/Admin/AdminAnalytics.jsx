@@ -22,6 +22,7 @@ import CatalogTab from "../../components/admin/analytics/CatalogTab";
 import TreasuryTab from "../../components/admin/analytics/TreasuryTab";
 import OnboardingTab from "../../components/admin/analytics/OnboardingTab";
 import PromotionsTab from "../../components/admin/analytics/PromotionsTab";
+import PilotTab from "../../components/admin/analytics/PilotTab";
 
 const TAB_COMPONENTS = {
   executive: ExecutiveOverviewTab,
@@ -43,6 +44,7 @@ const TAB_COMPONENTS = {
   treasury: TreasuryTab,
   onboarding: OnboardingTab,
   promotions: PromotionsTab,
+  pilot: PilotTab,
 };
 
 const DEFAULT_TAB = "executive";

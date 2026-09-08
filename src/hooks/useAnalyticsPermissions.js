@@ -45,6 +45,7 @@ export default function useAnalyticsPermissions() {
       onboarding: "analytics:onboarding:view",
       promotions: "analytics:promotions:view",
       b2b: "analytics:b2b:view",
+      pilot: "analytics:pilot:view",
     };
 
     const requiredPerm = tabPermissionMap[tabKey];

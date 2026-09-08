@@ -283,6 +283,7 @@ export const getTreasuryAnalyticsAPI = (params) => api.get("/admin/analytics/tre
 export const getStoreEscrowAPI = (storeId) => api.get(`/admin/analytics/store-escrow/${storeId}`);
 export const getOnboardingAnalyticsAPI = (params) => api.get("/admin/analytics/onboarding", { params });
 export const getPromotionsAnalyticsAPI = (params) => api.get("/admin/analytics/promotions", { params });
+export const getPilotAnalyticsAPI = (params) => api.get("/admin/analytics/pilot", { params });
 export const getLogisticsDeepAnalyticsAPI = (params) => api.get("/admin/analytics/logistics-deep", { params });
 export const getSupportDeepAnalyticsAPI = (params) => api.get("/admin/analytics/support-deep", { params });
 export const getB2bModulesAnalyticsAPI = (params) => api.get("/admin/analytics/b2b", { params });

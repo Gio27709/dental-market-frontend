@@ -10,6 +10,7 @@ import {
   Map,
   MessagesSquare,
   Puzzle,
+  Rocket,
   ShoppingCart,
   Star,
   Tags,
@@ -33,6 +34,7 @@ export const TAB_GROUPS = [
     label: "Negocio",
     tabs: [
       { key: "executive", label: "Resumen ejecutivo", icon: LayoutDashboard, permissionKey: "executive" },
+      { key: "pilot", label: "Piloto (dinero real)", icon: Rocket, permissionKey: "pilot" },
       { key: "financials", label: "Finanzas y escrow", icon: Wallet, permissionKey: "financials" },
       { key: "sales", label: "Ventas y operaciones", icon: ShoppingCart, permissionKey: "sales" },
       { key: "treasury", label: "Tesorería y divisas", icon: Landmark, permissionKey: "treasury" },
