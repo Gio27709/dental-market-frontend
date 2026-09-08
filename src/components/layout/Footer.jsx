@@ -178,7 +178,7 @@ export default function Footer() {
               <div className="w-8 h-8 flex items-center justify-center">
                 <img
                   src={brandLogo}
-                  alt="Logo"
+                  alt={`Logo de ${brandName}`}
                   className="w-full h-full object-contain rounded-md"
                   onError={(e) => {
                     e.target.style.display = "none";
@@ -221,6 +221,13 @@ export default function Footer() {
               {brandName}
             </span>
           </Link>
+
+          {/* El nombre de la marca en texto corriente: sin esto Google casi no ve la palabra
+              «Forcepx» en la página y corrige la búsqueda a «forceps». */}
+          <p className="text-[13.5px] leading-relaxed text-gray-500 mb-6 max-w-sm">
+            {brandName} es el marketplace de insumos y equipos odontológicos de Venezuela: depósitos
+            dentales verificados, pago en custodia hasta que recibes el pedido y envío a todo el país.
+          </p>
 
           <h4 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wider">
             Métodos de Pago
@@ -425,7 +432,7 @@ export default function Footer() {
       <div className="border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-5">
           <p className="text-center text-gray-400 font-medium text-[13px]">
-            Copyright {currentYear} &copy; All right reserved.
+            &copy; {currentYear} {brandName}. Todos los derechos reservados.
           </p>
         </div>
       </div>
