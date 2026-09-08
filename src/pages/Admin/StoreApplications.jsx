@@ -15,7 +15,9 @@ import {
   suspendStoreAPI,
   reactivateStoreAPI,
   revokeStoreAPI,
+  setStoreTestFlagAPI,
 } from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 import StoreDetailSlideOver from "../../components/admin/StoreDetailSlideOver";
 import StoreStatsTab from "../../components/admin/StoreStatsTab";
 import ApplicationReviewSlideOver from "../../components/admin/ApplicationReviewSlideOver";
@@ -337,6 +339,23 @@ export default function StoreApplications() {
   };
 
   // ── Moderación de tiendas ──
+  // Solo el owner marca tiendas de prueba: cambia las cifras que ven todos los admins.
+  const { user: currentUser } = useAuth();
+  const isOwner = currentUser?.role === "owner";
+
+  const handleToggleTest = async (store) => {
+    setOpenDropdown(null);
+    try {
+      setLoading(true);
+      const res = await setStoreTestFlagAPI(store.user_id, !store.is_test);
+      toast.success(res.data?.message || "Marca actualizada");
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "No se pudo cambiar la marca de prueba");
+      setLoading(false);
+    }
+  };
+
   const openStoreAction = async (kind, store) => {
     setOpenDropdown(null);
     if (kind === "suspend") setSuspendModal({ open: true, store });
@@ -512,6 +531,14 @@ export default function StoreApplications() {
                     >
                       Ver pública
                     </a>
+                    {isOwner && (
+                      <button
+                        onClick={() => handleToggleTest(app)}
+                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        {app.is_test ? "Quitar marca de prueba" : "Marcar como prueba"}
+                      </button>
+                    )}
                     <div className="border-t border-slate-100 my-1" />
                     {app.is_suspended ? (
                       <button
@@ -583,10 +610,18 @@ export default function StoreApplications() {
   const statusPill = (app) => {
     if (app.row_status === "pending") return <Pill tone={TONES.pending}>Pendiente</Pill>;
     if (app.row_status === "rejected") return <Pill tone={TONES.rejected}>Rechazada</Pill>;
-    return app.is_suspended ? (
-      <Pill tone={TONES.suspended}>Suspendida</Pill>
-    ) : (
-      <Pill tone={TONES.active}>Activa</Pill>
+    return (
+      <span className="inline-flex items-center gap-1.5 flex-wrap">
+        {app.is_suspended ? <Pill tone={TONES.suspended}>Suspendida</Pill> : <Pill tone={TONES.active}>Activa</Pill>}
+        {app.is_test && (
+          <span
+            title="Tienda de prueba: no cuenta en el tablero, el sitemap, IndexNow ni la pestaña Piloto."
+            className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-500 ring-1 ring-slate-200"
+          >
+            Prueba
+          </span>
+        )}
+      </span>
     );
   };
 
@@ -902,6 +937,14 @@ export default function StoreApplications() {
                           >
                             Detalles
                           </button>
+                          {isOwner && (
+                            <button
+                              onClick={() => handleToggleTest(app)}
+                              className="flex-1 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium"
+                            >
+                              {app.is_test ? "Quitar prueba" : "Es prueba"}
+                            </button>
+                          )}
                           {app.is_suspended ? (
                             <button
                               onClick={() => setReactivateModal({ open: true, store: app })}

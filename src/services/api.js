@@ -157,6 +157,8 @@ export const getAdminStoreStatsAPI = (params) => api.get("/admin/store-applicati
 export const suspendStoreAPI = (userId, reason) => api.post(`/admin/store-applications/stores/${userId}/suspend`, { reason });
 export const reactivateStoreAPI = (userId) => api.post(`/admin/store-applications/stores/${userId}/reactivate`);
 export const revokeStoreAPI = (userId, reason) => api.post(`/admin/store-applications/stores/${userId}/revoke`, { reason });
+// Solo owner: marcar/quitar «tienda de prueba» (no cuenta en tablero, sitemap, IndexNow ni Piloto).
+export const setStoreTestFlagAPI = (userId, isTest) => api.patch(`/admin/store-applications/stores/${userId}/test-flag`, { is_test: isTest });
 
 // Buyer confirms delivery — Escrow release
 export const confirmDeliveryAPI = (itemId) =>
