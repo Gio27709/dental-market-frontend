@@ -11,6 +11,7 @@ export default function PanelNotificationBell({ className = "" }) {
   return (
     <div className={`flex justify-end ${className}`}>
       <div
+        data-tour="panel-notifications"
         className="flex items-center justify-center w-10 h-10 rounded-full shadow-md"
         style={{ background: "linear-gradient(135deg, #2d1452 0%, #531575 100%)" }}
       >

@@ -157,18 +157,22 @@ export default function TourOverlay() {
     const cabeAbajo = focoBottom + SEPARACION + tarjetaAlto + 16 <= vh;
     const cabeArriba = focoTop - SEPARACION - tarjetaAlto >= 16;
     const preferirArriba = paso.placement === "top";
-    const abajo = preferirArriba ? !cabeArriba && cabeAbajo : cabeAbajo || !cabeArriba;
+    // null = no cabe ni arriba ni abajo (el elemento ocupa casi toda la pantalla).
+    let abajo = null;
+    if (cabeAbajo && cabeArriba) abajo = !preferirArriba;
+    else if (cabeAbajo) abajo = true;
+    else if (cabeArriba) abajo = false;
 
     const centroX = rect.left + rect.width / 2;
     const left = Math.max(16, Math.min(centroX - anchoTarjeta / 2, vw - anchoTarjeta - 16));
 
-    if (abajo || cabeArriba) {
+    if (abajo !== null) {
       const top = abajo ? focoBottom + SEPARACION : focoTop - SEPARACION - tarjetaAlto;
       estiloTarjeta = { top, left, width: anchoTarjeta };
       const flechaX = Math.max(18, Math.min(centroX - left - 8, anchoTarjeta - 26));
       flecha = abajo ? { arriba: true, left: flechaX } : { arriba: false, left: flechaX };
     } else {
-      // Ni arriba ni abajo: el elemento ocupa casi toda la pantalla. Va al pie.
+      // Ni arriba ni abajo: el elemento ocupa casi toda la pantalla. Va al pie, sobre él.
       estiloTarjeta = { bottom: 16, left, width: anchoTarjeta };
     }
   } else {

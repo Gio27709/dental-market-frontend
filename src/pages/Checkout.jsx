@@ -8,6 +8,7 @@ import PaymentProofUploader from "../components/orders/PaymentProofUploader";
 import { getPlatformSettingsShared } from "../services/sharedRequests";
 import toast from "react-hot-toast";
 import { track } from "../services/tracking";
+import { AutoTour, TOUR_IDS } from "../components/tour";
 
 export default function Checkout() {
   const {
@@ -311,6 +312,8 @@ export default function Checkout() {
 
       {step === 1 && items && items.length > 0 && (
         <div className="flex flex-col lg:flex-row gap-8 items-start">
+          {/* Guía del pago la primera vez que alguien llega con carrito */}
+          <AutoTour id={TOUR_IDS.CHECKOUT} delay={1200} />
           {/* Columna Izquierda (Formulario) */}
           <div className="w-full lg:w-[60%] xl:w-[65%] flex-shrink-0">
             <CheckoutForm

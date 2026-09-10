@@ -11,6 +11,7 @@ import LoadingSkeleton from "../../components/LoadingSkeleton";
 import DeliveryFailedModal from "../../components/rider/DeliveryFailedModal";
 import ConfirmDeliveryModal from "../../components/rider/ConfirmDeliveryModal";
 import RiderStats from "../../components/rider/RiderStats";
+import { AutoTour, useTour, TOUR_IDS } from "../../components/tour";
 
 // ─── Status Config ───
 const STATUS_CONFIG = {
@@ -27,6 +28,7 @@ export default function RiderDashboard() {
   const [loading, setLoading] = useState(true);
   const [notAffiliated, setNotAffiliated] = useState(false);
   const [tab, setTab] = useState("active");
+  const { startTour } = useTour();
   const [actionLoading, setActionLoading] = useState(null); // { itemId, action }
   const [failedModal, setFailedModal] = useState({ open: false, itemId: null });
   const [confirmModal, setConfirmModal] = useState({ open: false, itemId: null });
@@ -407,8 +409,11 @@ export default function RiderDashboard() {
   // ─── Affiliated: Full Dashboard ───
   return (
     <div className="space-y-5 animate-fade-in relative">
+      {/* Guía del panel la primera vez que el repartidor afiliado entra */}
+      <AutoTour id={TOUR_IDS.REPARTIDOR} delay={1200} />
+
       {/* Store Affiliation Badge */}
-      <div className="bg-gradient-to-r from-[#6b1e96] to-[#531575] rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-purple-900/20 relative overflow-hidden">
+      <div data-tour="rider-store" className="bg-gradient-to-r from-[#6b1e96] to-[#531575] rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-purple-900/20 relative overflow-hidden">
          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
          <div className="relative z-10 flex flex-col sm:flex-row items-center gap-5">
             <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/20 shadow-inner">
@@ -477,10 +482,24 @@ export default function RiderDashboard() {
       </div>
 
       {/* Stats */}
-      <RiderStats key={statsKey} />
+      <div data-tour="rider-stats">
+        <RiderStats key={statsKey} />
+      </div>
+
+      {/* Repetir la guía */}
+      <div className="flex justify-end -mb-2">
+        <button
+          type="button"
+          onClick={() => startTour(TOUR_IDS.REPARTIDOR)}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#6b1e96] hover:text-[#531575] transition-colors"
+        >
+          <span className="material-symbols-outlined text-[16px]">help</span>
+          Ver guía del panel
+        </button>
+      </div>
 
       {/* Tabs — 3 tabs now */}
-      <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] overflow-hidden flex p-1.5 gap-1">
+      <div data-tour="rider-tabs" className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] overflow-hidden flex p-1.5 gap-1">
         {[
           { key: "active", label: "En Curso", count: tabCounts.active },
           { key: "completed", label: "Completadas", count: tabCounts.completed },
@@ -504,7 +523,7 @@ export default function RiderDashboard() {
 
       {/* Cards */}
       {currentList.length === 0 ? (
-        <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] p-16 text-center">
+        <div data-tour="rider-job" className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] p-16 text-center">
           <div className="w-24 h-24 mx-auto bg-gray-50 rounded-full flex items-center justify-center mb-6">
              <span className="material-symbols-outlined text-[48px] text-gray-300">two_wheeler</span>
           </div>
@@ -518,7 +537,7 @@ export default function RiderDashboard() {
           {currentList.map((job) => {
             const statusCfg = STATUS_CONFIG[job.delivery_status] || STATUS_CONFIG.shipped;
             return (
-              <div key={job.id} className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.05] transition-all hover:shadow-lg flex flex-col h-full relative overflow-hidden group">
+              <div key={job.id} data-tour="rider-job" className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.05] transition-all hover:shadow-lg flex flex-col h-full relative overflow-hidden group">
                 {/* Decoration Line */}
                 <div className={`absolute top-0 left-0 w-full h-1.5 ${
                   job.delivery_status === "delivered" ? "bg-green-500" :

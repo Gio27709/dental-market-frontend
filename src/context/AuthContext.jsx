@@ -41,6 +41,8 @@ export const AuthProvider = ({ children }) => {
         lastNameChange: metadata.last_name_change || null,
         phone: metadata.phone || null,
         buyerState: metadata.buyer_state || null,
+        // Guías paso a paso ya vistas en cualquier dispositivo (las escribe TourProvider).
+        toursSeen: Array.isArray(metadata.tours_seen) ? metadata.tours_seen : [],
         avatarUrl: metadata.custom_avatar_url || metadata.avatar_url || null,
         firstName: metadata.first_name || metadata.full_name?.split(" ")[0],
         lastName:

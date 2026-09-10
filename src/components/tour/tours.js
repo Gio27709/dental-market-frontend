@@ -15,6 +15,8 @@ export const TOUR_IDS = {
   COMPRADOR: "comprador",
   VENDEDOR: "vendedor",
   CLINICA: "clinica",
+  REPARTIDOR: "repartidor",
+  CHECKOUT: "checkout",
 };
 
 const comprador = {
@@ -218,8 +220,79 @@ const clinica = {
   ],
 };
 
+/** Panel del repartidor (/delivery). Solo arranca cuando ya está afiliado a una tienda. */
+const repartidor = {
+  id: TOUR_IDS.REPARTIDOR,
+  nombre: "Guía del panel de entregas",
+  pasos: [
+    {
+      target: "rider-store",
+      title: "Tu tienda asignada",
+      text: "Trabajas para esta tienda. Aquí ves su dirección de recogida, cómo llegar y un botón para llamarla si algo no cuadra.",
+    },
+    {
+      target: "rider-stats",
+      title: "Tus números",
+      text: "Entregas completadas, en curso y tu desempeño. Se actualizan solos con cada entrega que cierras.",
+    },
+    {
+      target: "rider-tabs",
+      title: "En curso, completadas y fallidas",
+      text: "«En Curso» son las entregas que tienes hoy. Las que cierres pasan a «Completadas»; las que no se pudieron entregar, a «Fallidas» con su motivo.",
+    },
+    {
+      target: "rider-job",
+      title: "Aquí llegan tus entregas",
+      text: "Cada pedido aparece como una tarjeta con dirección, cliente y botones para abrir el mapa o llamar. Marca «Recogido» al salir de la tienda, «Llegué» al llegar y «Entregado» cuando el cliente reciba.",
+      placement: "top",
+    },
+    {
+      target: "panel-notifications",
+      title: "Avisos de nuevas entregas",
+      text: "Cuando la tienda te asigne un pedido te llega aquí. Si no ves nada, toca «Actualizar» en la bandeja.",
+    },
+  ],
+};
+
+/** Primer pago (/checkout, paso 1). Sin variantes móviles: las tarjetas se apilan y el foco las sigue. */
+const checkout = {
+  id: TOUR_IDS.CHECKOUT,
+  nombre: "Guía del pago",
+  pasos: [
+    {
+      target: "checkout-delivery",
+      title: "¿Cómo quieres recibirlo?",
+      text: "Envío nacional por encomienda, delivery local si la tienda está en tu mismo estado, o retiro en tienda. El costo del envío cambia según lo que elijas.",
+    },
+    {
+      target: "checkout-address",
+      title: "Datos de destino y contacto",
+      text: "Quién recibe, cédula, teléfono y la dirección exacta. Puedes elegir una dirección guardada o marcar el punto en el mapa.",
+    },
+    {
+      target: "checkout-payment",
+      title: "Método de pago",
+      text: "Elige cómo vas a pagar. Al confirmar verás los datos de la cuenta y en el siguiente paso subes el comprobante.",
+    },
+    {
+      target: "checkout-summary",
+      title: "Resumen y cupón",
+      text: "Revisa productos, envío y total en USD y bolívares. Si tienes un cupón del boletín, aplícalo aquí antes de confirmar.",
+      placement: "top",
+    },
+    {
+      target: "checkout-submit",
+      title: "Confirmar el pedido",
+      text: "Al confirmar se crea tu pedido y pasas a subir el comprobante. Tu dinero queda protegido hasta que confirmes que recibiste el pedido.",
+      placement: "top",
+    },
+  ],
+};
+
 export const TOURS = {
   [TOUR_IDS.COMPRADOR]: comprador,
   [TOUR_IDS.VENDEDOR]: vendedor,
   [TOUR_IDS.CLINICA]: clinica,
+  [TOUR_IDS.REPARTIDOR]: repartidor,
+  [TOUR_IDS.CHECKOUT]: checkout,
 };

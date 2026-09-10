@@ -132,6 +132,7 @@ export default function CheckoutSummary({ cartItems, total_usd, total_ves, deliv
 
   return (
     <div
+      data-tour="checkout-summary"
       className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_8px_30px_rgb(107,30,150,0.04)] transition-all duration-300"
       style={{
         position: "sticky",

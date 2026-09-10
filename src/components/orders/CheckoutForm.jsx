@@ -549,7 +549,7 @@ export default function CheckoutForm({
     <>
     <form onSubmit={handleSubmit} className="w-full space-y-6">
       {/* ── CARD 1: TIPO DE ENTREGA ── */}
-      <div className="bg-white rounded-2xl border border-slate-100/80 shadow-xs p-5 sm:p-6 transition-all duration-300">
+      <div data-tour="checkout-delivery" className="bg-white rounded-2xl border border-slate-100/80 shadow-xs p-5 sm:p-6 transition-all duration-300">
         <div className="flex items-start gap-3.5 mb-6 pb-4 border-b border-slate-100">
           <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-[#6b1e96]">
             <span className="material-symbols-outlined text-[22px]">local_shipping</span>
@@ -804,7 +804,7 @@ export default function CheckoutForm({
       </div>
 
       {/* ── CARD 2: DATOS DE DESTINO Y CONTACTO ── */}
-      <div className="bg-white rounded-2xl border border-slate-100/80 shadow-xs p-5 sm:p-6 transition-all duration-300">
+      <div data-tour="checkout-address" className="bg-white rounded-2xl border border-slate-100/80 shadow-xs p-5 sm:p-6 transition-all duration-300">
         <div className="flex items-start gap-3.5 mb-6 pb-4 border-b border-slate-100">
           <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-[#6b1e96]">
             <span className="material-symbols-outlined text-[22px]">distance</span>
@@ -1298,7 +1298,7 @@ export default function CheckoutForm({
       </div>
 
       {/* ── CARD 3: METODOS DE PAGO ── */}
-      <div className="bg-white rounded-2xl border border-slate-100/80 shadow-xs p-5 sm:p-6 transition-all duration-300">
+      <div data-tour="checkout-payment" className="bg-white rounded-2xl border border-slate-100/80 shadow-xs p-5 sm:p-6 transition-all duration-300">
         <div className="flex items-start gap-3.5 mb-6 pb-4 border-b border-slate-100">
           <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-[#6b1e96]">
             <span className="material-symbols-outlined text-[22px]">payments</span>
@@ -1322,6 +1322,7 @@ export default function CheckoutForm({
       <div className="mt-8">
         <button
           type="submit"
+          data-tour="checkout-submit"
           disabled={loading}
           className="w-full inline-flex justify-center items-center py-4 px-8 border border-transparent shadow-md shadow-purple-600/10 text-base font-black rounded-xl text-white bg-gradient-to-r from-[#6b1e96] to-[#8b2fc9] hover:from-[#7b24ab] hover:to-[#9c3ce0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6b1e96] disabled:opacity-70 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-purple-500/20 active:scale-[0.99] transition-all duration-200 uppercase tracking-wide cursor-pointer"
         >
