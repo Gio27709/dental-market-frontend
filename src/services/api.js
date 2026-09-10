@@ -472,6 +472,8 @@ export const getTicketDetailsAPI = (id) => api.get(`/support/tickets/${id}`);
 export const addTicketMessageAPI = (id, data) => api.post(`/support/tickets/${id}/messages`, data);
 export const getAllTicketsAdminAPI = (params) => api.get("/support/admin/tickets", { params });
 export const updateTicketStatusAdminAPI = (id, status) => api.put(`/support/admin/tickets/${id}/status`, { status });
+export const updateTicketPriorityAdminAPI = (id, priority) => api.put(`/support/admin/tickets/${id}/priority`, { priority });
+export const getTicketContextAdminAPI = (id) => api.get(`/support/admin/tickets/${id}/context`);
 
 // Store Discounts API
 export const getStoreDiscountsAPI = () => api.get("/store/discounts");

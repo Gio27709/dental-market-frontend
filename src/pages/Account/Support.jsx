@@ -1,24 +1,26 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   getMyTicketsAPI,
   createTicketAPI,
   getTicketDetailsAPI,
   addTicketMessageAPI,
   getMyOrders,
+  getMyProducts,
 } from "../../services/api";
 import toast from "react-hot-toast";
 import { socket } from "../../lib/socket";
 import { useAuth } from "../../context/AuthContext";
 import { AttachmentPicker, AttachmentList } from "../../components/support/TicketAttachments";
+import TicketContext from "../../components/support/TicketContext";
 import { subirAdjuntos } from "../../lib/ticketAttachments";
-
-const CATEGORIES = {
-  order_issue: "Problema con un Pedido",
-  product_issue: "Problema con un Producto",
-  account: "Mi Cuenta",
-  payment: "Pagos o Facturación",
-  other: "Otro Asunto",
-};
+import {
+  CATEGORIAS,
+  categoriasPara,
+  etiquetaCategoria,
+  etiquetaSubtipo,
+  ESTADOS_TICKET as STATUSES,
+  ESTADO_PAGO,
+} from "../../lib/supportCategorias";
 
 const infoDelDispositivo = () => ({
   ua: navigator.userAgent,
@@ -29,17 +31,52 @@ const infoDelDispositivo = () => ({
   tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
 });
 
-const STATUSES = {
-  open: { label: "Abierto", color: "#2563eb", bg: "#dbeafe" },
-  in_progress: { label: "En Proceso", color: "#d97706", bg: "#fef3c7" },
-  resolved: { label: "Resuelto", color: "#16a34a", bg: "#dcfce7" },
-  closed: { label: "Cerrado", color: "#4b5563", bg: "#f3f4f6" },
+const corto = (id) => (id ? String(id).substring(0, 8).toUpperCase() : "");
+const INPUT =
+  "w-full pl-4 pr-4 py-3 rounded-xl text-sm font-medium outline-none transition-all duration-200 focus:ring-2 focus:ring-[#6b1e96]/30 bg-slate-50 border border-slate-100 focus:border-[#6b1e96]";
+const LABEL = "block text-[11px] font-semibold uppercase tracking-wider mb-2";
+
+// Pedidos del autor normalizados para el selector: el comprador ve sus pedidos; la tienda ve los
+// pedidos en los que vendió algo (la API devuelve sus artículos, aquí se agrupan por pedido).
+const normalizarPedidos = (rows, esTienda) => {
+  if (!Array.isArray(rows)) return [];
+  if (!esTienda) {
+    return rows.map((o) => ({
+      id: o.id,
+      code: corto(o.order_group_id || o.id),
+      total: Number(o.total_usd ?? o.total ?? 0),
+      date: o.created_at,
+      payment_status: o.payment_status,
+      products: (o.order_items || []).map((i) => i.products).filter(Boolean),
+    }));
+  }
+  const porPedido = new Map();
+  for (const item of rows) {
+    const o = item.orders;
+    if (!o?.id) continue;
+    if (!porPedido.has(o.id)) {
+      porPedido.set(o.id, {
+        id: o.id,
+        code: corto(o.order_group_id || o.id),
+        total: 0,
+        date: o.created_at,
+        payment_status: o.payment_status,
+        products: [],
+      });
+    }
+    const p = porPedido.get(o.id);
+    p.total += Number(item.unit_price || 0) * Number(item.quantity || 1);
+    if (item.products) p.products.push(item.products);
+  }
+  return [...porPedido.values()].sort((a, b) => new Date(b.date) - new Date(a.date));
 };
 
 export default function Support() {
   const { user } = useAuth();
+  const esTienda = user?.role === "store";
   const [tickets, setTickets] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [storeProducts, setStoreProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTicket, setActiveTicket] = useState(null);
   const [ticketDetails, setTicketDetails] = useState(null);
@@ -49,17 +86,27 @@ export default function Support() {
   const [replyText, setReplyText] = useState("");
   const [replying, setReplying] = useState(false);
 
-  // Form states
+  // Formulario (N3)
   const [subject, setSubject] = useState("");
   const [category, setCategory] = useState("other");
-  const [message, setMessage] = useState("");
+  const [subtype, setSubtype] = useState("");
+  const [message, setMessage] = useState(""); // «¿Qué pasó?»
+  const [expected, setExpected] = useState(""); // «¿Qué esperabas que pasara?»
+  const [steps, setSteps] = useState("");
   const [orderId, setOrderId] = useState("");
-  const [files, setFiles] = useState([]); // adjuntos del ticket nuevo
-  const [replyFiles, setReplyFiles] = useState([]); // adjuntos de la respuesta
+  const [orderSearch, setOrderSearch] = useState("");
+  const [productId, setProductId] = useState("");
+  const [productSearch, setProductSearch] = useState("");
+  const [files, setFiles] = useState([]);
+  const [replyFiles, setReplyFiles] = useState([]);
 
   const chatContainerRef = useRef(null);
   const lastTicketIdRef = useRef(null);
   const lastMessagesLengthRef = useRef(0);
+
+  const categoriasVisibles = useMemo(() => categoriasPara(user?.role), [user?.role]);
+  const subtipos = CATEGORIAS[category]?.subtipos || {};
+  const tieneSubtipos = Object.keys(subtipos).length > 0;
 
   const handleSelectTicket = useCallback(async (ticket) => {
     setActiveTicket(ticket);
@@ -88,7 +135,7 @@ export default function Support() {
       if (res.data && res.data.success) {
         const ticketList = res.data.data || [];
         setTickets(ticketList);
-        
+
         // Auto-select ticket from URL if ticketId is present
         const params = new URLSearchParams(window.location.search);
         const ticketIdFromUrl = params.get("ticketId");
@@ -107,21 +154,30 @@ export default function Support() {
     }
   }, [handleSelectTicket]);
 
-  const fetchUserOrders = useCallback(async () => {
+  // Pedidos y (si es tienda) productos, para vincularlos al ticket. Se cargan una vez.
+  const fetchRelacionables = useCallback(async () => {
     try {
-      const res = await getMyOrders();
-      if (res.data && res.data.success) {
-        setOrders(res.data.data || []);
-      }
+      const res = await getMyOrders(esTienda ? { params: { as_store: "true" } } : {});
+      if (res.data && res.data.success) setOrders(normalizarPedidos(res.data.data || [], esTienda));
     } catch (error) {
       console.error("Error fetching orders:", error);
     }
-  }, []);
+    if (esTienda) {
+      try {
+        const res = await getMyProducts();
+        if (res.data && res.data.success) {
+          setStoreProducts((res.data.data || []).map((p) => ({ id: p.id, name: p.name, is_active: p.is_active })));
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    }
+  }, [esTienda]);
 
   useEffect(() => {
     fetchTickets();
-    fetchUserOrders();
-  }, [fetchTickets, fetchUserOrders]);
+    fetchRelacionables();
+  }, [fetchTickets, fetchRelacionables]);
 
   useEffect(() => {
     if (!ticketDetails || !chatContainerRef.current) return;
@@ -146,7 +202,6 @@ export default function Support() {
   useEffect(() => {
     if (!activeTicket) return;
 
-    // Join the ticket's room on connection / activeTicket mount
     socket.emit("join_ticket", activeTicket.id);
 
     const handleNewMessage = (message) => {
@@ -214,31 +269,81 @@ export default function Support() {
     };
   }, [user]);
 
+  // Cambiar de categoría limpia el subtipo (cada categoría tiene los suyos).
+  const cambiarCategoria = (value) => {
+    setCategory(value);
+    setSubtype("");
+  };
+
+  // Productos vinculables: la tienda elige entre los suyos; el comprador entre los del pedido
+  // elegido (o de todos sus pedidos si no eligió ninguno).
+  const productosVinculables = useMemo(() => {
+    if (esTienda) return storeProducts;
+    const fuente = orderId ? orders.filter((o) => o.id === orderId) : orders;
+    const vistos = new Map();
+    for (const o of fuente) for (const p of o.products) if (p?.id && !vistos.has(p.id)) vistos.set(p.id, { id: p.id, name: p.name });
+    return [...vistos.values()];
+  }, [esTienda, storeProducts, orders, orderId]);
+
+  const pedidosFiltrados = useMemo(() => {
+    const q = orderSearch.trim().toLowerCase();
+    if (!q) return orders;
+    return orders.filter(
+      (o) =>
+        o.code.toLowerCase().includes(q) ||
+        o.products.some((p) => p?.name?.toLowerCase().includes(q)) ||
+        String(o.total.toFixed(2)).includes(q),
+    );
+  }, [orders, orderSearch]);
+
+  const productosFiltrados = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    if (!q) return productosVinculables;
+    return productosVinculables.filter((p) => p.name?.toLowerCase().includes(q));
+  }, [productosVinculables, productSearch]);
+
+  const limpiarFormulario = () => {
+    setSubject("");
+    setCategory("other");
+    setSubtype("");
+    setMessage("");
+    setExpected("");
+    setSteps("");
+    setOrderId("");
+    setOrderSearch("");
+    setProductId("");
+    setProductSearch("");
+    setFiles([]);
+  };
+
   const handleCreateTicket = async (e) => {
     e.preventDefault();
     if (!subject.trim()) return toast.error("El asunto es requerido.");
-    if (!message.trim()) return toast.error("El mensaje es requerido.");
+    if (!message.trim()) return toast.error("Cuéntanos qué pasó.");
+    if (tieneSubtipos && !subtype) return toast.error("Elige el tipo de problema.");
 
     try {
       setSubmitting(true);
       const attachments = files.length ? await subirAdjuntos(files) : [];
+      const context = {};
+      if (subtype) context.subtype = subtype;
+      if (expected.trim()) context.expected = expected.trim();
+      if (steps.trim()) context.steps = steps.trim();
       const payload = {
         subject: subject.trim(),
         category,
         message: message.trim(),
         order_id: orderId || null,
+        product_id: productId || null,
         attachments,
+        context: Object.keys(context).length ? context : null,
         device_info: infoDelDispositivo(),
       };
 
       const res = await createTicketAPI(payload);
       if (res.data && res.data.success) {
         toast.success("Ticket de soporte creado correctamente.");
-        setSubject("");
-        setCategory("other");
-        setMessage("");
-        setOrderId("");
-        setFiles([]);
+        limpiarFormulario();
         setShowCreateForm(false);
         fetchTickets();
       }
@@ -261,12 +366,10 @@ export default function Support() {
       if (res.data && res.data.success) {
         setReplyText("");
         setReplyFiles([]);
-        // Refresh details
         const detailsRes = await getTicketDetailsAPI(activeTicket.id);
         if (detailsRes.data && detailsRes.data.success) {
           setTicketDetails(detailsRes.data.data);
         }
-        // Refresh ticket list to update last update timestamp
         fetchTickets();
       }
     } catch (error) {
@@ -286,6 +389,9 @@ export default function Support() {
       minute: "2-digit",
     });
   };
+
+  const formatFecha = (dateStr) =>
+    dateStr ? new Date(dateStr).toLocaleDateString("es-VE", { day: "2-digit", month: "short", year: "2-digit" }) : "";
 
   return (
     <div className="space-y-8 animate-fade-in pb-8">
@@ -338,6 +444,7 @@ export default function Support() {
               {tickets.map((t) => {
                 const status = STATUSES[t.status] || { label: t.status, color: "#9ca3af", bg: "#f3f4f6" };
                 const isActive = activeTicket?.id === t.id;
+                const sub = etiquetaSubtipo(t.category, t.context?.subtype);
 
                 return (
                   <button
@@ -354,11 +461,11 @@ export default function Support() {
                       <div className="flex items-center justify-between mb-1.5 gap-2">
                         <div className="flex items-center gap-1.5">
                           <span className="text-[10px] font-mono text-slate-400">
-                            #{t.id.substring(0, 8).toUpperCase()}
+                            #{corto(t.id)}
                           </span>
                           {t.user_has_unread && (
-                            <span 
-                              className="w-2 h-2 rounded-full bg-green-500 animate-pulse" 
+                            <span
+                              className="w-2 h-2 rounded-full bg-green-500 animate-pulse"
                               title="Respuesta nueva"
                             />
                           )}
@@ -381,7 +488,8 @@ export default function Support() {
                         {t.subject}
                       </h3>
                       <p className="text-xs text-slate-400 mt-1">
-                        {CATEGORIES[t.category]}
+                        {etiquetaCategoria(t.category)}
+                        {sub ? <span className="text-slate-300"> · {sub}</span> : null}
                       </p>
                     </div>
                     <div className="mt-4 pt-2 border-t border-slate-100 flex items-center justify-between w-full">
@@ -402,7 +510,7 @@ export default function Support() {
         {/* Right Column: Ticket Details or Create Form */}
         <div className="lg:col-span-2">
           {showCreateForm ? (
-            /* --- CREATE TICKET FORM --- */
+            /* --- CREATE TICKET FORM (N3) --- */
             <div className="bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm">
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
                 <h2 className="text-lg font-bold text-slate-900">Crear Ticket de Soporte</h2>
@@ -415,83 +523,228 @@ export default function Support() {
                 </button>
               </div>
 
-              <form onSubmit={handleCreateTicket} className="space-y-4">
-                {/* Category */}
+              <form onSubmit={handleCreateTicket} className="space-y-5">
+                {/* Categoría (tarjetas) */}
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#727785" }}>
-                    Categoría del Problema *
+                  <label className={LABEL} style={{ color: "#727785" }}>
+                    ¿Sobre qué es tu solicitud? *
                   </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full pl-4 pr-4 py-3 rounded-xl text-sm font-medium outline-none transition-all duration-200 focus:ring-2 focus:ring-[#6b1e96]/30 bg-slate-50 border border-slate-100 focus:border-[#6b1e96]"
-                  >
-                    {Object.entries(CATEGORIES).map(([k, v]) => (
-                      <option key={k} value={k}>
-                        {v}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {categoriasVisibles.map(([k, c]) => {
+                      const activa = category === k;
+                      return (
+                        <button
+                          type="button"
+                          key={k}
+                          onClick={() => cambiarCategoria(k)}
+                          className="rounded-xl border p-3 text-left transition-all cursor-pointer hover:border-[#6b1e96]/40"
+                          style={{
+                            background: activa ? "#fdfaff" : "#f8fafc",
+                            borderColor: activa ? "#6b1e96" : "rgba(0,0,0,0.06)",
+                          }}
+                          title={c.hint}
+                        >
+                          <span
+                            className="material-symbols-outlined text-[20px] block mb-1"
+                            style={{ color: activa ? "#6b1e96" : "#94a3b8" }}
+                          >
+                            {c.icon}
+                          </span>
+                          <span className="text-[11px] font-bold leading-tight block" style={{ color: activa ? "#6b1e96" : "#334155" }}>
+                            {c.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {CATEGORIAS[category]?.hint && (
+                    <p className="text-[11px] text-slate-400 mt-2">{CATEGORIAS[category].hint}</p>
+                  )}
                 </div>
 
-                {/* Subject */}
+                {/* Subtipo */}
+                {tieneSubtipos && (
+                  <div>
+                    <label className={LABEL} style={{ color: "#727785" }}>
+                      ¿Qué tipo de problema? *
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(subtipos).map(([k, v]) => {
+                        const activo = subtype === k;
+                        return (
+                          <button
+                            type="button"
+                            key={k}
+                            onClick={() => setSubtype(k)}
+                            className="px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer"
+                            style={{
+                              background: activo ? "#6b1e96" : "#ffffff",
+                              color: activo ? "#ffffff" : "#475569",
+                              borderColor: activo ? "#6b1e96" : "rgba(0,0,0,0.1)",
+                            }}
+                          >
+                            {v}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Asunto */}
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#727785" }}>
+                  <label className={LABEL} style={{ color: "#727785" }}>
                     Asunto Breve *
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="Ej: Retraso en entrega, Duda sobre un pago..."
+                    maxLength={200}
+                    placeholder="Ej: Retraso en entrega, duda sobre un pago..."
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    className="w-full pl-4 pr-4 py-3 rounded-xl text-sm font-medium outline-none transition-all duration-200 focus:ring-2 focus:ring-[#6b1e96]/30 bg-slate-50 border border-slate-100 focus:border-[#6b1e96]"
+                    className={INPUT}
                   />
                 </div>
 
-                {/* Associated Order (Optional) */}
-                {category === "order_issue" && orders.length > 0 && (
+                {/* Pedido y producto relacionados */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#727785" }}>
-                      Vincular a un Pedido (Opcional)
+                    <label className={LABEL} style={{ color: "#727785" }}>
+                      Pedido relacionado (opcional)
                     </label>
-                    <select
-                      value={orderId}
-                      onChange={(e) => setOrderId(e.target.value)}
-                      className="w-full pl-4 pr-4 py-3 rounded-xl text-sm font-medium outline-none transition-all duration-200 focus:ring-2 focus:ring-[#6b1e96]/30 bg-slate-50 border border-slate-100 focus:border-[#6b1e96]"
-                    >
-                      <option value="">Ninguno</option>
-                      {orders.map((o) => (
-                        <option key={o.id} value={o.id}>
-                          Pedido #{o.order_group_id?.substring(0, 8).toUpperCase() || o.id.substring(0, 8).toUpperCase()} - ${Number(o.total_amount || 0).toFixed(2)}
-                        </option>
-                      ))}
-                    </select>
+                    {orders.length === 0 ? (
+                      <p className="text-xs text-slate-400 py-3">
+                        {esTienda ? "Aún no tienes pedidos recibidos." : "Aún no tienes pedidos."}
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {orders.length > 5 && (
+                          <input
+                            type="text"
+                            placeholder="Buscar por número, producto o monto…"
+                            value={orderSearch}
+                            onChange={(e) => setOrderSearch(e.target.value)}
+                            className={`${INPUT} py-2 text-xs`}
+                          />
+                        )}
+                        <select
+                          value={orderId}
+                          onChange={(e) => {
+                            setOrderId(e.target.value);
+                            setProductId("");
+                          }}
+                          className={INPUT}
+                        >
+                          <option value="">Ninguno</option>
+                          {pedidosFiltrados.map((o) => (
+                            <option key={o.id} value={o.id}>
+                              #{o.code} · {formatFecha(o.date)} · ${o.total.toFixed(2)}
+                              {o.payment_status && ESTADO_PAGO[o.payment_status] ? ` · ${ESTADO_PAGO[o.payment_status]}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                        {orderId && (
+                          <p className="text-[10px] text-slate-400 truncate">
+                            {orders
+                              .find((o) => o.id === orderId)
+                              ?.products.map((p) => p?.name)
+                              .filter(Boolean)
+                              .join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
-                )}
 
-                {/* Message */}
+                  <div>
+                    <label className={LABEL} style={{ color: "#727785" }}>
+                      Producto relacionado (opcional)
+                    </label>
+                    {productosVinculables.length === 0 ? (
+                      <p className="text-xs text-slate-400 py-3">
+                        {esTienda ? "Aún no tienes productos publicados." : "Elige un pedido para ver sus productos."}
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {productosVinculables.length > 5 && (
+                          <input
+                            type="text"
+                            placeholder="Buscar producto por nombre…"
+                            value={productSearch}
+                            onChange={(e) => setProductSearch(e.target.value)}
+                            className={`${INPUT} py-2 text-xs`}
+                          />
+                        )}
+                        <select value={productId} onChange={(e) => setProductId(e.target.value)} className={INPUT}>
+                          <option value="">Ninguno</option>
+                          {productosFiltrados.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                              {p.is_active === false ? " (inactivo)" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ¿Qué pasó? */}
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#727785" }}>
-                    Descripción Detallada *
+                  <label className={LABEL} style={{ color: "#727785" }}>
+                    ¿Qué pasó? *
                   </label>
                   <textarea
                     required
-                    rows="5"
-                    placeholder="Explícanos tu problema o duda con la mayor cantidad de detalles posible..."
+                    rows="4"
+                    placeholder="Cuéntanos con detalle lo que ocurrió: qué hiciste, qué viste en pantalla, fechas, montos…"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    className="w-full pl-4 pr-4 py-3 rounded-xl text-sm font-medium outline-none transition-all duration-200 focus:ring-2 focus:ring-[#6b1e96]/30 bg-slate-50 border border-slate-100 focus:border-[#6b1e96] resize-none"
+                    className={`${INPUT} resize-none`}
+                  />
+                </div>
+
+                {/* ¿Qué esperabas? */}
+                <div>
+                  <label className={LABEL} style={{ color: "#727785" }}>
+                    ¿Qué esperabas que pasara? (opcional)
+                  </label>
+                  <textarea
+                    rows="2"
+                    maxLength={1000}
+                    placeholder="Ej: que el pago se aprobara y el pedido pasara a «en preparación»."
+                    value={expected}
+                    onChange={(e) => setExpected(e.target.value)}
+                    className={`${INPUT} resize-none`}
+                  />
+                </div>
+
+                {/* Pasos para reproducir */}
+                <div>
+                  <label className={LABEL} style={{ color: "#727785" }}>
+                    Pasos para que podamos repetirlo (opcional)
+                  </label>
+                  <textarea
+                    rows="3"
+                    maxLength={2000}
+                    placeholder={"1. Entré a…\n2. Pulsé…\n3. Apareció…"}
+                    value={steps}
+                    onChange={(e) => setSteps(e.target.value)}
+                    className={`${INPUT} resize-none`}
                   />
                 </div>
 
                 {/* Adjuntos */}
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#727785" }}>
+                  <label className={LABEL} style={{ color: "#727785" }}>
                     Capturas o documentos (opcional)
                   </label>
                   <AttachmentPicker files={files} onChange={setFiles} disabled={submitting} />
-                  <p className="text-[10px] text-slate-400 mt-1.5">Una captura de pantalla del problema nos ayuda a resolverlo mucho más rápido.</p>
+                  <p className="text-[10px] text-slate-400 mt-1.5">
+                    Una captura de pantalla del problema nos ayuda a resolverlo mucho más rápido. Guardamos también tu
+                    navegador y la pantalla desde la que abres el ticket.
+                  </p>
                 </div>
 
                 <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
@@ -533,7 +786,10 @@ export default function Support() {
                       {activeTicket.subject}
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Categoría: {CATEGORIES[activeTicket.category]}
+                      {etiquetaCategoria(activeTicket.category)}
+                      {etiquetaSubtipo(activeTicket.category, activeTicket.context?.subtype)
+                        ? ` · ${etiquetaSubtipo(activeTicket.category, activeTicket.context?.subtype)}`
+                        : ""}
                     </p>
                   </div>
                 </div>
@@ -559,15 +815,8 @@ export default function Support() {
                   </div>
                 ) : ticketDetails ? (
                   <>
-                    {/* Associated Order Banner */}
-                    {ticketDetails.ticket.order_id && (
-                      <div className="p-3 bg-purple-50/50 border border-[#6b1e96]/10 rounded-xl text-xs text-[#6b1e96] font-semibold flex items-center justify-between">
-                        <span>Vincular a Pedido #{ticketDetails.ticket.orders?.order_group_id?.substring(0, 8).toUpperCase() || ticketDetails.ticket.order_id.substring(0, 8).toUpperCase()}</span>
-                        <a href={`/account/orders/${ticketDetails.ticket.order_id}`} className="hover:underline flex items-center gap-0.5">
-                          Ver Pedido <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                        </a>
-                      </div>
-                    )}
+                    {/* Contexto del ticket: subtipo, pedido, producto, qué esperaba, pasos */}
+                    <TicketContext ticket={ticketDetails.ticket} />
 
                     {ticketDetails.messages.map((m) => {
                       const isMe = m.sender_id === ticketDetails.ticket.user_id;

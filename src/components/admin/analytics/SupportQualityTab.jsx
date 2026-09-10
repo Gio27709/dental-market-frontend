@@ -72,6 +72,10 @@ export default function SupportQualityTab() {
   const penalties = data?.penaltiesSummary || [];
   const recentTickets = data?.recentTickets || [];
   const disputes = data?.disputesAndRefunds || [];
+  const byAuthor = data?.ticketsByAuthor || [];
+  const byPriority = data?.ticketsByPriority || [];
+  const AUTOR = { store: "Tiendas", buyer: "Compradores" };
+  const PRIORIDAD = { urgent: "Urgente", high: "Alta", normal: "Normal", low: "Baja" };
 
   return (
     <div className="space-y-6">
@@ -206,6 +210,64 @@ export default function SupportQualityTab() {
             { header: "Estado", accessor: "status", render: (r) => <span className="uppercase font-bold text-fx-warn text-[10px] bg-fx-warn/10 px-2 py-0.5 rounded-full border border-fx-warn/20">{r.status}</span> }
           ]}
           data={penalties}
+        />
+      </div>
+
+      {/* Fase N8: quién abre los tickets (tiendas vs compradores) y reparto por prioridad */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <DataTable
+          title="Tickets de tiendas vs compradores"
+          columns={[
+            {
+              header: "Autor",
+              accessor: "author_type",
+              render: (r) => (
+                <button
+                  onClick={() =>
+                    drilldown.open("support_tickets", {
+                      title: `Tickets de ${(AUTOR[r.author_type] || r.author_type).toLowerCase()}`,
+                      subtitle: "Del período seleccionado",
+                      filters: { is_store: r.author_type === "store" }
+                    })
+                  }
+                  className="font-bold text-fx-text hover:text-fx-accent underline decoration-dotted text-left transition-colors"
+                >
+                  {AUTOR[r.author_type] || r.author_type}
+                </button>
+              )
+            },
+            { header: "Tickets", accessor: "total", render: (r) => parseInt(r.total || 0).toLocaleString() },
+            { header: "Abiertos", accessor: "open_count", render: (r) => <span className={r.open_count > 0 ? "text-fx-warn font-bold" : ""}>{r.open_count}</span> },
+            { header: "Alta/urgente", accessor: "high_priority", render: (r) => <span className={r.high_priority > 0 ? "text-fx-neg font-bold" : ""}>{r.high_priority}</span> },
+            { header: "Con adjuntos", accessor: "with_attachments" },
+            { header: "1ª resp. (h)", accessor: "avg_first_response_hours", render: (r) => (r.avg_first_response_hours == null ? "—" : r.avg_first_response_hours.toFixed(1)) }
+          ]}
+          data={byAuthor}
+        />
+        <DataTable
+          title="Tickets por prioridad"
+          columns={[
+            {
+              header: "Prioridad",
+              accessor: "priority",
+              render: (r) => (
+                <button
+                  onClick={() =>
+                    drilldown.open("support_tickets", {
+                      title: `Tickets con prioridad ${(PRIORIDAD[r.priority] || r.priority).toLowerCase()}`,
+                      filters: { priority: r.priority }
+                    })
+                  }
+                  className="font-bold text-fx-text hover:text-fx-accent underline decoration-dotted text-left transition-colors"
+                >
+                  {PRIORIDAD[r.priority] || r.priority}
+                </button>
+              )
+            },
+            { header: "Tickets", accessor: "total", render: (r) => parseInt(r.total || 0).toLocaleString() },
+            { header: "Abiertos", accessor: "open_count", render: (r) => <span className={r.open_count > 0 ? "text-fx-warn font-bold" : ""}>{r.open_count}</span> }
+          ]}
+          data={byPriority}
         />
       </div>
 
