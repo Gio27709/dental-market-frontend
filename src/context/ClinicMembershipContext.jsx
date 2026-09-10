@@ -2,6 +2,7 @@
 import PropTypes from "prop-types";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { getMyClinicMembershipAPI } from "../services/api";
+import { socket } from "../lib/socket";
 
 /**
  * Estado de la membresía del panel de Gestión Clínica, compartido por el layout (badge de
@@ -33,6 +34,16 @@ export function ClinicMembershipProvider({ children }) {
 
   useEffect(() => {
     refresh();
+  }, [refresh]);
+
+  // M8: cuando el admin aprueba, rechaza o revoca, llega un aviso `clinic_membership_*` por el
+  // socket; se vuelve a consultar /me y el candado se abre (o se cierra) sin recargar.
+  useEffect(() => {
+    const onNotification = (n) => {
+      if (typeof n?.type === "string" && n.type.startsWith("clinic_membership_")) refresh();
+    };
+    socket.on("notification", onNotification);
+    return () => socket.off("notification", onNotification);
   }, [refresh]);
 
   const value = useMemo(
