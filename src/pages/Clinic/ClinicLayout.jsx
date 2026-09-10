@@ -1,5 +1,6 @@
 import { Outlet, NavLink, Link } from "react-router-dom";
 import { ClinicMembershipProvider, useClinicMembership } from "../../context/ClinicMembershipContext";
+import { AutoTour, useTour, TOUR_IDS } from "../../components/tour";
 
 /**
  * Enlace "Mi membresía" con el estado al lado: días restantes, "en revisión", "vencida".
@@ -24,6 +25,7 @@ function MembershipNavLink() {
   return (
     <NavLink
       to="/clinic/membership"
+      data-tour="clinic-nav-/clinic/membership"
       className={({ isActive }) =>
         `flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
           isActive
@@ -46,8 +48,10 @@ function MembershipNavLink() {
 }
 
 export default function ClinicLayout() {
+  const { startTour } = useTour();
   return (
     <ClinicMembershipProvider>
+    <AutoTour id={TOUR_IDS.CLINICA} delay={1200} />
     <div className="min-h-screen font-sans" style={{ backgroundColor: "#f9f9ff", color: "#111c2c" }}>
       <div className="max-w-[1440px] mx-auto flex min-h-screen relative">
         
@@ -56,7 +60,7 @@ export default function ClinicLayout() {
           
           {/* Brand / Header */}
           <div className="px-6 py-6 border-b border-[#cdc3d4]/20 mb-2">
-            <div className="bg-[#541a97]/5 rounded-2xl p-4 flex flex-col gap-2 shadow-xs border border-[#541a97]/10">
+            <div data-tour="clinic-brand" className="bg-[#541a97]/5 rounded-2xl p-4 flex flex-col gap-2 shadow-xs border border-[#541a97]/10">
               <div className="flex items-center gap-3">
                 <div className="bg-white p-2 rounded-xl border border-[#541a97]/10 shadow-xs">
                   <span className="material-symbols-outlined text-[#541a97] text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
@@ -78,6 +82,7 @@ export default function ClinicLayout() {
             <NavLink
               to="/clinic"
               end
+              data-tour="clinic-nav-/clinic"
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
                   isActive
@@ -98,6 +103,7 @@ export default function ClinicLayout() {
 
             <NavLink
               to="/clinic/inventory"
+              data-tour="clinic-nav-/clinic/inventory"
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
                   isActive
@@ -118,6 +124,7 @@ export default function ClinicLayout() {
 
             <NavLink
               to="/clinic/subscriptions"
+              data-tour="clinic-nav-/clinic/subscriptions"
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
                   isActive
@@ -138,6 +145,7 @@ export default function ClinicLayout() {
 
             <NavLink
               to="/clinic/profitability"
+              data-tour="clinic-nav-/clinic/profitability"
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium text-sm transition-all duration-200 ${
                   isActive
@@ -163,8 +171,17 @@ export default function ClinicLayout() {
 
           {/* Footer Actions */}
           <div className="px-4 py-4 mt-auto border-t border-[#cdc3d4]/20 space-y-1">
+            <button
+              type="button"
+              onClick={() => startTour(TOUR_IDS.CLINICA)}
+              className="w-full flex items-center gap-3 px-4 py-3 text-[#4b4452] hover:bg-[#f0f3ff] hover:text-[#111c2c] transition-all duration-200 rounded-xl text-sm font-medium"
+            >
+              <span className="material-symbols-outlined text-[20px]">help</span>
+              <span>Ver guía del panel</span>
+            </button>
             <Link
               to="/account"
+              data-tour="clinic-back-account"
               className="flex items-center gap-3 px-4 py-3 text-[#4b4452] hover:bg-[#f0f3ff] hover:text-[#111c2c] transition-all duration-200 rounded-xl text-sm font-medium"
             >
               <span className="material-symbols-outlined text-[20px]">arrow_back</span>

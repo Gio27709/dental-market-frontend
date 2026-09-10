@@ -14,6 +14,7 @@
 export const TOUR_IDS = {
   COMPRADOR: "comprador",
   VENDEDOR: "vendedor",
+  CLINICA: "clinica",
 };
 
 const comprador = {
@@ -79,6 +80,11 @@ const comprador = {
         title: "¿Tienes una tienda o repartes?",
         text: "Dentro del menú está la opción «Afíliate con nosotros» para abrir tu tienda o unirte como repartidor.",
       },
+    },
+    {
+      target: "help",
+      title: "Repite esta guía cuando quieras",
+      text: "Este botón vuelve a mostrar el recorrido paso a paso. Si algún día no recuerdas dónde estaba algo, tócalo.",
     },
   ],
 };
@@ -162,7 +168,58 @@ const vendedor = {
   ],
 };
 
+/**
+ * Panel clínico (odontólogos y estudiantes). Sin variantes móviles: el menú lateral
+ * se ve siempre. Sin `route` estricta: la puerta de membresía redirige `/clinic` a
+ * `/clinic/membership` cuando no hay membresía activa, y el menú existe en ambas.
+ */
+const clinica = {
+  id: TOUR_IDS.CLINICA,
+  nombre: "Guía del panel clínico",
+  pasos: [
+    {
+      target: "clinic-brand",
+      title: "Bienvenido a Gestión Clínica",
+      text: "Este panel te ayuda a administrar los insumos de tu consultorio: qué tienes, qué se está acabando y cuánto gastas. Vamos a recorrer cada sección.",
+      routePrefix: "/clinic",
+      route: "/clinic",
+    },
+    {
+      target: "clinic-nav-/clinic/membership",
+      title: "Tu membresía",
+      text: "El panel funciona con una membresía mensual. Aquí la activas subiendo tu comprobante de pago, ves los días que te quedan y la renuevas cuando venza.",
+    },
+    {
+      target: "clinic-nav-/clinic",
+      title: "Resumen ejecutivo",
+      text: "Vista general de tu inventario: cuántos insumos monitoreas, cuáles están críticos o por agotarse y sugerencias de reposición.",
+    },
+    {
+      target: "clinic-nav-/clinic/inventory",
+      title: "Tu inventario clínico",
+      text: "Registra cada insumo con su stock actual y su mínimo. Cuando baje de ese umbral, el panel te avisa para que compres a tiempo.",
+    },
+    {
+      target: "clinic-nav-/clinic/subscriptions",
+      title: "Suscripciones recurrentes",
+      text: "Programa el reabastecimiento periódico de tus insumos esenciales para no tener que pedirlos a mano cada vez.",
+    },
+    {
+      target: "clinic-nav-/clinic/profitability",
+      title: "Rentabilidad y gastos",
+      text: "Auditoría de compras, gasto por categoría y proyección de presupuesto. Puedes exportar los reportes a PDF o Excel.",
+    },
+    {
+      target: "clinic-back-account",
+      title: "Volver a tu cuenta",
+      text: "Desde aquí regresas a tu cuenta y a la tienda. Puedes repetir esta guía cuando quieras con «Ver guía del panel».",
+      placement: "top",
+    },
+  ],
+};
+
 export const TOURS = {
   [TOUR_IDS.COMPRADOR]: comprador,
   [TOUR_IDS.VENDEDOR]: vendedor,
+  [TOUR_IDS.CLINICA]: clinica,
 };

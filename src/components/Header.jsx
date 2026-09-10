@@ -9,6 +9,7 @@ import LocationModal from "./LocationModal";
 import NotificationBell from "./notifications/NotificationBell";
 import useHomeSections from "../hooks/useHomeSections";
 import { getCategoriesShared } from "../services/sharedRequests";
+import { useTour, TOUR_IDS } from "./tour";
 
 // FALLBACKS: Static config used while useHomeSections() is loading or if API fails
 const HEADER_TOP_BAR = {
@@ -64,6 +65,14 @@ export default function Header() {
 
   // Estados visuales mapeados (Fase 2)
   const { currency, setCurrency } = useCurrency();
+  const { startTour } = useTour();
+
+  // «?»: la guía arranca en la Home; desde otra página primero llevamos allí.
+  const abrirGuia = () => {
+    setMobileMenuOpen(false);
+    navigate("/inicio");
+    setTimeout(() => startTour(TOUR_IDS.COMPRADOR), 300);
+  };
   const [langOpen, setLangOpen] = useState(false);
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -504,6 +513,19 @@ export default function Header() {
                 </span>
               </button>
             )}
+
+            {/* Action Item: Guía de la página */}
+            <button
+              type="button"
+              onClick={abrirGuia}
+              data-tour="help"
+              className="relative flex items-center gap-1 lg:gap-2 justify-center outline-none bg-transparent border-none p-0 cursor-pointer hover:text-gray-200 transition-colors group"
+              title="Guía de la página"
+              aria-label="Guía de la página"
+            >
+              <span className="material-symbols-outlined text-[22px] md:text-[20px]">help</span>
+              <span className="font-medium text-xs hidden lg:block tracking-wide">Guía</span>
+            </button>
 
             {/* Action Item: Notification Bell */}
             <NotificationBell />

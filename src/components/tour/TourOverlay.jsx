@@ -33,6 +33,7 @@ function buscarElemento(target) {
 function rutaSatisfecha(paso, pathname) {
   if (!paso.route) return true;
   if (pathname === paso.route) return true;
+  if (paso.routePrefix && pathname.startsWith(paso.routePrefix)) return true;
   return Array.isArray(paso.routeAlias) && paso.routeAlias.includes(pathname);
 }
 
@@ -45,6 +46,9 @@ export default function TourOverlay() {
   const [tarjetaAlto, setTarjetaAlto] = useState(180);
   const elementoRef = useRef(null);
   const tarjetaRef = useRef(null);
+  // Clave "tour:paso" de la última navegación pedida. Si tras navegar la ruta sigue sin
+  // coincidir (una redirección la cambió), no se insiste: se busca el elemento donde estemos.
+  const navegadoRef = useRef(null);
 
   const indice = activo?.indice ?? 0;
   const total = activo?.pasos.length ?? 0;
@@ -65,7 +69,9 @@ export default function TourOverlay() {
       return undefined;
     }
 
-    if (!rutaSatisfecha(paso, pathname)) {
+    const claveNavegacion = activo.id + ":" + indice;
+    if (!rutaSatisfecha(paso, pathname) && navegadoRef.current !== claveNavegacion) {
+      navegadoRef.current = claveNavegacion;
       navigate(paso.route);
       return undefined;
     }
