@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { subscribeNewsletterAPI } from "../../services/api";
+import { useTour, TOUR_IDS } from "../tour";
 import { getPlatformSettingsShared, getTrendingShared } from "../../services/sharedRequests";
 import toast from "react-hot-toast";
 import useHomeSections from "../../hooks/useHomeSections";
@@ -8,6 +9,14 @@ import usePaymentMethods from "../../hooks/usePaymentMethods";
 
 export default function Footer() {
   const { sections } = useHomeSections();
+  const navigate = useNavigate();
+  const { startTour } = useTour();
+
+  // La guía arranca en la Home; si el usuario está en otra página lo llevamos primero.
+  const verGuia = () => {
+    navigate("/inicio");
+    setTimeout(() => startTour(TOUR_IDS.COMPRADOR), 300);
+  };
   // Los chips salen de los métodos que hoy están activos. Antes estaban escritos a mano aquí,
   // así que apagar un método dejaba el footer anunciando algo que el checkout ya no ofrecía.
   const { activos: metodosDePago } = usePaymentMethods();
@@ -363,6 +372,16 @@ export default function Footer() {
         <div className="flex flex-col">
           <h4 className="text-base font-bold text-[#531575] mb-5">Tienda</h4>
           <ul className="space-y-3 text-[14px] text-gray-500 font-medium">
+            <li>
+              <button
+                type="button"
+                onClick={verGuia}
+                className="hover:text-[#6b1e96] transition-colors inline-flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[16px]">help</span>
+                Guía de la página
+              </button>
+            </li>
             <li>
               <Link
                 to="/store-catalog"

@@ -235,7 +235,7 @@ export default function Header() {
               <li className="w-px h-3 bg-gray-500"></li>
 
               {/* Dropdown Moneda */}
-              <li className="relative dropdown-wrapper text-white">
+              <li className="relative dropdown-wrapper text-white" data-tour="currency">
                 <button
                   onClick={() => {
                     setCurrencyOpen(!currencyOpen);
@@ -286,6 +286,8 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center gap-4">
           {/* Mobile Hamburger (Temporal) */}
           <button
+            data-tour="menu"
+            aria-label="Abrir menú"
             className="md:hidden p-2 text-white hover:text-gray-200"
             onClick={() => setMobileMenuOpen(true)}
           >
@@ -360,6 +362,7 @@ export default function Header() {
 
             {/* Header Location Widget (Desktop) */}
             <div 
+              data-tour="location"
               className="hidden md:flex flex-col justify-center items-start cursor-pointer hover:outline hover:outline-1 hover:outline-white p-1.5 rounded-sm text-white ml-2 transition-all"
               onClick={() => setLocationModalOpen(true)}
             >
@@ -385,6 +388,7 @@ export default function Header() {
           {/* Search Bar */}
           <div className="hidden md:flex flex-1 max-w-3xl px-8 ml-8">
             <form
+              data-tour="search"
               onSubmit={handleGlobalSearch}
               className="w-full relative shadow-sm rounded-full overflow-hidden bg-white"
             >
@@ -420,7 +424,7 @@ export default function Header() {
           {/* User Actions (Avatar y Carrito) */}
           <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-6 text-white">
             {/* Action Item: Avatar / Login */}
-            <div className="relative group cursor-pointer hover:text-gray-200 transition-colors">
+            <div data-tour="account" className="relative group cursor-pointer hover:text-gray-200 transition-colors">
               <button
                 onClick={() => navigate("/account")}
                 className="relative flex items-center gap-2 justify-center outline-none bg-transparent border-none p-0"
@@ -506,6 +510,7 @@ export default function Header() {
 
             {/* Action Item: Cart */}
             <div
+              data-tour="cart"
               className="relative cursor-pointer hover:text-gray-200 transition-colors flex items-center gap-2"
               onClick={toggleDrawer}
             >
@@ -546,6 +551,7 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
           {/* Categorias Especial Boton (Integrado) */}
           <div 
+            data-tour="categories"
             onClick={() => setCategoriesDrawerOpen(true)}
             className="bg-[#6b1e96] hover:bg-[#7e25b0] text-white cursor-pointer px-6 h-full flex items-center gap-2 font-semibold tracking-wide transition-colors"
           >
@@ -571,7 +577,7 @@ export default function Header() {
               {navLinks.map((link, idx) => {
                 const isActive = link.url === "/" ? pathname === "/" : pathname.startsWith(link.url);
                 return (
-                  <li key={idx} className="relative h-full flex items-center group py-2">
+                  <li key={idx} className="relative h-full flex items-center group py-2" data-tour={link.url === "/afiliate" ? "nav-afiliate" : undefined}>
                     <Link
                       to={link.url}
                       className={`transition-colors duration-200 ${

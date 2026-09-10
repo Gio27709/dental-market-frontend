@@ -2,10 +2,12 @@ import { Link, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import PropTypes from "prop-types";
 import { useStore } from "../../../context/StoreContext";
+import { useTour, TOUR_IDS } from "../../tour";
 
 export default function StoreSidebar({ isProfileComplete = true }) {
   const location = useLocation();
   const { storeStats } = useStore();
+  const { startTour } = useTour();
 
   const getLinkNotificationCount = (path) => {
     if (!storeStats) return 0;
@@ -187,7 +189,7 @@ export default function StoreSidebar({ isProfileComplete = true }) {
                 const pendingCount = getLinkNotificationCount(link.path);
 
                 return (
-                  <li key={link.path}>
+                  <li key={link.path} data-tour={"store-nav-" + link.path}>
                     <Link
                       to={disabled ? '#' : link.path}
                       onClick={(e) => {
@@ -298,10 +300,30 @@ export default function StoreSidebar({ isProfileComplete = true }) {
       {/* Divider */}
       <div className="mx-5 border-t border-white/[0.06] mt-2" />
 
-      {/* ── Bottom Area: Back to Store ── */}
+      {/* ── Bottom Area: Guía del panel + Back to Store ── */}
       <div className="p-4 relative z-10">
+        <button
+          type="button"
+          onClick={() => startTour(TOUR_IDS.VENDEDOR)}
+          className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium rounded-xl transition-all duration-200 group"
+          style={{ color: 'rgba(255,255,255,0.5)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(195,255,0,0.08)';
+            e.currentTarget.style.color = '#c3ff00';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 flex-shrink-0">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+          </svg>
+          Ver guía del panel
+        </button>
         <Link
           to="/"
+          data-tour="store-back-home"
           className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium rounded-xl transition-all duration-200 group"
           style={{ color: 'rgba(255,255,255,0.5)' }}
           onMouseEnter={(e) => {

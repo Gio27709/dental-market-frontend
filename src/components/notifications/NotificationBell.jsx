@@ -64,6 +64,7 @@ export default function NotificationBell() {
     <div ref={dropdownRef} style={{ position: "relative" }}>
       {/* Bell Button */}
       <div
+        data-tour="notifications"
         onClick={handleToggle}
         aria-label="Notificaciones"
         className={`relative cursor-pointer transition-colors flex items-center gap-2 ${

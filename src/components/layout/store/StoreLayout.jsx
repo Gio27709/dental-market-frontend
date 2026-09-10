@@ -6,6 +6,7 @@ import PanelNotificationBell from "../../notifications/PanelNotificationBell";
 import toast from "react-hot-toast";
 import { useStore } from "../../../context/StoreContext";
 import { useAuth } from "../../../context/AuthContext";
+import { AutoTour, TOUR_IDS } from "../../tour";
 
 export default function StoreLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -191,6 +192,9 @@ export default function StoreLayout() {
 
   return (
     <div className="flex min-h-screen relative" style={{ background: '#f1ecf6' }}>
+      {/* Guía del panel la primera vez que la tienda entra */}
+      <AutoTour id={TOUR_IDS.VENDEDOR} delay={1200} />
+
       {/* Desktop Sidebar */}
       <StoreSidebar isProfileComplete={isComplete} />
 
@@ -199,7 +203,7 @@ export default function StoreLayout() {
         className="fixed top-0 left-0 right-0 z-[90] md:hidden text-white h-14 flex items-center justify-between px-4 shadow-lg"
         style={{ background: 'linear-gradient(135deg, #531575 0%, #6b1e96 100%)' }}
       >
-        <button onClick={() => setMobileOpen(true)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+        <button data-tour="store-menu" aria-label="Abrir menú del panel" onClick={() => setMobileOpen(true)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
           </svg>

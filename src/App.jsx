@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Outlet } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ProductProvider } from "./context/ProductContext";
@@ -25,6 +25,8 @@ import StoreLayout from "./components/layout/store/StoreLayout";
 import LoadingSkeleton from "./components/LoadingSkeleton";
 import Landing from "./pages/Landing";
 import { usePageTracking } from "./hooks/usePageTracking";
+import { TourProvider, TourOverlay, AutoTour, TOUR_IDS } from "./components/tour";
+import { getPlatformSettingsShared } from "./services/sharedRequests";
 
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
@@ -134,20 +136,82 @@ function EcommerceLayout() {
   );
 }
 
+/** Home pública con la guía de la página la primera vez que se entra. */
+function HomeConGuia() {
+  return (
+    <>
+      <AutoTour id={TOUR_IDS.COMPRADOR} esperarUbicacion />
+      <Home />
+    </>
+  );
+}
+
+const LANDING_SESSION_KEY = "forcepx_welcome_session";
+
+function landingVistaEnNavegador() {
+  try {
+    return localStorage.getItem("forcepx_welcome_seen") === "1";
+  } catch {
+    return true;
+  }
+}
+
+function landingVistaEnSesion() {
+  try {
+    return sessionStorage.getItem(LANDING_SESSION_KEY) === "1";
+  } catch {
+    return true;
+  }
+}
+
 /**
- * En `/`: la primera visita ve la landing de bienvenida; después, la Home de siempre.
- * Se decide una sola vez al montar para no parpadear entre las dos.
+ * En `/` decide entre la landing de bienvenida y la Home según el interruptor
+ * `landing_mode` de Ajustes de plataforma:
+ *
+ *  - always  (por defecto): la landing se ve cada vez que alguien entra a `/`.
+ *  - session: una vez por visita (pestaña); dentro de la misma visita `/` es la Home.
+ *  - once   : una sola vez por navegador (comportamiento anterior).
+ *
+ * Mientras llega el ajuste, si el navegador nunca vio la landing se enseña directo
+ * (todos los modos la enseñarían); si ya la vio, se espera al ajuste para no parpadear.
  */
 function HomeGate() {
-  const [seen] = useState(() => {
-    try {
-      return localStorage.getItem("forcepx_welcome_seen") === "1";
-    } catch {
-      return true;
-    }
-  });
+  const [mode, setMode] = useState(null);
+  const [vistaNavegador] = useState(landingVistaEnNavegador);
+  const [vistaSesion] = useState(landingVistaEnSesion);
 
-  return seen ? <Home /> : <Landing />;
+  useEffect(() => {
+    let vivo = true;
+    getPlatformSettingsShared()
+      .then(({ data }) => {
+        if (!vivo) return;
+        const m = data?.data?.landing_mode?.mode;
+        setMode(["always", "session", "once"].includes(m) ? m : "always");
+      })
+      .catch(() => {
+        if (vivo) setMode("always");
+      });
+    return () => {
+      vivo = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (mode === "session" && !vistaSesion) {
+      try {
+        sessionStorage.setItem(LANDING_SESSION_KEY, "1");
+      } catch {
+        // sin sessionStorage la landing se repite; no es grave
+      }
+    }
+  }, [mode, vistaSesion]);
+
+  if (mode === null) {
+    return vistaNavegador ? <LoadingSkeleton /> : <Landing />;
+  }
+  if (mode === "always") return <Landing />;
+  if (mode === "session") return vistaSesion ? <HomeConGuia /> : <Landing />;
+  return vistaNavegador ? <HomeConGuia /> : <Landing />;
 }
 
 export default function App() {
@@ -167,6 +231,8 @@ export default function App() {
               <OrderProvider>
                 <StoreProvider>
                 <NotificationProvider>
+                <TourProvider>
+                  <TourOverlay />
                   <Suspense fallback={<LoadingSkeleton />}>
                     <Routes>
                       {/* --- RUTAS PRIVADAS / PANELES INTERNOS (Sin Header/Footer públicos) --- */}
@@ -283,7 +349,7 @@ export default function App() {
                       {/* --- RUTAS PÚBLICAS / CLIENTE (Con Header y Footer de E-commerce) --- */}
                       <Route element={<EcommerceLayout />}>
                         <Route path="/" element={<HomeGate />} />
-                        <Route path="/inicio" element={<Home />} />
+                        <Route path="/inicio" element={<HomeConGuia />} />
                         <Route path="/product/:id" element={<ProductDetail />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
@@ -360,6 +426,7 @@ export default function App() {
                       },
                     }}
                   />
+                </TourProvider>
                 </NotificationProvider>
                 </StoreProvider>
               </OrderProvider>

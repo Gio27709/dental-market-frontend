@@ -93,7 +93,7 @@ const ProductCardInner = memo(function ProductCardInner({
 
   return (
     <>
-      <article className="w-full h-full max-w-[340px] mx-auto sm:mx-0 bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col group hover:-translate-y-1.5 hover:shadow-[0_20px_40px_-10px_rgba(107,30,150,0.15)] hover:border-[#6b1e96]/20 transition-all duration-300 relative">
+      <article data-tour="product-card" className="w-full h-full max-w-[340px] mx-auto sm:mx-0 bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col group hover:-translate-y-1.5 hover:shadow-[0_20px_40px_-10px_rgba(107,30,150,0.15)] hover:border-[#6b1e96]/20 transition-all duration-300 relative">
         {/* Línea de acento superior */}
         <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-[#6b1e96] via-[#9333ea] to-[#c3ff00] opacity-80 z-20"></div>
         {/* Sección de la Imagen con Altura Fija Uniforme */}

@@ -1,9 +1,30 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
 import toast from "react-hot-toast";
+import { invalidatePlatformSettingsShared } from "../../services/sharedRequests";
+
+const LANDING_MODES = [
+  {
+    value: "always",
+    label: "Siempre",
+    desc: "La página de bienvenida se muestra cada vez que alguien entra a la dirección principal.",
+  },
+  {
+    value: "session",
+    label: "Una vez por visita",
+    desc: "Se muestra al abrir la página; dentro de la misma visita, la dirección principal es la tienda.",
+  },
+  {
+    value: "once",
+    label: "Solo la primera vez",
+    desc: "Se muestra una sola vez por navegador. Cuentas nuevas en el mismo equipo no la verán.",
+  },
+];
 
 export default function PlatformSettings() {
   const [allowOpenReviews, setAllowOpenReviews] = useState(true);
+  const [landingMode, setLandingMode] = useState("always");
+  const [savingLanding, setSavingLanding] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -51,6 +72,9 @@ export default function PlatformSettings() {
         setAllowOpenReviews(communityValue.enabled !== false); // true por defecto
       }
 
+      const landingValue = data.data?.landing_mode?.mode;
+      if (LANDING_MODES.some((m) => m.value === landingValue)) setLandingMode(landingValue);
+
       // BCV Rate
       const bcvValue = data.data?.bcv_rate;
       if (bcvValue?.rate) {
@@ -96,6 +120,24 @@ export default function PlatformSettings() {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLandingMode = async (mode) => {
+    if (mode === landingMode || savingLanding) return;
+    const anterior = landingMode;
+    setLandingMode(mode);
+    setSavingLanding(true);
+    try {
+      await api.put("/admin/settings/landing-mode", { mode });
+      invalidatePlatformSettingsShared();
+      toast.success("Modo de la página de bienvenida guardado.");
+    } catch (error) {
+      console.error(error);
+      setLandingMode(anterior);
+      toast.error("No se pudo guardar el modo de la página de bienvenida.");
+    } finally {
+      setSavingLanding(false);
     }
   };
 
@@ -367,6 +409,44 @@ export default function PlatformSettings() {
               </span>
             </div>
 
+          </div>
+        </div>
+
+        {/* ─── Página de bienvenida (landing) Block ─── */}
+        <div className="border border-gray-200 rounded-2xl p-6 md:p-8 bg-gray-50/50 shadow-sm relative transition-all hover:border-[#6b1e96]/30 hover:shadow-md group">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-lime-100 text-lime-700 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[20px]">waving_hand</span>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 font-['Manrope']">Página de bienvenida</h2>
+          </div>
+          <p className="text-gray-500 text-sm mb-5 max-w-2xl">
+            Decide cuándo se muestra la landing de bienvenida al entrar a la dirección principal de la página.
+            La guía paso a paso de la tienda es independiente: se muestra una vez por cuenta y se puede repetir desde el pie de página.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {LANDING_MODES.map((m) => {
+              const activo = landingMode === m.value;
+              const claseCaja = activo
+                ? "border-[#6b1e96] bg-[#f3e8ff] shadow-sm"
+                : "border-gray-200 bg-white hover:border-[#6b1e96]/40";
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => handleLandingMode(m.value)}
+                  disabled={savingLanding}
+                  aria-pressed={activo}
+                  className={"text-left p-4 rounded-xl border transition-all " + claseCaja + (savingLanding ? " opacity-60 cursor-not-allowed" : "")}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={"w-3 h-3 rounded-full border-2 " + (activo ? "bg-[#c3ff00] border-[#6b1e96]" : "border-gray-300")} />
+                    <strong className={"text-[15px] " + (activo ? "text-[#531575]" : "text-gray-800")}>{m.label}</strong>
+                  </div>
+                  <span className="text-sm text-gray-500">{m.desc}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
