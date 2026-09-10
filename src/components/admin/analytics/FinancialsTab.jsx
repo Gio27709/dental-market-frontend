@@ -89,6 +89,7 @@ export default function FinancialsTab() {
   const refunds = data?.refunds || {};
   const takeRateTrend = data?.takeRateTrend || [];
   const categoryRevenue = data?.revenueByCategory || [];
+  const memberships = data?.memberships || {};
 
   return (
     <div className="space-y-6">
@@ -175,6 +176,13 @@ export default function FinancialsTab() {
               filters: { delivery_status: "shipped", not_cancelled: true }
             })
           }
+        />
+        <KpiCard
+          title="Membresías Clínicas"
+          value={memberships.revenueUsd || 0}
+          format="currency"
+          tooltip={`Ingreso de plataforma por membresías del panel clínico aprobadas en el período (por fecha de aprobación). ${memberships.approvedCount || 0} aprobada(s), ${memberships.activeNow || 0} vigente(s) hoy${memberships.revokedCount ? `, ${memberships.revokedCount} revocada(s)` : ""}. No entra en el take rate: no es comisión sobre ventas.`}
+          drilldownUrl="/admin/clinic-memberships"
         />
       </div>
 

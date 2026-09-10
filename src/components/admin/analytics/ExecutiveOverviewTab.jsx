@@ -114,7 +114,7 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
           previous={isComparing ? kpis.platformRevenue?.previous : null}
           deltaPct={isComparing ? kpis.platformRevenue?.deltaPct : null}
           format="currency"
-          tooltip="Mapeado en M02: Haz clic para ir a las analíticas detalladas de Finanzas & Escrow."
+          tooltip={`Comisiones sobre ventas $${Number(kpis.platformRevenue?.commissions || 0).toFixed(2)} + membresías clínicas $${Number(kpis.platformRevenue?.memberships || 0).toFixed(2)} (${kpis.platformRevenue?.membershipsApproved || 0} aprobadas). El take rate se calcula solo sobre las comisiones. Haz clic para ir a Finanzas & Escrow.`}
           onDrilldown={() => onNavigateTab && onNavigateTab("financials")}
         />
 
@@ -183,8 +183,8 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
 
       {/* Gráfico Principal de Evolución de Ingresos y GMV */}
       <ChartCard
-        title="Evolución de GMV e Ingresos Netos de la Plataforma"
-        subtitle="Mapeado en M01 y M02: Comportamiento transaccional a lo largo del tiempo"
+        title="Evolución de GMV e Ingresos de la Plataforma"
+        subtitle="Mapeado en M01 y M02: ventas brutas, comisiones y membresías clínicas por día"
         onTypeChange={setChartMode}
       >
         <ResponsiveContainer width="100%" height={280}>
@@ -195,7 +195,8 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
               <YAxis stroke="#877f92" fontSize={11} />
               <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Bar dataKey="gmv" name="GMV ($)" fill="#7c4f9e" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="platform_revenue" name="Ingreso Neto ($)" fill="#6b1e96" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="platform_revenue" name="Comisiones ($)" stackId="ingreso" fill="#6b1e96" />
+              <Bar dataKey="membership_revenue" name="Membresías ($)" stackId="ingreso" fill="#c3a6e0" radius={[4, 4, 0, 0]} />
             </BarChart>
           ) : chartMode === "line" ? (
             <LineChart data={revenueChart}>
@@ -204,7 +205,8 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
               <YAxis stroke="#877f92" fontSize={11} />
               <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Line type="monotone" dataKey="gmv" name="GMV ($)" stroke="#7c4f9e" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="platform_revenue" name="Ingreso Neto ($)" stroke="#6b1e96" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="platform_revenue" name="Comisiones ($)" stroke="#6b1e96" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="membership_revenue" name="Membresías ($)" stroke="#c3a6e0" strokeWidth={2} dot={false} />
             </LineChart>
           ) : (
             <AreaChart data={revenueChart}>
@@ -223,7 +225,8 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
               <YAxis stroke="#877f92" fontSize={11} />
               <Tooltip contentStyle={{ backgroundColor: "#f7f4fc", border: "1px solid #00000020", borderRadius: "10px", color: "#33243d", fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.55)" }} />
               <Area type="monotone" dataKey="gmv" name="GMV ($)" stroke="#7c4f9e" fillOpacity={1} fill="url(#colorGmv)" />
-              <Area type="monotone" dataKey="platform_revenue" name="Ingreso Neto ($)" stroke="#6b1e96" strokeWidth={2} fillOpacity={1} fill="url(#colorRev)" />
+              <Area type="monotone" dataKey="platform_revenue" name="Comisiones ($)" stackId="ingreso" stroke="#6b1e96" strokeWidth={2} fillOpacity={1} fill="url(#colorRev)" />
+              <Area type="monotone" dataKey="membership_revenue" name="Membresías ($)" stackId="ingreso" stroke="#c3a6e0" strokeWidth={2} fillOpacity={0.5} fill="#c3a6e0" />
             </AreaChart>
           )}
         </ResponsiveContainer>
