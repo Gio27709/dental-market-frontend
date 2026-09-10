@@ -1,6 +1,7 @@
 import axios from "axios";
 import { supabase } from "../lib/supabaseClient";
 import toast from "react-hot-toast";
+import { getRealStoresOnly } from "../lib/analyticsScope";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -16,6 +17,11 @@ api.interceptors.request.use(
 
     if (session?.access_token) {
       config.headers.Authorization = `Bearer ${session.access_token}`;
+    }
+
+    // «Solo tiendas reales» en analíticas: el backend lo traduce al filtro de tiendas.
+    if (typeof config.url === "string" && config.url.startsWith("/admin/analytics") && getRealStoresOnly()) {
+      config.params = { ...(config.params || {}), exclude_test: "true" };
     }
 
     return config;

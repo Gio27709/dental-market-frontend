@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
 import { useSearchParams } from "react-router-dom";
-import { Store, ChevronDown, Search, Check } from "lucide-react";
+import { Store, ChevronDown, Search, Check, FlaskConical } from "lucide-react";
+import { getRealStoresOnly, setRealStoresOnly, onRealStoresOnlyChange } from "../../../lib/analyticsScope";
 
 /**
  * Filtro de tiendas de las analíticas.
@@ -16,8 +17,18 @@ export default function AnalyticsStoreFilter({ storeList = [], selectedStoreIds 
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [realOnly, setRealOnly] = useState(getRealStoresOnly);
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
+
+  // Interruptor «Solo tiendas reales»: se guarda por navegador y lo aplica el interceptor de la
+  // API. Al cambiar se fuerza el refresco de la pestaña reenviando la misma selección (nueva
+  // referencia → la pestaña vuelve a pedir los datos).
+  useEffect(() => onRealStoresOnlyChange(setRealOnly), []);
+  const toggleRealOnly = () => {
+    setRealStoresOnly(!realOnly);
+    onStoreChange([...selectedStoreIds]);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -68,7 +79,7 @@ export default function AnalyticsStoreFilter({ storeList = [], selectedStoreIds 
   };
 
   const getLabel = () => {
-    if (selectedStoreIds.length === 0) return "Todas las Tiendas";
+    if (selectedStoreIds.length === 0) return realOnly ? "Tiendas reales" : "Todas las Tiendas";
     if (selectedStoreIds.length === 1) {
       const store = storeList.find((s) => s.id === selectedStoreIds[0] || s.user_id === selectedStoreIds[0]);
       return store ? (store.business_name || store.name) : "1 Tienda";
@@ -85,7 +96,25 @@ export default function AnalyticsStoreFilter({ storeList = [], selectedStoreIds 
   }, [storeList, searchTerm]);
 
   return (
-    <div className="relative inline-block text-left z-50" ref={dropdownRef}>
+    <div className="relative inline-flex items-center gap-2 text-left z-50" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={toggleRealOnly}
+        aria-pressed={realOnly}
+        title={
+          realOnly
+            ? "Excluyendo las tiendas marcadas como prueba. Pulsa para incluirlas."
+            : "Incluye las tiendas marcadas como prueba. Pulsa para ver solo tiendas reales."
+        }
+        className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs font-semibold transition-colors duration-200 ${
+          realOnly
+            ? "bg-fx-accent/10 border-fx-accent text-fx-accent"
+            : "bg-fx-panel border-fx-line hover:border-fx-line-strong text-fx-muted"
+        }`}
+      >
+        <FlaskConical className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+        <span className="hidden sm:inline">{realOnly ? "Solo reales" : "Con pruebas"}</span>
+      </button>
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
