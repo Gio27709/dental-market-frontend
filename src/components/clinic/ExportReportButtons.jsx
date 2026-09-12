@@ -57,23 +57,38 @@ export default function ExportReportButtons({ containerId = "profitability-conta
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    // En móvil: dos botones a lo ancho, con la etiqueta corta.
+    <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-3 w-full sm:w-auto">
       <button
         onClick={handleExportExcel}
         disabled={downloadingExcel}
-        className="flex items-center gap-2 px-5 py-2.5 bg-[#006d37] hover:bg-[#005228] text-white rounded-2xl font-bold text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50"
+        className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3 sm:py-2.5 bg-[#006d37] hover:bg-[#005228] text-white rounded-2xl font-bold text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50"
       >
         <span className="material-symbols-outlined text-[18px]">table_chart</span>
-        <span>{downloadingExcel ? "Generando..." : "Descargar Excel Contable (.xlsx)"}</span>
+        {downloadingExcel ? (
+          <span>Generando...</span>
+        ) : (
+          <>
+            <span className="sm:hidden">Excel</span>
+            <span className="hidden sm:inline">Descargar Excel Contable (.xlsx)</span>
+          </>
+        )}
       </button>
 
       <button
         onClick={handleExportPdf}
         disabled={downloadingPdf}
-        className="flex items-center gap-2 px-5 py-2.5 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-2xl font-bold text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50"
+        className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3 sm:py-2.5 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-2xl font-bold text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50"
       >
         <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
-        <span>{downloadingPdf ? "Generando..." : "Exportar Informe PDF"}</span>
+        {downloadingPdf ? (
+          <span>Generando...</span>
+        ) : (
+          <>
+            <span className="sm:hidden">PDF</span>
+            <span className="hidden sm:inline">Exportar Informe PDF</span>
+          </>
+        )}
       </button>
     </div>
   );

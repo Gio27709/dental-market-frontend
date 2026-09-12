@@ -15,12 +15,12 @@ const STITCH_COLORS = ["#541a97", "#006d37", "#7a4b00", "#ba1a1a", "#6c38b0", "#
 
 export default function FinancialCharts({ monthlyHistory, categoryBreakdown }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
       {/* ── GRAFICO DE TENDENCIA DE GASTO MENSUAL ── */}
-      <div className="bg-white p-6 md:p-8 rounded-3xl border border-[#cdc3d4]/20 shadow-xs space-y-4">
+      <div className="bg-white p-5 md:p-8 rounded-3xl border border-[#cdc3d4]/20 shadow-xs space-y-4">
         <div className="flex items-center justify-between border-b border-[#cdc3d4]/20 pb-4">
           <div>
-            <h3 className="text-lg font-bold text-[#111c2c] flex items-center gap-2">
+            <h3 className="text-base md:text-lg font-bold text-[#111c2c] flex items-center gap-2">
               <span className="material-symbols-outlined text-[#541a97]" style={{ fontVariationSettings: "'FILL' 1" }}>
                 bar_chart
               </span>
@@ -54,10 +54,10 @@ export default function FinancialCharts({ monthlyHistory, categoryBreakdown }) {
       </div>
 
       {/* ── GRAFICO DE DISTRIBUCION POR CATEGORIA ── */}
-      <div className="bg-white p-6 md:p-8 rounded-3xl border border-[#cdc3d4]/20 shadow-xs space-y-4">
+      <div className="bg-white p-5 md:p-8 rounded-3xl border border-[#cdc3d4]/20 shadow-xs space-y-4">
         <div className="flex items-center justify-between border-b border-[#cdc3d4]/20 pb-4">
           <div>
-            <h3 className="text-lg font-bold text-[#111c2c] flex items-center gap-2">
+            <h3 className="text-base md:text-lg font-bold text-[#111c2c] flex items-center gap-2">
               <span className="material-symbols-outlined text-[#541a97]" style={{ fontVariationSettings: "'FILL' 1" }}>
                 pie_chart
               </span>

@@ -74,20 +74,20 @@ export default function ClinicDashboard() {
   }
 
   return (
-    <div className="space-y-8">
-      
+    <div className="space-y-6 md:space-y-8">
+
       {/* ── Header Section (Stitch Design) ── */}
-      <header className="bg-white p-8 rounded-3xl border border-[#cdc3d4]/20 shadow-xs">
+      <header className="bg-white p-5 md:p-8 rounded-3xl border border-[#cdc3d4]/20 shadow-xs">
         <div className="flex items-center gap-2 mb-3">
           <span className="w-1.5 h-1.5 rounded-full bg-[#541a97]/60"></span>
           <span className="text-xs font-bold text-[#541a97]/80 tracking-widest uppercase">
             Panel B2B Odontológico
           </span>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-3xl font-extrabold text-[#111c2c] tracking-tight">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-[#111c2c] tracking-tight">
               Panel Odontológico &amp; Clínico
             </h2>
             <div className="flex items-center text-[#7a4b00] bg-[#ffddb9]/40 px-3.5 py-1 rounded-full border border-[#ffb961]/40">
@@ -102,7 +102,7 @@ export default function ClinicDashboard() {
             <button
               onClick={() => handleRestockNow(criticalItems)}
               disabled={restocking}
-              className="flex items-center gap-2 px-5 py-3 bg-[#ba1a1a] hover:bg-[#93000a] text-white rounded-2xl font-bold text-sm shadow-md transition-all cursor-pointer disabled:opacity-50"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-[#ba1a1a] hover:bg-[#93000a] text-white rounded-2xl font-bold text-sm shadow-md transition-all cursor-pointer disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[20px]">shopping_cart_checkout</span>
               <span>Reponer Insumos Críticos ({criticalItems.length})</span>
@@ -110,102 +110,103 @@ export default function ClinicDashboard() {
           )}
         </div>
 
-        <p className="text-base text-[#4b4452] max-w-3xl leading-relaxed">
+        <p className="text-sm md:text-base text-[#4b4452] max-w-3xl leading-relaxed">
           Monitoreo en tiempo real de insumos odontológicos, alertas de reposición crítica y compras recurrentes en un solo lugar.
         </p>
       </header>
 
       {/* ── Summary Cards Row (Stitch Masonry Design) ── */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        
+      {/* En móvil van de dos en dos y sin la descripción: la cifra y la etiqueta bastan. */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+
         {/* Total Insumos */}
-        <div className="bg-white p-6 rounded-3xl border border-[#cdc3d4]/20 flex flex-col justify-between hover:shadow-lg transition-all duration-300 group">
-          <div className="flex flex-col mb-4">
+        <div className="bg-white p-4 md:p-6 rounded-3xl border border-[#cdc3d4]/20 flex flex-col justify-between hover:shadow-lg transition-all duration-300 group">
+          <div className="flex flex-col md:mb-4">
             <div className="flex items-center gap-2 mb-2 text-[#4b4452]">
               <span className="material-symbols-outlined text-[18px]">inventory</span>
               <span className="text-[11px] font-bold uppercase tracking-wider">Total Insumos</span>
             </div>
-            <p className="text-sm text-[#4b4452]/80">Elementos monitorizados en su inventario actual.</p>
+            <p className="hidden sm:block text-sm text-[#4b4452]/80">Elementos monitorizados en su inventario actual.</p>
           </div>
-          <div className="flex items-end justify-between mt-4">
-            <span className="text-[48px] font-bold text-[#111c2c] leading-none group-hover:text-[#541a97] transition-colors">
+          <div className="flex flex-wrap items-end justify-between gap-x-2 mt-3 md:mt-4">
+            <span className="text-4xl md:text-[48px] font-bold text-[#111c2c] leading-none group-hover:text-[#541a97] transition-colors">
               {summary.totalItems}
             </span>
-            <span className="text-sm text-[#4b4452]/60 font-medium">Artículos</span>
+            <span className="text-xs md:text-sm text-[#4b4452]/60 font-medium">Artículos</span>
           </div>
         </div>
 
         {/* Stock Crítico */}
-        <div className="bg-[#ba1a1a]/5 p-6 rounded-3xl border border-[#ba1a1a]/20 flex flex-col justify-between hover:shadow-lg transition-all duration-300 group relative overflow-hidden">
+        <div className="bg-[#ba1a1a]/5 p-4 md:p-6 rounded-3xl border border-[#ba1a1a]/20 flex flex-col justify-between hover:shadow-lg transition-all duration-300 group relative overflow-hidden">
           <div className="absolute -right-4 -top-4 opacity-[0.04] text-[#ba1a1a] pointer-events-none">
             <span className="material-symbols-outlined text-[120px]">warning</span>
           </div>
-          <div className="flex flex-col mb-4 relative z-10">
+          <div className="flex flex-col md:mb-4 relative z-10">
             <div className="flex items-center gap-2 mb-2 text-[#ba1a1a]">
               <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>error</span>
               <span className="text-[11px] font-bold uppercase tracking-wider">Atención Inmediata</span>
             </div>
-            <p className="text-sm text-[#ba1a1a]/80">Insumos agotados o por debajo del mínimo vital.</p>
+            <p className="hidden sm:block text-sm text-[#ba1a1a]/80">Insumos agotados o por debajo del mínimo vital.</p>
           </div>
-          <div className="flex items-end justify-between mt-4 relative z-10">
-            <span className="text-[48px] font-bold text-[#ba1a1a] leading-none">
+          <div className="flex flex-wrap items-end justify-between gap-x-2 mt-3 md:mt-4 relative z-10">
+            <span className="text-4xl md:text-[48px] font-bold text-[#ba1a1a] leading-none">
               {summary.criticalCount}
             </span>
-            <span className="text-sm text-[#ba1a1a]/80 font-medium">Urgentes</span>
+            <span className="text-xs md:text-sm text-[#ba1a1a]/80 font-medium">Urgentes</span>
           </div>
         </div>
 
         {/* En Advertencia */}
-        <div className="bg-[#ffddb9]/30 p-6 rounded-3xl border border-[#ffb961]/30 flex flex-col justify-between hover:shadow-lg transition-all duration-300 group relative overflow-hidden">
+        <div className="bg-[#ffddb9]/30 p-4 md:p-6 rounded-3xl border border-[#ffb961]/30 flex flex-col justify-between hover:shadow-lg transition-all duration-300 group relative overflow-hidden">
           <div className="absolute -right-4 -bottom-4 opacity-[0.05] text-[#7a4b00] pointer-events-none">
             <span className="material-symbols-outlined text-[120px]">info</span>
           </div>
-          <div className="flex flex-col mb-4 relative z-10">
+          <div className="flex flex-col md:mb-4 relative z-10">
             <div className="flex items-center gap-2 mb-2 text-[#7a4b00]">
               <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>info</span>
               <span className="text-[11px] font-bold uppercase tracking-wider">Revisión Recomendada</span>
             </div>
-            <p className="text-sm text-[#7a4b00]/80">Acercándose a los niveles de reposición.</p>
+            <p className="hidden sm:block text-sm text-[#7a4b00]/80">Acercándose a los niveles de reposición.</p>
           </div>
-          <div className="flex items-end justify-between mt-4 relative z-10">
-            <span className="text-[48px] font-bold text-[#7a4b00] leading-none">
+          <div className="flex flex-wrap items-end justify-between gap-x-2 mt-3 md:mt-4 relative z-10">
+            <span className="text-4xl md:text-[48px] font-bold text-[#7a4b00] leading-none">
               {summary.warningCount}
             </span>
-            <span className="text-sm text-[#7a4b00]/80 font-medium">A revisar</span>
+            <span className="text-xs md:text-sm text-[#7a4b00]/80 font-medium">A revisar</span>
           </div>
         </div>
 
         {/* Saludables */}
-        <div className="bg-[#006d37]/5 p-6 rounded-3xl border border-[#006d37]/20 flex flex-col justify-between hover:shadow-lg transition-all duration-300 group relative overflow-hidden">
+        <div className="bg-[#006d37]/5 p-4 md:p-6 rounded-3xl border border-[#006d37]/20 flex flex-col justify-between hover:shadow-lg transition-all duration-300 group relative overflow-hidden">
           <div className="absolute -right-2 -bottom-2 opacity-[0.04] text-[#006d37] pointer-events-none">
             <span className="material-symbols-outlined text-[120px]">verified</span>
           </div>
-          <div className="flex flex-col mb-4 relative z-10">
+          <div className="flex flex-col md:mb-4 relative z-10">
             <div className="flex items-center gap-2 mb-2 text-[#006d37]">
               <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
               <span className="text-[11px] font-bold uppercase tracking-wider">Niveles Óptimos</span>
             </div>
-            <p className="text-sm text-[#006d37]/80">Insumos con stock suficiente para operar.</p>
+            <p className="hidden sm:block text-sm text-[#006d37]/80">Insumos con stock suficiente para operar.</p>
           </div>
-          <div className="flex items-end justify-between mt-4 relative z-10">
-            <span className="text-[48px] font-bold text-[#006d37] leading-none">
+          <div className="flex flex-wrap items-end justify-between gap-x-2 mt-3 md:mt-4 relative z-10">
+            <span className="text-4xl md:text-[48px] font-bold text-[#006d37] leading-none">
               {summary.healthyCount}
             </span>
-            <span className="text-sm text-[#006d37]/80 font-medium">Suficientes</span>
+            <span className="text-xs md:text-sm text-[#006d37]/80 font-medium">Suficientes</span>
           </div>
         </div>
 
       </section>
 
       {/* ── Predictive Restocking Section (Stitch Design) ── */}
-      <section className="bg-white rounded-3xl border border-[#cdc3d4]/20 p-8 shadow-xs">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 pb-6 border-b border-[#cdc3d4]/20 gap-4">
+      <section className="bg-white rounded-3xl border border-[#cdc3d4]/20 p-5 md:p-8 shadow-xs">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 pb-5 md:pb-6 border-b border-[#cdc3d4]/20 gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="bg-[#541a97]/10 p-2 rounded-xl">
                 <span className="material-symbols-outlined text-[#541a97] text-[24px]">support_agent</span>
               </div>
-              <h3 className="text-xl font-bold text-[#111c2c]">Sugerencias de Reposición</h3>
+              <h3 className="text-lg md:text-xl font-bold text-[#111c2c]">Sugerencias de Reposición</h3>
             </div>
             <p className="text-sm text-[#4b4452] max-w-2xl mt-1">
               Recomendaciones personalizadas para su clínica, basadas en su historial de consumo y necesidades operativas.
@@ -213,7 +214,7 @@ export default function ClinicDashboard() {
           </div>
           <Link
             to="/clinic/inventory"
-            className="bg-[#541a97]/5 hover:bg-[#541a97]/10 text-[#541a97] font-semibold text-sm px-6 py-3 rounded-2xl transition-colors duration-200 flex items-center gap-2 whitespace-nowrap border border-[#541a97]/20"
+            className="w-full md:w-auto justify-center bg-[#541a97]/5 hover:bg-[#541a97]/10 text-[#541a97] font-semibold text-sm px-6 py-3 rounded-2xl transition-colors duration-200 flex items-center gap-2 whitespace-nowrap border border-[#541a97]/20"
           >
             <span>Ver Inventario Completo</span>
             <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
@@ -222,7 +223,7 @@ export default function ClinicDashboard() {
 
         {suggestions.length === 0 ? (
           /* Empty State Canvas */
-          <div className="bg-[#f9f9ff] border border-[#cdc3d4]/20 rounded-2xl p-12 md:p-16 flex flex-col items-center justify-center text-center">
+          <div className="bg-[#f9f9ff] border border-[#cdc3d4]/20 rounded-2xl p-6 sm:p-12 md:p-16 flex flex-col items-center justify-center text-center">
             <div className="bg-white p-5 rounded-2xl mb-6 shadow-xs border border-[#cdc3d4]/20">
               <span className="material-symbols-outlined text-[#541a97]/60 text-[40px]" style={{ fontVariationSettings: "'wght' 200" }}>
                 hourglass_empty
@@ -237,11 +238,11 @@ export default function ClinicDashboard() {
           </div>
         ) : (
           /* List of Suggestions */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {suggestions.slice(0, 6).map((item) => (
               <div
                 key={item.productId}
-                className="p-5 border border-[#cdc3d4]/30 rounded-2xl bg-white hover:border-[#541a97]/30 hover:shadow-md transition-all space-y-4"
+                className="p-4 md:p-5 border border-[#cdc3d4]/30 rounded-2xl bg-white hover:border-[#541a97]/30 hover:shadow-md transition-all space-y-4"
               >
                 <div className="flex items-center gap-3">
                   <img
@@ -259,9 +260,9 @@ export default function ClinicDashboard() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-xs pt-3 border-t border-[#cdc3d4]/20">
+                <div className="flex items-center justify-between gap-2 text-xs pt-3 border-t border-[#cdc3d4]/20">
                   <span className="text-[#4b4452]">Agotamiento estimado:</span>
-                  <span className="font-bold text-[#7a4b00] bg-[#ffddb9]/40 px-3 py-1 rounded-full">
+                  <span className="font-bold text-[#7a4b00] bg-[#ffddb9]/40 px-3 py-1 rounded-full whitespace-nowrap">
                     en {item.estimatedDaysRemaining} día(s)
                   </span>
                 </div>

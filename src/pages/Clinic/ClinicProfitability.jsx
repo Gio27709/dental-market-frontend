@@ -63,10 +63,10 @@ export default function ClinicProfitability() {
   } = summaryData || {};
 
   return (
-    <div id="profitability-container" className="space-y-8">
-      
+    <div id="profitability-container" className="space-y-6 md:space-y-8">
+
       {/* ── HEADER DE RENTABILIDAD ── */}
-      <header className="bg-white p-8 rounded-3xl border border-[#cdc3d4]/20 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <header className="bg-white p-5 md:p-8 rounded-3xl border border-[#cdc3d4]/20 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="w-1.5 h-1.5 rounded-full bg-[#541a97]"></span>
@@ -74,13 +74,13 @@ export default function ClinicProfitability() {
               Inteligencia Financiera B2B
             </span>
           </div>
-          <h1 className="text-3xl font-extrabold text-[#111c2c] tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-[#111c2c] tracking-tight flex items-center gap-3">
             <span className="material-symbols-outlined text-[32px] text-[#541a97]" style={{ fontVariationSettings: "'FILL' 1" }}>
               payments
             </span>
             Rentabilidad &amp; Gestión Financiera
           </h1>
-          <p className="text-base text-[#4b4452] mt-1 max-w-xl">
+          <p className="text-sm md:text-base text-[#4b4452] mt-1 max-w-xl">
             Auditoría de compras, distribución de gasto por categoría y proyección presupuestaria para tu consultorio.
           </p>
         </div>
@@ -90,35 +90,35 @@ export default function ClinicProfitability() {
       </header>
 
       {/* ── METRIC CARDS ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         
         {/* Gasto Mes Actual */}
-        <div className="bg-white p-6 rounded-3xl border border-[#cdc3d4]/20 flex flex-col justify-between shadow-xs hover:shadow-md transition-all">
+        <div className="bg-white p-4 md:p-6 rounded-3xl border border-[#cdc3d4]/20 flex flex-col justify-between shadow-xs hover:shadow-md transition-all">
           <p className="text-xs font-bold text-[#4b4452] uppercase tracking-wider">
             Gasto Mes Actual
           </p>
-          <p className="text-3xl font-extrabold text-[#111c2c] mt-2">
+          <p className="text-2xl md:text-3xl font-extrabold text-[#111c2c] mt-2">
             ${currentMonthSpent.toFixed(2)}
           </p>
           <div className="mt-3 text-xs flex items-center gap-1 font-semibold">
             {monthOverMonthChange >= 0 ? (
               <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
-                ▲ +{monthOverMonthChange}% vs mes anterior
+                ▲ +{monthOverMonthChange}%<span className="hidden sm:inline"> vs mes anterior</span>
               </span>
             ) : (
               <span className="text-[#006d37] bg-[#006d37]/10 px-2 py-0.5 rounded-full">
-                ▼ {monthOverMonthChange}% vs mes anterior
+                ▼ {monthOverMonthChange}%<span className="hidden sm:inline"> vs mes anterior</span>
               </span>
             )}
           </div>
         </div>
 
         {/* Valor Promedio de Orden */}
-        <div className="bg-white p-6 rounded-3xl border border-[#cdc3d4]/20 flex flex-col justify-between shadow-xs hover:shadow-md transition-all">
+        <div className="bg-white p-4 md:p-6 rounded-3xl border border-[#cdc3d4]/20 flex flex-col justify-between shadow-xs hover:shadow-md transition-all">
           <p className="text-xs font-bold text-[#4b4452] uppercase tracking-wider">
             Promedio por Pedido
           </p>
-          <p className="text-3xl font-extrabold text-[#541a97] mt-2">
+          <p className="text-2xl md:text-3xl font-extrabold text-[#541a97] mt-2">
             ${avgOrderValue.toFixed(2)}
           </p>
           <p className="text-[11px] text-[#4b4452] mt-3">
@@ -127,11 +127,11 @@ export default function ClinicProfitability() {
         </div>
 
         {/* Categoría de Mayor Inversión */}
-        <div className="bg-white p-6 rounded-3xl border border-[#cdc3d4]/20 flex flex-col justify-between shadow-xs hover:shadow-md transition-all">
+        <div className="bg-white p-4 md:p-6 rounded-3xl border border-[#cdc3d4]/20 flex flex-col justify-between shadow-xs hover:shadow-md transition-all">
           <p className="text-xs font-bold text-[#4b4452] uppercase tracking-wider">
             Especialidad Principal
           </p>
-          <p className="text-2xl font-bold text-[#111c2c] mt-2 truncate">
+          <p className="text-lg md:text-2xl font-bold text-[#111c2c] mt-2 truncate">
             {topCategory}
           </p>
           <p className="text-[11px] text-[#4b4452] mt-3">
@@ -140,11 +140,11 @@ export default function ClinicProfitability() {
         </div>
 
         {/* Estado de Ahorro */}
-        <div className="bg-white p-6 rounded-3xl border border-[#cdc3d4]/20 flex flex-col justify-between shadow-xs hover:shadow-md transition-all">
+        <div className="bg-white p-4 md:p-6 rounded-3xl border border-[#cdc3d4]/20 flex flex-col justify-between shadow-xs hover:shadow-md transition-all">
           <p className="text-xs font-bold text-[#006d37] uppercase tracking-wider">
             Oportunidades de Ahorro
           </p>
-          <p className="text-3xl font-extrabold text-[#006d37] mt-2">
+          <p className="text-2xl md:text-3xl font-extrabold text-[#006d37] mt-2">
             {offers.length} Activa(s)
           </p>
           <p className="text-[11px] text-[#006d37]/80 mt-3 font-medium">
@@ -162,20 +162,20 @@ export default function ClinicProfitability() {
 
       {/* ── SECCION DE OFERTAS INTELIGENTES PARA LA CLINICA ── */}
       {offers.length > 0 && (
-        <section className="bg-white rounded-3xl border border-[#cdc3d4]/20 p-8 shadow-xs space-y-6">
+        <section className="bg-white rounded-3xl border border-[#cdc3d4]/20 p-5 md:p-8 shadow-xs space-y-6">
           <div className="flex items-center gap-3 border-b border-[#cdc3d4]/20 pb-4">
             <div className="bg-[#006d37]/10 p-2 rounded-xl">
               <span className="material-symbols-outlined text-[#006d37]">local_offer</span>
             </div>
             <div>
-              <h3 className="text-xl font-bold text-[#111c2c]">Sugerencias de Ahorro Inteligente</h3>
+              <h3 className="text-lg md:text-xl font-bold text-[#111c2c]">Sugerencias de Ahorro Inteligente</h3>
               <p className="text-xs text-[#4b4452]">Descuentos vigentes en las tiendas proveedoras para tus insumos frecuentes.</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {offers.map((offer) => (
-              <div key={offer.productId} className="p-5 border border-[#cdc3d4]/30 rounded-2xl bg-white hover:shadow-md transition-all space-y-3">
+              <div key={offer.productId} className="p-4 md:p-5 border border-[#cdc3d4]/30 rounded-2xl bg-white hover:shadow-md transition-all space-y-3">
                 <div className="flex items-center gap-3">
                   <img src={offer.imageUrl || "/placeholder.png"} alt={offer.productName} className="w-12 h-12 rounded-xl object-cover border border-[#cdc3d4]/20" />
                   <div className="flex-1 min-w-0">

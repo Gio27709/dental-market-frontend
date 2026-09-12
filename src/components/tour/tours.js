@@ -171,8 +171,9 @@ const vendedor = {
 };
 
 /**
- * Panel clínico (odontólogos y estudiantes). Sin variantes móviles: el menú lateral
- * se ve siempre. Sin `route` estricta: la puerta de membresía redirige `/clinic` a
+ * Panel clínico (odontólogos y estudiantes). En móvil el menú lateral vive dentro del
+ * ☰ de la barra superior (`clinic-menu`), y la membresía tiene acceso directo en la
+ * misma barra. Sin `route` estricta: la puerta de membresía redirige `/clinic` a
  * `/clinic/membership` cuando no hay membresía activa, y el menú existe en ambas.
  */
 const clinica = {
@@ -185,37 +186,58 @@ const clinica = {
       text: "Este panel te ayuda a administrar los insumos de tu consultorio: qué tienes, qué se está acabando y cuánto gastas. Vamos a recorrer cada sección.",
       routePrefix: "/clinic",
       route: "/clinic",
+      mobile: {
+        target: "clinic-menu",
+        text: "Este panel te ayuda a administrar los insumos de tu consultorio. En el celular, todas las secciones están dentro de este menú. Te contamos qué hace cada una.",
+      },
     },
     {
       target: "clinic-nav-/clinic/membership",
       title: "Tu membresía",
       text: "El panel funciona con una membresía mensual. Aquí la activas subiendo tu comprobante de pago, ves los días que te quedan y la renuevas cuando venza.",
+      mobile: { target: "clinic-mobile-membership" },
     },
     {
       target: "clinic-nav-/clinic",
       title: "Resumen ejecutivo",
       text: "Vista general de tu inventario: cuántos insumos monitoreas, cuáles están críticos o por agotarse y sugerencias de reposición.",
+      mobile: {
+        target: "clinic-menu",
+        title: "Resumen e inventario",
+        text: "En «Resumen Ejecutivo» ves qué insumos están críticos o por agotarse. En «Mi Inventario Clínico» registras cada insumo con su mínimo y el panel te avisa cuando baje.",
+      },
     },
     {
       target: "clinic-nav-/clinic/inventory",
       title: "Tu inventario clínico",
       text: "Registra cada insumo con su stock actual y su mínimo. Cuando baje de ese umbral, el panel te avisa para que compres a tiempo.",
+      mobile: false,
     },
     {
       target: "clinic-nav-/clinic/subscriptions",
       title: "Suscripciones recurrentes",
       text: "Programa el reabastecimiento periódico de tus insumos esenciales para no tener que pedirlos a mano cada vez.",
+      mobile: {
+        target: "clinic-menu",
+        title: "Suscripciones y rentabilidad",
+        text: "En «Suscripciones Recurrentes» programas reposiciones periódicas. En «Rentabilidad & Gastos» ves tu gasto por categoría y exportas reportes a PDF o Excel.",
+      },
     },
     {
       target: "clinic-nav-/clinic/profitability",
       title: "Rentabilidad y gastos",
       text: "Auditoría de compras, gasto por categoría y proyección de presupuesto. Puedes exportar los reportes a PDF o Excel.",
+      mobile: false,
     },
     {
       target: "clinic-back-account",
       title: "Volver a tu cuenta",
       text: "Desde aquí regresas a tu cuenta y a la tienda. Puedes repetir esta guía cuando quieras con «Ver guía del panel».",
       placement: "top",
+      mobile: {
+        target: "clinic-menu",
+        text: "Al final de este menú están «Volver a Mi Cuenta» y «Ver guía del panel», por si quieres repetir este recorrido.",
+      },
     },
   ],
 };

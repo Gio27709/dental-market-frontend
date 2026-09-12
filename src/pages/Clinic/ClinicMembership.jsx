@@ -157,7 +157,8 @@ function FormularioPago({ configuracion, onEnviado, esRenovacion }) {
   const isWallet = formulario === "billetera";
 
   const inputCls = (key) =>
-    `w-full p-3 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
+    // 16px en móvil para que iOS no haga zoom al enfocar el campo.
+    `w-full p-3 border rounded-xl text-base sm:text-sm focus:outline-none focus:ring-2 transition-all ${
       errors[key]
         ? "border-red-300 bg-red-50/30 focus:ring-red-100 focus:border-red-400"
         : "border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-[#541a97]/15 focus:border-[#541a97]"
@@ -242,9 +243,9 @@ function FormularioPago({ configuracion, onEnviado, esRenovacion }) {
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-[#cdc3d4]/20 shadow-xs p-6 md:p-8">
+    <div className="bg-white rounded-3xl border border-[#cdc3d4]/20 shadow-xs p-5 md:p-8">
       <div className="flex items-start gap-3.5 mb-6 pb-5 border-b border-slate-100">
-        <div className="w-10 h-10 rounded-xl bg-[#541a97]/5 flex items-center justify-center text-[#541a97]">
+        <div className="w-10 h-10 rounded-xl bg-[#541a97]/5 flex items-center justify-center text-[#541a97] flex-shrink-0">
           <span className="material-symbols-outlined text-[22px]">receipt_long</span>
         </div>
         <div>
@@ -291,7 +292,7 @@ function FormularioPago({ configuracion, onEnviado, esRenovacion }) {
                 <div className="col-span-2 sm:col-span-1">
                   <label className="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">Cédula / RIF <span className="text-red-500">*</span></label>
                   <div className="flex gap-2">
-                    <select value={cedulaType} onChange={(e) => setCedulaType(e.target.value)} className="w-1/3 p-3 border border-slate-200 rounded-xl text-sm bg-white" disabled={sending}>
+                    <select value={cedulaType} onChange={(e) => setCedulaType(e.target.value)} className="w-1/3 p-3 border border-slate-200 rounded-xl text-base sm:text-sm bg-white" disabled={sending}>
                       {["V", "J", "E", "P", "G"].map((t) => <option key={t} value={t}>{t}</option>)}
                     </select>
                     <input type="text" value={cedulaNumber} onChange={(e) => { setCedulaNumber(e.target.value); clear("payerCedula"); }} placeholder="12345678" className={`w-2/3 ${inputCls("payerCedula")}`} disabled={sending} />
@@ -417,7 +418,7 @@ export default function ClinicMembership() {
                 <h3 className="font-black text-slate-900">¿Quieres adelantar la renovación?</h3>
                 <p className="text-xs text-slate-500 mt-1">Puedes pagar el siguiente período ahora. Empezará cuando termine el actual.</p>
               </div>
-              <button onClick={() => setMostrarRenovar(true)} className="px-5 py-3 rounded-2xl bg-[#541a97] text-white text-sm font-bold hover:bg-[#6c38b0] transition-colors whitespace-nowrap">
+              <button onClick={() => setMostrarRenovar(true)} className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-[#541a97] text-white text-sm font-bold hover:bg-[#6c38b0] transition-colors whitespace-nowrap">
                 Renovar ahora
               </button>
             </div>
@@ -440,10 +441,26 @@ export default function ClinicMembership() {
 
           {historial?.length > 0 && (
             <div className="bg-white rounded-3xl border border-[#cdc3d4]/20 shadow-xs overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100">
+              <div className="px-5 md:px-6 py-4 border-b border-slate-100">
                 <h3 className="font-black text-slate-900">Historial</h3>
               </div>
-              <div className="overflow-x-auto">
+              {/* Móvil: una tarjeta por período en vez de la tabla de 4 columnas. */}
+              <ul className="md:hidden divide-y divide-slate-100">
+                {historial.map((m) => (
+                  <li key={m.id} className="px-5 py-4 space-y-1.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <Badge status={m.status} />
+                      <span className="font-bold text-slate-800 text-sm">{usd(m.price_usd)}</span>
+                    </div>
+                    <p className="text-sm text-slate-700">
+                      {m.starts_at ? `${fecha(m.starts_at)} → ${fecha(m.ends_at)}` : `Enviado ${fecha(m.created_at)}`}
+                    </p>
+                    <p className="text-xs text-slate-500">{m.payment_method}</p>
+                    {m.review_reason && <p className="text-[11px] text-slate-500">{m.review_reason}</p>}
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
                     <tr>

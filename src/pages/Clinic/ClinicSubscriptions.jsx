@@ -8,6 +8,9 @@ import {
   getProducts,
 } from "../../services/api";
 
+// Campos del modal: 16px en móvil para que iOS no haga zoom al enfocarlos.
+const fieldCls = "w-full mt-1.5 px-3 py-2.5 bg-[#f9f9ff] border border-[#cdc3d4]/40 rounded-2xl text-base sm:text-sm font-semibold";
+
 export default function ClinicSubscriptions() {
   const [loading, setLoading] = useState(true);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -111,9 +114,9 @@ export default function ClinicSubscriptions() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       {/* ── HEADER ── */}
-      <div className="bg-white p-8 rounded-3xl border border-[#cdc3d4]/20 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+      <div className="bg-white p-5 md:p-8 rounded-3xl border border-[#cdc3d4]/20 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5 md:gap-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="w-1.5 h-1.5 rounded-full bg-[#541a97]"></span>
@@ -121,13 +124,13 @@ export default function ClinicSubscriptions() {
               Compras Recurrentes
             </span>
           </div>
-          <h1 className="text-3xl font-extrabold text-[#111c2c] tracking-tight flex items-center gap-3">
-            <span className="material-symbols-outlined text-[32px] text-[#541a97]">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-[#111c2c] tracking-tight flex items-center gap-2 md:gap-3">
+            <span className="material-symbols-outlined text-[28px] md:text-[32px] text-[#541a97]">
               sync
             </span>
             Suscripciones Recurrentes B2B
           </h1>
-          <p className="text-base text-[#4b4452] mt-1 max-w-xl">
+          <p className="text-sm md:text-base text-[#4b4452] mt-1 max-w-xl">
             Programa el reabastecimiento periódico de tus insumos esenciales sin necesidad de ordenarlos manualmente.
           </p>
         </div>
@@ -140,7 +143,7 @@ export default function ClinicSubscriptions() {
             setFrequencyDays(30);
             setIsModalOpen(true);
           }}
-          className="flex items-center justify-center gap-2 px-6 py-3.5 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-2xl font-bold text-sm shadow-md transition-all cursor-pointer"
+          className="w-full sm:w-auto flex-shrink-0 flex items-center justify-center gap-2 px-6 py-3.5 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-2xl font-bold text-sm shadow-md transition-all cursor-pointer"
         >
           <span className="material-symbols-outlined text-[20px]">add_circle</span>
           <span>Nueva Suscripción</span>
@@ -152,7 +155,7 @@ export default function ClinicSubscriptions() {
         {loading ? (
           <div className="p-12 text-center text-[#4b4452] font-medium">Cargando suscripciones...</div>
         ) : subscriptions.length === 0 ? (
-          <div className="p-16 text-center space-y-4">
+          <div className="p-8 md:p-16 text-center space-y-4">
             <div className="w-16 h-16 mx-auto rounded-2xl bg-[#541a97]/5 border border-[#541a97]/10 flex items-center justify-center">
               <span className="material-symbols-outlined text-[32px] text-[#541a97]">
                 sync
@@ -168,30 +171,30 @@ export default function ClinicSubscriptions() {
             {subscriptions.map((sub) => (
               <div
                 key={sub.id}
-                className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:bg-[#f0f3ff]/40 transition-colors"
+                className="p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 hover:bg-[#f0f3ff]/40 transition-colors"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 md:gap-4 min-w-0">
                   <img
                     src={sub.productImage || "/placeholder.png"}
                     alt={sub.productName}
-                    className="w-16 h-16 object-cover rounded-2xl border border-[#cdc3d4]/30 flex-shrink-0"
+                    className="w-14 h-14 md:w-16 md:h-16 object-cover rounded-2xl border border-[#cdc3d4]/30 flex-shrink-0"
                   />
-                  <div>
-                    <h3 className="font-bold text-[#111c2c] text-base">{sub.productName}</h3>
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-[#4b4452] mt-1.5">
-                      <span className="flex items-center gap-1 font-medium">
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-[#111c2c] text-sm md:text-base leading-snug">{sub.productName}</h3>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#4b4452] mt-1.5">
+                      <span className="flex items-center gap-1 font-medium min-w-0">
                         <span className="material-symbols-outlined text-[16px] text-[#4b4452]">storefront</span>
-                        {sub.storeName || "Tienda Proveedora"}
+                        <span className="truncate">{sub.storeName || "Tienda Proveedora"}</span>
                       </span>
-                      <span>•</span>
+                      <span className="hidden sm:inline">•</span>
                       <span className="font-semibold text-[#111c2c]">Cantidad: {sub.quantity} unidad(es)</span>
-                      <span>•</span>
+                      <span className="hidden sm:inline">•</span>
                       <span className="font-bold text-[#541a97]">Frecuencia: Cada {sub.frequencyDays} días</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 pt-4 md:pt-0 border-[#cdc3d4]/20">
+                <div className="flex items-center justify-between md:justify-end gap-4 md:gap-6 border-t md:border-t-0 pt-3 md:pt-0 border-[#cdc3d4]/20">
                   <div className="text-left md:text-right">
                     <p className="text-xs text-[#4b4452] flex items-center gap-1 font-semibold">
                       <span className="material-symbols-outlined text-[16px] text-[#541a97]">calendar_today</span>
@@ -205,7 +208,7 @@ export default function ClinicSubscriptions() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleToggleStatus(sub)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      className={`px-4 py-2.5 md:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                         sub.status === "ACTIVE"
                           ? "bg-[#ffddb9]/40 text-[#7a4b00] border border-[#ffb961]/40 hover:bg-[#ffddb9]/60"
                           : "bg-[#006d37]/10 text-[#006d37] border border-[#006d37]/30 hover:bg-[#006d37]/20"
@@ -226,10 +229,11 @@ export default function ClinicSubscriptions() {
 
                     <button
                       onClick={() => handleDelete(sub.id)}
-                      className="p-2 text-[#ba1a1a] hover:bg-[#ba1a1a]/10 rounded-xl transition-colors cursor-pointer"
+                      className="p-2.5 md:p-2 text-[#ba1a1a] hover:bg-[#ba1a1a]/10 rounded-xl transition-colors cursor-pointer"
                       title="Cancelar Suscripción"
+                      aria-label="Cancelar Suscripción"
                     >
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                      <span className="material-symbols-outlined text-[18px] block">delete</span>
                     </button>
                   </div>
                 </div>
@@ -240,16 +244,17 @@ export default function ClinicSubscriptions() {
       </div>
 
       {/* ── MODAL NUEVA SUSCRIPCIÓN ── */}
+      {/* En móvil sale desde abajo (hoja) y se desplaza si no cabe. */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-[#cdc3d4]/30">
-            <div className="flex items-center justify-between border-b border-[#cdc3d4]/20 pb-3">
+        <div className="fixed inset-0 z-[150] bg-black/40 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-lg w-full max-h-[92vh] overflow-y-auto p-5 sm:p-6 space-y-5 shadow-2xl border border-[#cdc3d4]/30">
+            <div className="flex items-center justify-between gap-3 border-b border-[#cdc3d4]/20 pb-3">
               <h3 className="text-lg font-bold text-[#111c2c] flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#541a97]">sync</span>
                 Nueva Suscripción Recurrente
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-[#4b4452] hover:text-[#111c2c]">
-                <span className="material-symbols-outlined">close</span>
+              <button onClick={() => setIsModalOpen(false)} aria-label="Cerrar" className="p-1 text-[#4b4452] hover:text-[#111c2c]">
+                <span className="material-symbols-outlined block">close</span>
               </button>
             </div>
 
@@ -263,12 +268,12 @@ export default function ClinicSubscriptions() {
                   placeholder="Ej. Anestésico 2%, Guantes de Nitrilo..."
                   value={searchQuery}
                   onChange={(e) => handleSearchCatalog(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-[#f9f9ff] border border-[#cdc3d4]/40 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#541a97]/30"
+                  className="w-full pl-10 pr-4 py-3 bg-[#f9f9ff] border border-[#cdc3d4]/40 rounded-2xl text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#541a97]/30"
                 />
               </div>
 
               {catalogProducts.length > 0 && (
-                <div className="max-h-40 overflow-y-auto border border-[#cdc3d4]/30 rounded-2xl divide-y divide-[#cdc3d4]/20 bg-white">
+                <div className="max-h-48 overflow-y-auto border border-[#cdc3d4]/30 rounded-2xl divide-y divide-[#cdc3d4]/20 bg-white">
                   {catalogProducts.map((p) => (
                     <div
                       key={p.id}
@@ -290,15 +295,16 @@ export default function ClinicSubscriptions() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="text-xs font-bold text-[#111c2c]">Cantidad por Entrega</label>
                 <input
                   type="number"
+                  inputMode="numeric"
                   min="1"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
-                  className="w-full mt-1.5 px-3 py-2.5 bg-[#f9f9ff] border border-[#cdc3d4]/40 rounded-2xl text-sm font-semibold"
+                  className={fieldCls}
                 />
               </div>
 
@@ -307,7 +313,7 @@ export default function ClinicSubscriptions() {
                 <select
                   value={frequencyDays}
                   onChange={(e) => setFrequencyDays(e.target.value)}
-                  className="w-full mt-1.5 px-3 py-2.5 bg-[#f9f9ff] border border-[#cdc3d4]/40 rounded-2xl text-sm font-semibold"
+                  className={fieldCls}
                 >
                   <option value={15}>Cada 15 días</option>
                   <option value={30}>Cada 30 días (Mensual)</option>
@@ -318,16 +324,16 @@ export default function ClinicSubscriptions() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-3">
+            <div className="grid grid-cols-2 sm:flex sm:justify-end gap-3 pt-3">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-5 py-2.5 border border-[#cdc3d4]/40 rounded-2xl text-xs font-bold text-[#4b4452]"
+                className="px-5 py-3 sm:py-2.5 border border-[#cdc3d4]/40 rounded-2xl text-xs font-bold text-[#4b4452]"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleCreateSubscription}
-                className="px-6 py-2.5 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-2xl text-xs font-bold shadow-md cursor-pointer"
+                className="px-6 py-3 sm:py-2.5 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-2xl text-xs font-bold shadow-md cursor-pointer"
               >
                 Crear Suscripción
               </button>

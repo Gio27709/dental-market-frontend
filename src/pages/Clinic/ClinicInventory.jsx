@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -9,6 +10,32 @@ import {
   preloadRestockCartAPI,
   getProducts,
 } from "../../services/api";
+
+const STOCK_STATUS = {
+  CRITICAL: { icon: "error", label: "🚨 Stock Crítico", cls: "bg-[#ba1a1a]/10 text-[#ba1a1a] border-[#ba1a1a]/30" },
+  WARNING: { icon: "info", label: "⚠️ Advertencia", cls: "bg-[#ffddb9]/40 text-[#7a4b00] border-[#ffb961]/40" },
+  HEALTHY: { icon: "check_circle", label: "🟢 Saludable", cls: "bg-[#006d37]/10 text-[#006d37] border-[#006d37]/30" },
+};
+
+function StockBadge({ status }) {
+  const s = STOCK_STATUS[status];
+  if (!s) return null;
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold border ${s.cls}`}>
+      <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>{s.icon}</span>
+      <span>{s.label}</span>
+    </span>
+  );
+}
+StockBadge.propTypes = { status: PropTypes.string };
+
+// Campos de los modales: 16px en móvil para que iOS no haga zoom al enfocarlos.
+const fieldCls =
+  "w-full mt-1.5 px-3 py-2.5 bg-[#f9f9ff] border border-[#cdc3d4]/40 rounded-2xl text-base sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#541a97]/30";
+
+// En móvil los modales salen desde abajo (hoja) y se desplazan si no caben.
+const modalBackdropCls = "fixed inset-0 z-[150] bg-black/40 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4";
+const modalPanelCls = "bg-white rounded-t-3xl sm:rounded-3xl w-full max-h-[92vh] overflow-y-auto p-5 sm:p-6 shadow-2xl border border-[#cdc3d4]/30";
 
 export default function ClinicInventory() {
   const [loading, setLoading] = useState(true);
@@ -153,9 +180,9 @@ export default function ClinicInventory() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       {/* ── Header (Stitch Style) ── */}
-      <div className="bg-white p-8 rounded-3xl border border-[#cdc3d4]/20 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+      <div className="bg-white p-5 md:p-8 rounded-3xl border border-[#cdc3d4]/20 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5 md:gap-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="w-1.5 h-1.5 rounded-full bg-[#541a97]"></span>
@@ -163,13 +190,13 @@ export default function ClinicInventory() {
               Inventario Clínico
             </span>
           </div>
-          <h1 className="text-3xl font-extrabold text-[#111c2c] tracking-tight flex items-center gap-3">
-            <span className="material-symbols-outlined text-[32px] text-[#541a97]" style={{ fontVariationSettings: "'FILL' 1" }}>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-[#111c2c] tracking-tight flex items-center gap-2 md:gap-3">
+            <span className="material-symbols-outlined text-[28px] md:text-[32px] text-[#541a97]" style={{ fontVariationSettings: "'FILL' 1" }}>
               inventory_2
             </span>
             Mi Inventario Clínico
           </h1>
-          <p className="text-base text-[#4b4452] mt-1 max-w-xl">
+          <p className="text-sm md:text-base text-[#4b4452] mt-1 max-w-xl">
             Gestiona los insumos de tu clínica y configura los umbrales de stock crítico para recompra automática.
           </p>
         </div>
@@ -182,7 +209,7 @@ export default function ClinicInventory() {
             setUnitType("cajas");
             setIsAddModalOpen(true);
           }}
-          className="flex items-center justify-center gap-2 px-6 py-3.5 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-2xl font-bold text-sm shadow-md transition-all cursor-pointer"
+          className="w-full sm:w-auto flex-shrink-0 flex items-center justify-center gap-2 px-6 py-3.5 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-2xl font-bold text-sm shadow-md transition-all cursor-pointer"
         >
           <span className="material-symbols-outlined text-[20px]">add_box</span>
           <span>Monitorear Nuevo Insumo</span>
@@ -194,7 +221,7 @@ export default function ClinicInventory() {
         {loading ? (
           <div className="p-12 text-center text-[#4b4452] font-medium">Cargando inventario de la clínica...</div>
         ) : items.length === 0 ? (
-          <div className="p-16 text-center space-y-4">
+          <div className="p-8 md:p-16 text-center space-y-4">
             <div className="w-16 h-16 mx-auto rounded-2xl bg-[#541a97]/5 border border-[#541a97]/10 flex items-center justify-center">
               <span className="material-symbols-outlined text-[32px] text-[#541a97]">
                 inventory_2
@@ -206,118 +233,166 @@ export default function ClinicInventory() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[#f0f3ff] border-b border-[#cdc3d4]/20 text-xs font-bold text-[#111c2c] uppercase tracking-wider">
-                  <th className="p-5">Insumo / Producto</th>
-                  <th className="p-5">Tienda Proveedora</th>
-                  <th className="p-5">Estado de Stock</th>
-                  <th className="p-5">Stock Estimado</th>
-                  <th className="p-5">Umbral Crítico</th>
-                  <th className="p-5 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#cdc3d4]/20 text-sm">
-                {items.map((item) => (
-                  <tr key={item.id} className="hover:bg-[#f0f3ff]/40 transition-colors">
-                    <td className="p-5">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={item.productImage || "/placeholder.png"}
-                          alt={item.productName}
-                          className="w-12 h-12 object-cover rounded-xl border border-[#cdc3d4]/30"
-                        />
-                        <div>
-                          <p className="font-bold text-[#111c2c]">{item.productName}</p>
-                          <p className="text-xs text-[#4b4452]">${item.productPrice.toFixed(2)} / unidad</p>
-                        </div>
+          <>
+            {/* Móvil: una tarjeta por insumo (la tabla de 6 columnas no cabe). */}
+            <ul className="md:hidden divide-y divide-[#cdc3d4]/20">
+              {items.map((item) => (
+                <li key={item.id} className="p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <img
+                      src={item.productImage || "/placeholder.png"}
+                      alt={item.productName}
+                      className="w-14 h-14 object-cover rounded-xl border border-[#cdc3d4]/30 flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-[#111c2c] leading-snug">{item.productName}</p>
+                      <p className="text-xs text-[#4b4452] mt-0.5 flex items-center gap-1 min-w-0">
+                        <span className="whitespace-nowrap">${item.productPrice.toFixed(2)} / unidad</span>
+                        <span aria-hidden="true">·</span>
+                        <span className="material-symbols-outlined text-[14px]">storefront</span>
+                        <span className="truncate">{item.storeName || "Tienda Registrada"}</span>
+                      </p>
+                      <div className="mt-2">
+                        <StockBadge status={item.stockStatus} />
                       </div>
-                    </td>
+                    </div>
+                  </div>
 
-                    <td className="p-5 text-[#4b4452]">
-                      <div className="flex items-center gap-1.5 text-xs font-medium">
-                        <span className="material-symbols-outlined text-[16px] text-[#4b4452]">storefront</span>
-                        <span>{item.storeName || "Tienda Registrada"}</span>
-                      </div>
-                    </td>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-[#f9f9ff] border border-[#cdc3d4]/20 rounded-xl px-3 py-2">
+                      <p className="text-[11px] text-[#4b4452]">Stock estimado</p>
+                      <p className="text-sm font-bold text-[#111c2c]">{item.currentEstimatedStock} {item.unitType}</p>
+                    </div>
+                    <div className="bg-[#f9f9ff] border border-[#cdc3d4]/20 rounded-xl px-3 py-2">
+                      <p className="text-[11px] text-[#4b4452]">Umbral crítico</p>
+                      <p className="text-sm font-semibold text-[#4b4452]">≤ {item.criticalThreshold} {item.unitType}</p>
+                    </div>
+                  </div>
 
-                    <td className="p-5">
-                      {item.stockStatus === "CRITICAL" && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-[#ba1a1a]/10 text-[#ba1a1a] border border-[#ba1a1a]/30">
-                          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>error</span>
-                          <span>🚨 Stock Crítico</span>
-                        </span>
-                      )}
-                      {item.stockStatus === "WARNING" && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-[#ffddb9]/40 text-[#7a4b00] border border-[#ffb961]/40">
-                          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>info</span>
-                          <span>⚠️ Advertencia</span>
-                        </span>
-                      )}
-                      {item.stockStatus === "HEALTHY" && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-[#006d37]/10 text-[#006d37] border border-[#006d37]/30">
-                          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                          <span>🟢 Saludable</span>
-                        </span>
-                      )}
-                    </td>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleRestockSingle(item)}
+                      className="flex-1 py-2.5 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">shopping_cart</span>
+                      <span>Reponer</span>
+                    </button>
+                    <button
+                      onClick={() => openEditModal(item)}
+                      aria-label="Editar"
+                      className="p-2.5 text-[#4b4452] border border-[#cdc3d4]/40 hover:text-[#541a97] hover:bg-[#f0f3ff] rounded-xl transition-colors cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[18px] block">edit</span>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      aria-label="Eliminar"
+                      className="p-2.5 text-[#ba1a1a] border border-[#ba1a1a]/20 hover:bg-[#ba1a1a]/10 rounded-xl transition-colors cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[18px] block">delete</span>
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
 
-                    <td className="p-5 font-bold text-[#111c2c]">
-                      {item.currentEstimatedStock} {item.unitType}
-                    </td>
-
-                    <td className="p-5 text-[#4b4452] font-semibold">
-                      ≤ {item.criticalThreshold} {item.unitType}
-                    </td>
-
-                    <td className="p-5 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleRestockSingle(item)}
-                          className="px-4 py-2 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-                          title="Reponer insumo en el carrito"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">shopping_cart</span>
-                          <span>Reponer</span>
-                        </button>
-
-                        <button
-                          onClick={() => openEditModal(item)}
-                          className="p-2 text-[#4b4452] hover:text-[#541a97] hover:bg-[#f0f3ff] rounded-xl transition-colors cursor-pointer"
-                          title="Editar"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">edit</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleDelete(item.id)}
-                          className="p-2 text-[#ba1a1a] hover:bg-[#ba1a1a]/10 rounded-xl transition-colors cursor-pointer"
-                          title="Eliminar"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
-                      </div>
-                    </td>
+            {/* Escritorio: tabla completa. */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#f0f3ff] border-b border-[#cdc3d4]/20 text-xs font-bold text-[#111c2c] uppercase tracking-wider">
+                    <th className="p-5">Insumo / Producto</th>
+                    <th className="p-5">Tienda Proveedora</th>
+                    <th className="p-5">Estado de Stock</th>
+                    <th className="p-5">Stock Estimado</th>
+                    <th className="p-5">Umbral Crítico</th>
+                    <th className="p-5 text-right">Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-[#cdc3d4]/20 text-sm">
+                  {items.map((item) => (
+                    <tr key={item.id} className="hover:bg-[#f0f3ff]/40 transition-colors">
+                      <td className="p-5">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={item.productImage || "/placeholder.png"}
+                            alt={item.productName}
+                            className="w-12 h-12 object-cover rounded-xl border border-[#cdc3d4]/30"
+                          />
+                          <div>
+                            <p className="font-bold text-[#111c2c]">{item.productName}</p>
+                            <p className="text-xs text-[#4b4452]">${item.productPrice.toFixed(2)} / unidad</p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="p-5 text-[#4b4452]">
+                        <div className="flex items-center gap-1.5 text-xs font-medium">
+                          <span className="material-symbols-outlined text-[16px] text-[#4b4452]">storefront</span>
+                          <span>{item.storeName || "Tienda Registrada"}</span>
+                        </div>
+                      </td>
+
+                      <td className="p-5">
+                        <StockBadge status={item.stockStatus} />
+                      </td>
+
+                      <td className="p-5 font-bold text-[#111c2c]">
+                        {item.currentEstimatedStock} {item.unitType}
+                      </td>
+
+                      <td className="p-5 text-[#4b4452] font-semibold">
+                        ≤ {item.criticalThreshold} {item.unitType}
+                      </td>
+
+                      <td className="p-5 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleRestockSingle(item)}
+                            className="px-4 py-2 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                            title="Reponer insumo en el carrito"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">shopping_cart</span>
+                            <span>Reponer</span>
+                          </button>
+
+                          <button
+                            onClick={() => openEditModal(item)}
+                            className="p-2 text-[#4b4452] hover:text-[#541a97] hover:bg-[#f0f3ff] rounded-xl transition-colors cursor-pointer"
+                            title="Editar"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">edit</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="p-2 text-[#ba1a1a] hover:bg-[#ba1a1a]/10 rounded-xl transition-colors cursor-pointer"
+                            title="Eliminar"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
       {/* ── MODAL MONITOREAR NUEVO INSUMO ── */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-[#cdc3d4]/30">
-            <div className="flex items-center justify-between border-b border-[#cdc3d4]/20 pb-4">
+        <div className={modalBackdropCls}>
+          <div className={`${modalPanelCls} max-w-lg space-y-5`}>
+            <div className="flex items-center justify-between gap-3 border-b border-[#cdc3d4]/20 pb-4">
               <h3 className="text-lg font-bold text-[#111c2c] flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#541a97]">add_box</span>
                 Monitorear Insumo Clínico
               </h3>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-[#4b4452] hover:text-[#111c2c]">
-                <span className="material-symbols-outlined">close</span>
+              <button onClick={() => setIsAddModalOpen(false)} aria-label="Cerrar" className="p-1 text-[#4b4452] hover:text-[#111c2c]">
+                <span className="material-symbols-outlined block">close</span>
               </button>
             </div>
 
@@ -333,12 +408,12 @@ export default function ClinicInventory() {
                   placeholder="Ej. Resina Filtek, Anestésico 2%..."
                   value={searchQuery}
                   onChange={(e) => handleSearchCatalog(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-[#f9f9ff] border border-[#cdc3d4]/40 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#541a97]/30 focus:border-[#541a97]"
+                  className="w-full pl-10 pr-4 py-3 bg-[#f9f9ff] border border-[#cdc3d4]/40 rounded-2xl text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#541a97]/30 focus:border-[#541a97]"
                 />
               </div>
 
               {catalogProducts.length > 0 && (
-                <div className="max-h-40 overflow-y-auto border border-[#cdc3d4]/30 rounded-2xl divide-y divide-[#cdc3d4]/20 bg-white">
+                <div className="max-h-48 overflow-y-auto border border-[#cdc3d4]/30 rounded-2xl divide-y divide-[#cdc3d4]/20 bg-white">
                   {catalogProducts.map((p) => (
                     <div
                       key={p.id}
@@ -363,15 +438,16 @@ export default function ClinicInventory() {
             </div>
 
             {/* Valores de umbral */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="text-xs font-bold text-[#111c2c]">Stock Actual Estimado</label>
                 <input
                   type="number"
+                  inputMode="numeric"
                   min="0"
                   value={currentEstimatedStock}
                   onChange={(e) => setCurrentEstimatedStock(e.target.value)}
-                  className="w-full mt-1.5 px-3 py-2.5 bg-[#f9f9ff] border border-[#cdc3d4]/40 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#541a97]/30"
+                  className={fieldCls}
                 />
               </div>
 
@@ -379,10 +455,11 @@ export default function ClinicInventory() {
                 <label className="text-xs font-bold text-[#111c2c]">Umbral Crítico de Alerta</label>
                 <input
                   type="number"
+                  inputMode="numeric"
                   min="0"
                   value={criticalThreshold}
                   onChange={(e) => setCriticalThreshold(e.target.value)}
-                  className="w-full mt-1.5 px-3 py-2.5 bg-[#f9f9ff] border border-[#cdc3d4]/40 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#541a97]/30"
+                  className={fieldCls}
                 />
               </div>
             </div>
@@ -392,7 +469,7 @@ export default function ClinicInventory() {
               <select
                 value={unitType}
                 onChange={(e) => setUnitType(e.target.value)}
-                className="w-full mt-1.5 px-3 py-2.5 bg-[#f9f9ff] border border-[#cdc3d4]/40 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#541a97]/30"
+                className={fieldCls}
               >
                 <option value="cajas">Cajas</option>
                 <option value="unidades">Unidades</option>
@@ -402,16 +479,16 @@ export default function ClinicInventory() {
               </select>
             </div>
 
-            <div className="flex justify-end gap-3 pt-3">
+            <div className="grid grid-cols-2 sm:flex sm:justify-end gap-3 pt-3">
               <button
                 onClick={() => setIsAddModalOpen(false)}
-                className="px-5 py-2.5 border border-[#cdc3d4]/40 rounded-2xl text-xs font-bold text-[#4b4452] hover:bg-[#f0f3ff]"
+                className="px-5 py-3 sm:py-2.5 border border-[#cdc3d4]/40 rounded-2xl text-xs font-bold text-[#4b4452] hover:bg-[#f0f3ff]"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSaveAlert}
-                className="px-6 py-2.5 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-2xl text-xs font-bold shadow-md cursor-pointer"
+                className="px-6 py-3 sm:py-2.5 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-2xl text-xs font-bold shadow-md cursor-pointer"
               >
                 Guardar Insumo
               </button>
@@ -422,24 +499,25 @@ export default function ClinicInventory() {
 
       {/* ── MODAL EDITAR STOCK ── */}
       {isEditModalOpen && editItem && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-[#cdc3d4]/30">
-            <div className="flex items-center justify-between border-b border-[#cdc3d4]/20 pb-3">
-              <h3 className="text-base font-bold text-[#111c2c]">Editar Stock: {editItem.productName}</h3>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-[#4b4452] hover:text-[#111c2c]">
-                <span className="material-symbols-outlined">close</span>
+        <div className={modalBackdropCls}>
+          <div className={`${modalPanelCls} max-w-md space-y-4`}>
+            <div className="flex items-start justify-between gap-3 border-b border-[#cdc3d4]/20 pb-3">
+              <h3 className="text-base font-bold text-[#111c2c] leading-snug">Editar Stock: {editItem.productName}</h3>
+              <button onClick={() => setIsEditModalOpen(false)} aria-label="Cerrar" className="p-1 text-[#4b4452] hover:text-[#111c2c] flex-shrink-0">
+                <span className="material-symbols-outlined block">close</span>
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="text-xs font-bold text-[#111c2c]">Stock Actual Estimado</label>
                 <input
                   type="number"
+                  inputMode="numeric"
                   min="0"
                   value={currentEstimatedStock}
                   onChange={(e) => setCurrentEstimatedStock(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 bg-[#f9f9ff] border border-[#cdc3d4]/40 rounded-2xl text-sm font-semibold"
+                  className={fieldCls}
                 />
               </div>
 
@@ -447,24 +525,25 @@ export default function ClinicInventory() {
                 <label className="text-xs font-bold text-[#111c2c]">Umbral Crítico</label>
                 <input
                   type="number"
+                  inputMode="numeric"
                   min="0"
                   value={criticalThreshold}
                   onChange={(e) => setCriticalThreshold(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 bg-[#f9f9ff] border border-[#cdc3d4]/40 rounded-2xl text-sm font-semibold"
+                  className={fieldCls}
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="grid grid-cols-2 sm:flex sm:justify-end gap-3 pt-2">
               <button
                 onClick={() => setIsEditModalOpen(false)}
-                className="px-4 py-2 border border-[#cdc3d4]/40 rounded-2xl text-xs font-bold text-[#4b4452]"
+                className="px-4 py-3 sm:py-2 border border-[#cdc3d4]/40 rounded-2xl text-xs font-bold text-[#4b4452]"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleUpdateAlert}
-                className="px-5 py-2 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-2xl text-xs font-bold shadow-md cursor-pointer"
+                className="px-5 py-3 sm:py-2 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-2xl text-xs font-bold shadow-md cursor-pointer"
               >
                 Actualizar
               </button>
