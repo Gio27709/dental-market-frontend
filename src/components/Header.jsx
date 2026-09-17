@@ -10,6 +10,7 @@ import NotificationBell from "./notifications/NotificationBell";
 import useHomeSections from "../hooks/useHomeSections";
 import { getCategoriesShared } from "../services/sharedRequests";
 import { useTour, TOUR_IDS } from "./tour";
+import BotonInstalarApp from "./pwa/BotonInstalarApp";
 
 // FALLBACKS: Static config used while useHomeSections() is loading or if API fails
 const HEADER_TOP_BAR = {
@@ -735,6 +736,14 @@ export default function Header() {
                     </Link>
                   );
                 })}
+                {/* Solo aparece si el teléfono permite instalar la app y aún no está instalada. */}
+                <BotonInstalarApp
+                  onDespues={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm text-[#6b1e96] bg-[#f6f0fc] hover:bg-[#efe4fa] transition-colors text-left"
+                >
+                  <span className="material-symbols-outlined text-[#6b1e96]" style={{ fontSize: "20px" }}>install_mobile</span>
+                  Instalar la app
+                </BotonInstalarApp>
               </div>
 
               {/* Divider + Categories */}

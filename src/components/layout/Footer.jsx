@@ -6,6 +6,7 @@ import { getPlatformSettingsShared, getTrendingShared } from "../../services/sha
 import toast from "react-hot-toast";
 import useHomeSections from "../../hooks/useHomeSections";
 import usePaymentMethods from "../../hooks/usePaymentMethods";
+import BotonInstalarApp from "../pwa/BotonInstalarApp";
 
 export default function Footer() {
   const { sections } = useHomeSections();
@@ -237,6 +238,12 @@ export default function Footer() {
             {brandName} es el marketplace de insumos y equipos odontológicos de Venezuela: depósitos
             dentales verificados, pago en custodia hasta que recibes el pedido y envío a todo el país.
           </p>
+
+          {/* Solo si el navegador permite instalar la app y aún no está instalada. */}
+          <BotonInstalarApp className="mb-6 inline-flex w-fit items-center gap-2 rounded-xl border border-[#6b1e96]/20 bg-[#f6f0fc] px-4 py-2.5 text-sm font-semibold text-[#6b1e96] hover:bg-[#efe4fa] transition-colors">
+            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">install_mobile</span>
+            Instalar la app de {brandName}
+          </BotonInstalarApp>
 
           <h4 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wider">
             Métodos de Pago

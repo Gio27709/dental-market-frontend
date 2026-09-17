@@ -20,6 +20,9 @@ import ScrollToTop from "./components/ScrollToTop";
 import { RouteMeta } from "./lib/seo";
 import WhatsAppButton from "./components/common/WhatsAppButton";
 import ChatbotWidget from "./components/bot/ChatbotWidget";
+import BannerInstalarApp from "./components/pwa/BannerInstalarApp";
+import ActualizacionPwa from "./components/pwa/ActualizacionPwa";
+import EstadoConexion from "./components/pwa/EstadoConexion";
 import AccountLayout from "./components/layout/account/AccountLayout";
 import AdminLayout from "./components/layout/admin/AdminLayout";
 import StoreLayout from "./components/layout/store/StoreLayout";
@@ -129,6 +132,7 @@ function EcommerceLayout() {
   return (
     <div className="min-h-screen flex flex-col font-sans">
       <Header />
+      <BannerInstalarApp />
       <main className="flex-grow bg-gray-50">
         <Outlet />
       </main>
@@ -239,6 +243,9 @@ export default function App() {
                 <NotificationProvider>
                 <TourProvider>
                   <TourOverlay />
+                  {/* App instalable: aviso de versión nueva y de pérdida de conexión, en todas las pantallas. */}
+                  <ActualizacionPwa />
+                  <EstadoConexion />
                   <Suspense fallback={<LoadingSkeleton />}>
                     <Routes>
                       {/* --- RUTAS PRIVADAS / PANELES INTERNOS (Sin Header/Footer públicos) --- */}
