@@ -53,7 +53,8 @@ Titulo.propTypes = {
 
 function Carrusel({ productos }) {
   return (
-    <div className={`${ANCHO} flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 pt-3`}>
+    // `items-start`: sin él, la tarjeta más alta de la fila estira a todas las demás.
+    <div className={`${ANCHO} flex snap-x snap-mandatory items-start gap-3 overflow-x-auto px-4 pb-2 pt-3`}>
       {productos.map((p) => (
         <TarjetaProductoMovil key={p.id} producto={p} />
       ))}
@@ -260,14 +261,14 @@ export default function InicioMovil() {
       {publicaciones.length > 0 && (
         <section className="mt-4">
           <Titulo texto="Publicaciones" enlace="/news" enlaceTexto="Ver todas" />
-          <div className={`${ANCHO} flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 pt-3`}>
+          <div className={`${ANCHO} flex snap-x snap-mandatory items-start gap-3 overflow-x-auto px-4 pb-2 pt-3`}>
             {publicaciones.map((p) => (
               <Link
                 key={p.id}
                 to={`/news/${p.id}`}
-                className="flex w-[220px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-fx-line bg-white transition-transform active:scale-[0.98]"
+                className="flex w-[210px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-fx-line bg-white transition-transform active:scale-[0.98]"
               >
-                <div className="h-28 bg-fx-inset">
+                <div className="h-24 shrink-0 bg-fx-inset">
                   {p.thumbnail_url ? (
                     <img src={p.thumbnail_url} alt="" loading="lazy" className="h-full w-full object-cover" />
                   ) : (
@@ -276,12 +277,12 @@ export default function InicioMovil() {
                     </span>
                   )}
                 </div>
-                <div className="flex flex-1 flex-col gap-1 p-2.5">
-                  {p.category && (
-                    <span className="w-fit rounded-full bg-[#f1ebf9] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#6b1e96]">{p.category}</span>
-                  )}
-                  <p className="line-clamp-2 text-[12.5px] font-semibold leading-tight text-fx-text">{p.title}</p>
-                  <span className="mt-auto pt-1 text-[11px] text-fx-faint">{fechaCorta(p.created_at)}</span>
+                <div className="shrink-0 p-2.5">
+                  <span className="flex h-[18px] w-fit items-center rounded-full bg-[#f1ebf9] px-2 text-[10px] font-bold uppercase tracking-wide text-[#6b1e96]">
+                    {p.category || "General"}
+                  </span>
+                  <p className="mt-1 h-[32px] overflow-hidden text-[12.5px] font-semibold leading-4 text-fx-text">{p.title}</p>
+                  <span className="mt-1 block text-[11px] text-fx-faint">{fechaCorta(p.created_at)}</span>
                 </div>
               </Link>
             ))}

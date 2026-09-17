@@ -4,9 +4,11 @@ import PropTypes from "prop-types";
 import { useCart } from "../../context/CartContext";
 import { formatCurrencyUSD } from "../../utils/formatters";
 
-// Tarjeta de producto compacta para el inicio del teléfono. La tarjeta grande del catálogo se
-// veía alargada dentro de los carruseles: aquí la foto es cuadrada, el nombre ocupa dos líneas
-// y el botón de agregar es un círculo, así entran dos por pantalla sin estirarse.
+// Tarjeta de producto compacta para los carruseles del inicio en el teléfono.
+// TODAS las medidas van fijas a propósito: foto 120 px, nombre 2 líneas, tienda 1 línea y la
+// fila del precio. Si se dejan libres, la tarjeta más alta de la fila estira a las demás (flex
+// reparte la altura) y quedan enormes con un hueco blanco abajo, que fue lo que se vio en el
+// celular. Con alturas fijas + `items-start` en la fila, todas miden ~225 px pase lo que pase.
 
 const imagenDe = (p) => {
   const img = Array.isArray(p?.images) ? p.images[0] : null;
@@ -43,34 +45,34 @@ export default function TarjetaProductoMovil({ producto }) {
   return (
     <Link
       to={`/product/${producto.id}`}
-      className="flex w-[160px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-fx-line bg-white active:scale-[0.98] transition-transform"
+      className="flex w-[150px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-fx-line bg-white transition-transform active:scale-[0.98]"
     >
-      <div className="relative aspect-square bg-fx-inset">
+      <div className="relative h-[120px] shrink-0 bg-fx-inset">
         {imagen ? (
-          <img src={imagen} alt="" loading="lazy" className="h-full w-full object-contain p-2" />
+          <img src={imagen} alt="" loading="lazy" className="h-full w-full object-contain p-1.5" />
         ) : (
           <span className="flex h-full w-full items-center justify-center">
-            <span className="material-symbols-outlined text-[34px] text-fx-faint" aria-hidden="true">dentistry</span>
+            <span className="material-symbols-outlined text-[32px] text-fx-faint" aria-hidden="true">dentistry</span>
           </span>
         )}
         {descuento && (
-          <span className="absolute left-2 top-2 rounded-full bg-[#b8482f] px-2 py-0.5 text-[10px] font-bold text-white">
+          <span className="absolute left-1.5 top-1.5 rounded-full bg-[#b8482f] px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
             -{descuento.discount_type === "percentage" ? `${Math.round(descuento.discount_value)}%` : formatCurrencyUSD(descuento.discount_amount)}
           </span>
         )}
         {agotado && (
-          <span className="absolute inset-x-0 bottom-0 bg-fx-text/70 py-1 text-center text-[10px] font-bold text-white">Agotado</span>
+          <span className="absolute inset-x-0 bottom-0 bg-fx-text/70 py-0.5 text-center text-[10px] font-bold text-white">Agotado</span>
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-0.5 p-2.5">
-        <p className="line-clamp-2 min-h-[32px] text-[12.5px] font-semibold leading-tight text-fx-text">{producto.name}</p>
-        {tienda && <p className="truncate text-[11px] text-fx-muted">{tienda}</p>}
-        <div className="mt-1 flex items-end justify-between gap-1">
-          <span className="min-w-0">
-            <span className="block text-[15px] font-bold leading-none text-[#6b1e96]">{formatCurrencyUSD(precio)}</span>
+      <div className="shrink-0 px-2.5 pb-2.5 pt-2">
+        <p className="h-[30px] overflow-hidden text-[12px] font-semibold leading-[15px] text-fx-text">{producto.name}</p>
+        <p className="h-[14px] truncate text-[10.5px] leading-[14px] text-fx-muted">{tienda || ""}</p>
+        <div className="mt-1.5 flex h-8 items-center justify-between gap-1">
+          <span className="min-w-0 leading-none">
+            <span className="block text-[14px] font-bold leading-none text-[#6b1e96]">{formatCurrencyUSD(precio)}</span>
             {descuento && (
-              <span className="block text-[11px] text-fx-faint line-through">{formatCurrencyUSD(producto.price)}</span>
+              <span className="block text-[10px] leading-tight text-fx-faint line-through">{formatCurrencyUSD(producto.price)}</span>
             )}
           </span>
           <button
@@ -78,9 +80,9 @@ export default function TarjetaProductoMovil({ producto }) {
             onClick={agregar}
             disabled={agotado || agregando}
             aria-label={tieneOpciones ? `Ver opciones de ${producto.name}` : `Agregar ${producto.name} al carrito`}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#c3ff00] text-[#531575] active:scale-95 disabled:bg-fx-raised disabled:text-fx-faint"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#c3ff00] text-[#531575] active:scale-95 disabled:bg-fx-raised disabled:text-fx-faint"
           >
-            <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden="true">
+            <span className="material-symbols-outlined text-[18px] leading-none" aria-hidden="true">
               {agregando ? "hourglass_top" : "add_shopping_cart"}
             </span>
           </button>

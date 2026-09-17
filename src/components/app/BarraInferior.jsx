@@ -22,9 +22,9 @@ export default function BarraInferior() {
     { ruta: "/inicio", icono: "home", texto: "Inicio", activa: pathname === "/" || pathname === "/inicio" },
     { ruta: "/store-catalog", icono: "storefront", texto: "Catálogo", activa: pathname.startsWith("/store-catalog") || pathname.startsWith("/product/") },
     { ruta: "/cart", icono: "shopping_cart", texto: "Carrito", activa: pathname.startsWith("/cart"), globo: itemCount },
-    // «Publicaciones» no cabe en 1/5 de pantalla a 360 px: se acorta en el rótulo y va completo
-    // en el aria-label. Los pedidos quedan en el acceso rápido del inicio y en el menú Cuenta.
-    { ruta: "/news", icono: "newspaper", texto: "Publica.", nombre: "Publicaciones", activa: pathname.startsWith("/news") },
+    // La sección se llama «Publicaciones y Noticias»; en la barra va como «Noticias» porque
+    // «Publicaciones» no cabe en 1/5 de pantalla a 360 px y salía cortado.
+    { ruta: "/news", icono: "newspaper", texto: "Noticias", nombre: "Publicaciones y noticias", activa: pathname.startsWith("/news") },
     { ruta: user ? "/account" : "/login", icono: "person", texto: "Cuenta", activa: pathname.startsWith("/account") },
   ];
 
