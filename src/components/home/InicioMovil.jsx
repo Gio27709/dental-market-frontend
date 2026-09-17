@@ -85,7 +85,7 @@ export default function InicioMovil() {
   return (
     <div className="min-h-screen bg-fx-base pb-6">
       {/* Saludo + buscador */}
-      <section className="bg-gradient-to-b from-[#6b1e96] to-[#5a1880] px-4 pb-5 pt-4 text-white">
+      <section className="bg-gradient-to-b from-[#6b1e96] to-[#5a1880] px-4 pb-5 pt-4 text-white"><div className="mx-auto w-full max-w-[560px]">
         <p className="text-[15px] font-semibold">
           {user ? `Hola${firstName ? `, ${firstName}` : ""} 👋` : "¡Hola! 👋"}
         </p>
@@ -104,19 +104,21 @@ export default function InicioMovil() {
           />
           <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[22px] text-fx-faint" aria-hidden="true">search</span>
         </form>
+      </div>
       </section>
 
       {/* Accesos rápidos */}
-      <section className="-mt-3 rounded-t-3xl bg-white px-4 pb-5 pt-5">
+      <section className="-mt-3 rounded-t-3xl bg-white px-4 pb-5 pt-5"><div className="mx-auto w-full max-w-[560px]">
         <div className="grid grid-cols-4 gap-y-4">
           {accesos.map((a) => (
             <Acceso key={a.texto} {...a} />
           ))}
         </div>
+      </div>
       </section>
 
       {/* Confianza */}
-      <section className="mt-2 bg-white px-4 py-3">
+      <section className="mt-2 bg-white px-4 py-3"><div className="mx-auto w-full max-w-[560px]">
         <ul className="flex items-center justify-between gap-2 text-center text-[10.5px] font-semibold text-fx-muted">
           {[
             ["verified_user", "Compra protegida"],
@@ -129,6 +131,7 @@ export default function InicioMovil() {
             </li>
           ))}
         </ul>
+      </div>
       </section>
 
       {/* Categorías */}

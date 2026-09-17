@@ -394,7 +394,7 @@ export default function Header() {
             <div data-tour="account" className="relative group cursor-pointer hover:text-gray-200 transition-colors">
               <button
                 onClick={() => navigate("/account")}
-                className="relative flex items-center gap-2 justify-center outline-none bg-transparent border-none p-0"
+                className="relative hidden md:flex items-center gap-2 justify-center outline-none bg-transparent border-none p-0"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -491,7 +491,7 @@ export default function Header() {
             {/* Action Item: Cart */}
             <div
               data-tour="cart"
-              className="relative cursor-pointer hover:text-gray-200 transition-colors flex items-center gap-2"
+              className="relative cursor-pointer hover:text-gray-200 transition-colors hidden md:flex items-center gap-2"
               onClick={toggleDrawer}
             >
               <div className="relative">

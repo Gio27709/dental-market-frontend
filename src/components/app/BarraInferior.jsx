@@ -7,7 +7,9 @@ import { useAuth } from "../../context/AuthContext";
 // «pedido listo» para no competir con los botones de esas pantallas.
 
 const OCULTA_EN = ["/checkout", "/order-success", "/login", "/register"];
-export const ALTO_BARRA = 64; // px; el layout deja este espacio abajo
+// Alto: fila de 56 px + la franja de los botones del teléfono (safe-area-inset-bottom, que solo
+// llega con viewport-fit=cover en index.html). El contenido reserva ese mismo espacio abajo con
+// `pb-[calc(56px+env(safe-area-inset-bottom,0px))]` (ver App.jsx); si cambia el alto, cambiar los dos.
 
 export default function BarraInferior() {
   const { pathname } = useLocation();
@@ -27,8 +29,8 @@ export default function BarraInferior() {
   return (
     <nav
       aria-label="Navegación principal"
-      className="md:hidden fixed inset-x-0 bottom-0 z-[95] border-t border-fx-line bg-white/95 backdrop-blur"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="md:hidden fixed inset-x-0 bottom-0 z-[95] border-t border-fx-line bg-white shadow-[0_-2px_12px_rgba(0,0,0,0.06)]"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <ul className="mx-auto flex max-w-lg items-stretch">
         {entradas.map((e) => (
@@ -36,13 +38,13 @@ export default function BarraInferior() {
             <Link
               to={e.ruta}
               aria-current={e.activa ? "page" : undefined}
-              className={`flex h-16 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition-colors ${
+              className={`flex h-14 flex-col items-center justify-center gap-0.5 text-[10.5px] font-semibold leading-none transition-colors ${
                 e.activa ? "text-[#6b1e96]" : "text-fx-muted"
               }`}
             >
               <span className="relative">
                 <span
-                  className="material-symbols-outlined text-[24px] leading-none"
+                  className="material-symbols-outlined text-[22px] leading-none"
                   style={{ fontVariationSettings: e.activa ? "'FILL' 1" : undefined }}
                   aria-hidden="true"
                 >

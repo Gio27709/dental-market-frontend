@@ -135,8 +135,9 @@ function EcommerceLayout() {
     <div className="min-h-screen flex flex-col font-sans">
       <Header />
       <BannerInstalarApp />
-      {/* El padding inferior deja sitio a la barra de navegación del teléfono. */}
-      <main className="flex-grow bg-gray-50 pb-16 md:pb-0">
+      {/* Deja sitio para la barra de navegación del teléfono, incluida la franja de los botones
+          del sistema (safe-area). En md ya no hay barra. */}
+      <main className="flex-grow bg-gray-50 pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0">
         <Outlet />
       </main>
       {/* En la app instalada el pie (mapa del sitio) sobra en el teléfono: ya está la barra. */}
@@ -145,7 +146,7 @@ function EcommerceLayout() {
       </div>
       {/* Botones flotantes de la esquina: WhatsApp encima y el asistente con IA debajo. En el
           teléfono suben para no quedar debajo de la barra de navegación. */}
-      <div className="fixed bottom-20 right-4 z-[80] flex flex-col items-end gap-3 md:bottom-5 md:right-5">
+      <div className="fixed bottom-[calc(68px+env(safe-area-inset-bottom,0px))] right-4 z-[80] flex flex-col items-end gap-3 md:bottom-5 md:right-5">
         <WhatsAppButton />
         <ChatbotWidget />
       </div>
