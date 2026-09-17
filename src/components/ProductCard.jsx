@@ -7,6 +7,7 @@ import { useProducts } from "../context/ProductContext";
 import { useLocationContext } from "../hooks/useLocationContext";
 import { getProximityLabel } from "../utils/stateProximity";
 import ProductCardInner from "./ProductCardInner";
+import { variacionParaTarjeta } from "../utils/variations";
 
 export default function ProductCard({ product }) {
   const { addToCart, items: cartItems } = useCart();
@@ -27,27 +28,17 @@ export default function ProductCard({ product }) {
     return buyerState && storeState ? getProximityLabel(buyerState, storeState) : "";
   }, [buyerState, product.store?.state, product.store_profiles?.state]);
 
-  // Resolve max stock for this product (consistent with CartContext logic)
-  const maxStock = useMemo(() => {
+  // La variación que añade «Al carrito» y la que limita el stock (ver utils/variations.js)
+  const cardVariation = useMemo(() => {
     const fullProduct = allProducts?.find((p) => p.id === product.id) || product;
-    const defaultVariation = fullProduct?.variations?.[0];
-    if (defaultVariation?.stock != null) return defaultVariation.stock;
-    const defaultVar = fullProduct?.variations?.find(
-      (v) =>
-        v.attribute_name === "default" ||
-        v.attribute_value === '{"_default":"default"}' ||
-        v.attribute_value === "default"
-    );
-    if (defaultVar?.stock != null) return defaultVar.stock;
-    if (
-      fullProduct?.product_variations?.length > 0 &&
-      fullProduct.product_variations[0].stock != null
-    ) {
-      return fullProduct.product_variations[0].stock;
-    }
-    if (fullProduct?.stock != null) return fullProduct.stock;
-    return 99; // Safe cap — backend enforces actual limit
+    return variacionParaTarjeta(fullProduct);
   }, [allProducts, product]);
+
+  const maxStock = useMemo(() => {
+    if (cardVariation?.stock != null) return cardVariation.stock;
+    if (product?.stock != null) return product.stock;
+    return 99; // Safe cap — backend enforces actual limit
+  }, [cardVariation, product]);
 
   // Determine if cart has reached max stock
   const isCartAtMax = useMemo(() => {
@@ -77,12 +68,11 @@ export default function ProductCard({ product }) {
     if (isOwnProduct || isAdding || isCartAtMax) return;
     setIsAdding(true);
     try {
-      const defaultVar = product.product_variations?.[0] || product.variations?.[0] || null;
-      await addToCart(product, defaultVar, 1);
+      await addToCart(product, cardVariation, 1);
     } finally {
       setIsAdding(false);
     }
-  }, [isOwnProduct, isAdding, isCartAtMax, addToCart, product]);
+  }, [isOwnProduct, isAdding, isCartAtMax, addToCart, product, cardVariation]);
 
   const handleToggleFavorite = useCallback(
     (e) => {

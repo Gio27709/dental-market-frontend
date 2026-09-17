@@ -9,6 +9,7 @@ import { useCurrency } from "../context/CurrencyContext";
 import { formatCurrencyUSD, formatCurrencyVES } from "../utils/formatters";
 import { getProximityLabel } from "../utils/stateProximity";
 import ProductRowInner from "./ProductRowInner";
+import { variacionParaTarjeta } from "../utils/variations";
 
 export default function ProductRow({ product }) {
   const { addToCart, items: cartItems } = useCart();
@@ -145,27 +146,17 @@ export default function ProductRow({ product }) {
     return buyerState && storeState ? getProximityLabel(buyerState, storeState) : "";
   }, [buyerState, product.store?.state]);
 
-  // Resolve max stock
-  const maxStock = useMemo(() => {
+  // La variación que añade «Al carrito» y la que limita el stock (ver utils/variations.js)
+  const cardVariation = useMemo(() => {
     const fullProduct = allProducts?.find((p) => p.id === product.id) || product;
-    const defaultVariation = fullProduct?.variations?.[0];
-    if (defaultVariation?.stock != null) return defaultVariation.stock;
-    const defaultVar = fullProduct?.variations?.find(
-      (v) =>
-        v.attribute_name === "default" ||
-        v.attribute_value === '{"_default":"default"}' ||
-        v.attribute_value === "default"
-    );
-    if (defaultVar?.stock != null) return defaultVar.stock;
-    if (
-      fullProduct?.product_variations?.length > 0 &&
-      fullProduct.product_variations[0].stock != null
-    ) {
-      return fullProduct.product_variations[0].stock;
-    }
-    if (fullProduct?.stock != null) return fullProduct.stock;
-    return 99;
+    return variacionParaTarjeta(fullProduct);
   }, [allProducts, product]);
+
+  const maxStock = useMemo(() => {
+    if (cardVariation?.stock != null) return cardVariation.stock;
+    if (product?.stock != null) return product.stock;
+    return 99; // Safe cap — backend enforces actual limit
+  }, [cardVariation, product]);
 
   const hasRealVariations = useMemo(() => {
     const variations = product?.product_variations || product?.variations || [];
@@ -178,7 +169,7 @@ export default function ProductRow({ product }) {
     }).length > 0;
   }, [product]);
 
-  const targetVariation = product?.variations?.[0] || null;
+  const targetVariation = cardVariation;
 
   // Determine cart max
   const isCartAtMax = useMemo(() => {
@@ -219,11 +210,11 @@ export default function ProductRow({ product }) {
     if (isOwnProduct || isAdding || isCartAtMax) return;
     setIsAdding(true);
     try {
-      await addToCart(product, product.variations?.[0] || null, 1);
+      await addToCart(product, cardVariation, 1);
     } finally {
       setIsAdding(false);
     }
-  }, [isOwnProduct, isAdding, isCartAtMax, addToCart, product]);
+  }, [isOwnProduct, isAdding, isCartAtMax, addToCart, product, cardVariation]);
 
   const handleToggleFavorite = useCallback(
     (e) => {
