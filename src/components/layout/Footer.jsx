@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import useHomeSections from "../../hooks/useHomeSections";
 import usePaymentMethods from "../../hooks/usePaymentMethods";
 import BotonInstalarApp from "../pwa/BotonInstalarApp";
+import LogoMarca from "../common/LogoMarca";
 
 export default function Footer() {
   const { sections } = useHomeSections();
@@ -184,49 +185,7 @@ export default function Footer() {
         <div className="lg:col-span-2 flex flex-col">
           {/* Logo Forcepx Oficial */}
           <Link to="/" className="flex items-center gap-3 mb-6">
-            {brandLogo ? (
-              <div className="w-8 h-8 flex items-center justify-center">
-                <img
-                  src={brandLogo}
-                  alt={`Logo de ${brandName}`}
-                  className="w-full h-full object-contain rounded-md"
-                  onError={(e) => {
-                    e.target.style.display = "none";
-                    const sibling = e.target.nextSibling;
-                    if (sibling) sibling.style.display = "flex";
-                  }}
-                />
-                <div className="hidden w-full h-full rounded-md bg-[#c3ff00] items-center justify-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="w-5 h-5 text-[#531575]"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 4.5v15m7.5-7.5h-15"
-                    />
-                  </svg>
-                </div>
-              </div>
-            ) : (
-              <div className="w-8 h-8 rounded-md bg-[#c3ff00] flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="w-5 h-5 text-[#531575]"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 4.5v15m7.5-7.5h-15"
-                  />
-                </svg>
-              </div>
-            )}
+            <LogoMarca src={brandLogo} className="w-10 h-10" />
             <span className="text-2xl font-bold tracking-widest text-[#531575] uppercase">
               {brandName}
             </span>

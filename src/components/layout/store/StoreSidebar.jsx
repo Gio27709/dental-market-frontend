@@ -2,7 +2,8 @@ import { Link, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import PropTypes from "prop-types";
 import { useStore } from "../../../context/StoreContext";
-import { useTour, TOUR_IDS } from "../../tour";
+import { useTour, TOUR_IDS } from "../../tour";
+import LogoMarca from "../../common/LogoMarca";
 
 export default function StoreSidebar({ isProfileComplete = true }) {
   const location = useLocation();
@@ -150,12 +151,7 @@ export default function StoreSidebar({ isProfileComplete = true }) {
       {/* ── Branding / Logo Area ── */}
       <div className="px-6 pt-6 pb-4 relative z-10">
         <Link to="/store" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 rounded-lg bg-[#c3ff00] flex items-center justify-center shadow-lg shadow-[#c3ff00]/20 group-hover:shadow-[#c3ff00]/40 transition-shadow duration-300">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-[#531575]">
-              <path d="M5.223 2.25h13.554a.75.75 0 0 1 .724.95l-.965 3.57a1.5 1.5 0 0 1-1.448 1.105H6.912a1.5 1.5 0 0 1-1.448-1.105l-.965-3.57a.75.75 0 0 1 .724-.95Z" />
-              <path fillRule="evenodd" d="M3.087 9h17.826a.75.75 0 0 1 .743.858l-1.53 11.25a1.5 1.5 0 0 1-1.486 1.142H5.36a1.5 1.5 0 0 1-1.486-1.142L2.344 9.858A.75.75 0 0 1 3.087 9Z" clipRule="evenodd" />
-            </svg>
-          </div>
+          <LogoMarca className="w-9 h-9" placa />
           <div className="flex flex-col">
             <span className="text-lg font-bold tracking-widest text-white uppercase leading-tight">
               Forcepx

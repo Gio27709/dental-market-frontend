@@ -35,7 +35,7 @@ export default function InstalarAppDialogo({ abierto, onCerrar }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center gap-3">
-          <img src="/icons/icon-192.png" alt="" className="h-12 w-12 rounded-xl" />
+          <img src="/icons/logo-192.png" alt="" className="h-12 w-12 rounded-xl" />
           <div>
             <h2 id="instalar-app-titulo" className="text-[17px] font-bold text-fx-text">Instala Forcepx en tu iPhone</h2>
             <p className="text-[13px] text-fx-muted">Ábrela desde tu pantalla de inicio, como cualquier app.</p>

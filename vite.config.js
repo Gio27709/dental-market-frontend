@@ -29,16 +29,16 @@ const pwa = VitePWA({
     theme_color: "#6b1e96",
     categories: ["shopping", "medical", "business"],
     icons: [
-      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: "/icons/icon-maskable-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
-      { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: "/icons/logo-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icons/logo-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icons/logo-maskable-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
+      { src: "/icons/logo-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
     shortcuts: [
-      { name: "Catálogo", url: "/store-catalog?origen=atajo", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
-      { name: "Mis pedidos", url: "/account/orders?origen=atajo", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
-      { name: "Carrito", url: "/cart?origen=atajo", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
-      { name: "Soporte", url: "/account/support?origen=atajo", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+      { name: "Catálogo", url: "/store-catalog?origen=atajo", icons: [{ src: "/icons/logo-192.png", sizes: "192x192" }] },
+      { name: "Mis pedidos", url: "/account/orders?origen=atajo", icons: [{ src: "/icons/logo-192.png", sizes: "192x192" }] },
+      { name: "Carrito", url: "/cart?origen=atajo", icons: [{ src: "/icons/logo-192.png", sizes: "192x192" }] },
+      { name: "Soporte", url: "/account/support?origen=atajo", icons: [{ src: "/icons/logo-192.png", sizes: "192x192" }] },
     ],
   },
   workbox: {
@@ -47,9 +47,9 @@ const pwa = VitePWA({
       "assets/index-*.{js,css}",
       "assets/vendor-react-*.js",
       "assets/vendor-supabase-*.js",
-      "favicon.svg",
       "favicon-32.png",
-      "apple-touch-icon.png",
+      "favicon-48.png",
+      "apple-touch-icon-logo.png",
       // Los íconos del manifiesto los añade el plugin solo (includeManifestIcons).
     ],
     // Las navegaciones (abrir la app, recargar, atajos) sirven el index.html guardado: abre

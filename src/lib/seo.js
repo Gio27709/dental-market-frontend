@@ -10,7 +10,7 @@ export const SITE_NAME = "Forcepx";
 export const DEFAULT_TITLE = "Forcepx | Insumos y equipos odontológicos en Venezuela";
 export const DEFAULT_DESCRIPTION =
   "Forcepx es el marketplace que conecta odontólogos y clínicas con tiendas verificadas de insumos dentales. Compra protegida, entrega con seguimiento y pago en bolívares o dólares.";
-export const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
+export const DEFAULT_IMAGE = `${SITE_URL}/og-forcepx.png`;
 
 const TITLE_MAX = 60;
 const DESC_MAX = 160;

@@ -3,7 +3,8 @@ import { navGroups, backToStoreIcon } from '../../../config/adminNavConfig';
 import { useAdminStats } from '../../../context/AdminStatsContext';
 import useHomeSections from '../../../hooks/useHomeSections';
 import { useAuth } from '../../../context/AuthContext';
-import { canAccess, permissionForPath } from '../../../config/adminPermissions';
+import { canAccess, permissionForPath } from '../../../config/adminPermissions';
+import LogoMarca from "../../common/LogoMarca";
 
 export default function AdminSidebar() {
   const location = useLocation();
@@ -70,41 +71,7 @@ export default function AdminSidebar() {
       {/* ── Branding / Logo Area ── */}
       <div className="px-6 pt-6 pb-4 relative z-10">
         <Link to="/admin" className="flex items-center gap-3 group">
-          {brandLogo ? (
-            <div className="w-9 h-9 flex items-center justify-center shadow-lg shadow-[#c3ff00]/10 group-hover:shadow-[#c3ff00]/30 transition-shadow duration-300">
-              <img
-                src={brandLogo}
-                alt="Logo"
-                className="w-full h-full object-contain rounded-lg"
-                onError={(e) => {
-                  e.target.style.display = "none";
-                  const sibling = e.target.nextSibling;
-                  if (sibling) sibling.style.display = "flex";
-                }}
-              />
-              <div className="hidden w-full h-full rounded-lg bg-[#c3ff00] items-center justify-center shadow-lg shadow-[#c3ff00]/20">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="w-5 h-5 text-[#531575]"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-              </div>
-            </div>
-          ) : (
-            <div className="w-9 h-9 rounded-lg bg-[#c3ff00] flex items-center justify-center shadow-lg shadow-[#c3ff00]/20 group-hover:shadow-[#c3ff00]/40 transition-shadow duration-300">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-5 h-5 text-[#531575]"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-            </div>
-          )}
+          <LogoMarca src={brandLogo} className="w-9 h-9" placa />
           <div className="flex flex-col">
             <span className="text-lg font-bold tracking-widest text-white uppercase leading-tight">
               {brandName}

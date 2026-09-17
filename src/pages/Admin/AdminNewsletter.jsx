@@ -565,9 +565,7 @@ export default function AdminNewsletter() {
                 <div className="mx-auto w-full max-w-[600px] bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden text-left font-sans text-gray-700">
                   {/* Email Header */}
                   <div className="bg-gradient-to-br from-[#531575] to-[#6b1e96] p-6 text-center text-white">
-                    <div className="inline-block w-8 h-8 rounded-lg bg-[#c3ff00] text-[#531575] text-center font-bold text-lg leading-8 align-middle">
-                      +
-                    </div>
+                    <img src="/logo-forcepx-placa-96.png" alt="Forcepx" className="inline-block w-10 h-10 align-middle" />
                     <span className="text-xl font-extrabold tracking-widest text-white ml-2 align-middle">FORCEPX</span>
                     <div className="mt-2 text-[10px] font-bold text-purple-200 uppercase tracking-widest">
                       Boletín Semanal de Promociones

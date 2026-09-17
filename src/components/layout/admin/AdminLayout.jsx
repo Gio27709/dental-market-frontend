@@ -8,7 +8,8 @@ import { AdminStatsProvider, useAdminStats } from "../../../context/AdminStatsCo
 import useHomeSections from "../../../hooks/useHomeSections";
 import { useAuth } from "../../../context/AuthContext";
 import { canAccess, permissionForPath, PERMISSIONS_LIST } from "../../../config/adminPermissions";
-import MfaGate from "../../auth/MfaGate";
+import MfaGate from "../../auth/MfaGate";
+import LogoMarca from "../../common/LogoMarca";
 
 // Bloquea la página si la cuenta no tiene el área de esa ruta. El backend también lo
 // rechaza (requirePermission), esto solo evita pantallas a medio cargar con errores 403.
@@ -116,31 +117,7 @@ function AdminLayoutContent() {
           </svg>
         </button>
         <div className="flex items-center gap-2">
-          {brandLogo ? (
-            <div className="w-6 h-6 flex items-center justify-center">
-              <img
-                src={brandLogo}
-                alt="Logo"
-                className="w-full h-full object-contain rounded-md"
-                onError={(e) => {
-                  e.target.style.display = "none";
-                  const sibling = e.target.nextSibling;
-                  if (sibling) sibling.style.display = "flex";
-                }}
-              />
-              <div className="hidden w-full h-full rounded-md bg-[#c3ff00] items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-[#531575]">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-              </div>
-            </div>
-          ) : (
-            <div className="w-6 h-6 rounded-md bg-[#c3ff00] flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-[#531575]">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-            </div>
-          )}
+          <LogoMarca src={brandLogo} className="w-6 h-6" placa />
           <span className="font-bold text-sm tracking-widest uppercase">{brandName} <span className="font-normal text-[#c3ff00]/70 text-[10px] tracking-[0.15em]">Admin</span></span>
         </div>
         <div className="flex items-center gap-3">
@@ -164,31 +141,7 @@ function AdminLayoutContent() {
             {/* Drawer Header */}
             <div className="h-14 flex items-center justify-between px-5" style={{ background: 'rgba(0,0,0,0.2)' }}>
               <div className="flex items-center gap-2.5">
-                {brandLogo ? (
-                  <div className="w-7 h-7 flex items-center justify-center shadow-lg shadow-[#c3ff00]/10">
-                    <img
-                      src={brandLogo}
-                      alt="Logo"
-                      className="w-full h-full object-contain rounded-lg"
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                        const sibling = e.target.nextSibling;
-                        if (sibling) sibling.style.display = "flex";
-                      }}
-                    />
-                    <div className="hidden w-full h-full rounded-lg bg-[#c3ff00] items-center justify-center shadow-lg shadow-[#c3ff00]/20">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#531575]">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                      </svg>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-7 h-7 rounded-lg bg-[#c3ff00] flex items-center justify-center shadow-lg shadow-[#c3ff00]/20">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#531575]">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                  </div>
-                )}
+                <LogoMarca src={brandLogo} className="w-7 h-7" placa />
                 <div className="flex flex-col">
                   <span className="text-sm font-bold tracking-widest text-white uppercase leading-tight">{brandName}</span>
                   <span className="text-[9px] font-medium tracking-[0.15em] text-[#c3ff00]/60 uppercase">Admin Panel</span>

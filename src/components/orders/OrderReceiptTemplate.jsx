@@ -31,7 +31,8 @@ const OrderReceiptTemplate = forwardRef(({ order }, ref) => {
         {/* HEADER */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: "28px", color: "#6b1e96", fontWeight: 850, letterSpacing: "-0.5px" }}>
+            <h1 style={{ margin: 0, fontSize: "28px", color: "#6b1e96", fontWeight: 850, letterSpacing: "-0.5px", display: "flex", alignItems: "center", gap: "10px" }}>
+              <img src="/logo-forcepx-192.png" alt="" width={40} height={40} style={{ width: "40px", height: "40px" }} />
               FORCEPX
             </h1>
             <p style={{ margin: "4px 0 0 0", fontSize: "14px", color: "#727785" }}>

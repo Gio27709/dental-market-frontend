@@ -42,7 +42,7 @@ export default function BannerInstalarApp() {
     <>
       <div className="md:hidden border-b border-[#e6daf5] bg-[#f6f0fc]">
         <div className="flex items-center gap-3 px-4 py-2.5">
-          <img src="/icons/icon-192.png" alt="" className="h-9 w-9 shrink-0 rounded-lg" />
+          <img src="/icons/logo-192.png" alt="" className="h-9 w-9 shrink-0 rounded-lg" />
           <p className="min-w-0 flex-1 text-[13px] leading-tight text-fx-text">
             <strong className="block text-[#531575]">Instala la app de Forcepx</strong>
             Ábrela desde tu pantalla de inicio, más rápido.

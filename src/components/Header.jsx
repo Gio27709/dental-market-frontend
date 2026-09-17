@@ -11,6 +11,7 @@ import useHomeSections from "../hooks/useHomeSections";
 import { getCategoriesShared } from "../services/sharedRequests";
 import { useTour, TOUR_IDS } from "./tour";
 import BotonInstalarApp from "./pwa/BotonInstalarApp";
+import LogoMarca from "./common/LogoMarca";
 
 // FALLBACKS: Static config used while useHomeSections() is loading or if API fails
 const HEADER_TOP_BAR = {
@@ -320,51 +321,7 @@ export default function Header() {
           {/* Logo Forcepx */}
           <div className="flex-shrink-0 flex items-center gap-2">
             <Link to="/" className="flex items-center gap-3">
-              {headerSection.brand_logo ? (
-                <div className="w-8 h-8 md:w-7 md:h-7 flex items-center justify-center">
-                  <img
-                    src={headerSection.brand_logo}
-                    alt="Logo"
-                    loading="eager"
-                    fetchPriority="high"
-                    className="w-full h-full object-contain rounded-md"
-                    onError={(e) => {
-                      e.target.style.display = "none";
-                      const sibling = e.target.nextSibling;
-                      if (sibling) sibling.style.display = "flex";
-                    }}
-                  />
-                  <div className="hidden w-full h-full rounded-md bg-[#c3ff00] items-center justify-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      className="w-5 h-5 md:w-4 md:h-4 text-[#531575]"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 4.5v15m7.5-7.5h-15"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-8 h-8 md:w-7 md:h-7 rounded-md bg-[#c3ff00] flex items-center justify-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="w-5 h-5 md:w-4 md:h-4 text-[#531575]"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 4.5v15m7.5-7.5h-15"
-                    />
-                  </svg>
-                </div>
-              )}
+              <LogoMarca src={headerSection.brand_logo} className="w-9 h-9" placa prioridad />
               <span className="text-lg sm:text-xl md:text-2xl font-bold tracking-widest text-white uppercase">
                 {brandName}
               </span>
@@ -636,32 +593,7 @@ export default function Header() {
             {/* Drawer Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-[#6b1e96]">
               <Link to="/" className="flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
-                {headerSection.brand_logo ? (
-                  <div className="w-7 h-7 flex items-center justify-center">
-                    <img
-                      src={headerSection.brand_logo}
-                      alt="Logo"
-                      loading="eager"
-                      className="w-full h-full object-contain rounded-md"
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                        const sibling = e.target.nextSibling;
-                        if (sibling) sibling.style.display = "flex";
-                      }}
-                    />
-                    <div className="hidden w-full h-full rounded-md bg-[#c3ff00] items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#531575]">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                      </svg>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-7 h-7 rounded-md bg-[#c3ff00] flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#531575]">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                  </div>
-                )}
+                <LogoMarca src={headerSection.brand_logo} className="w-7 h-7" placa />
                 <span className="text-lg font-bold tracking-widest text-white uppercase">{brandName}</span>
               </Link>
               <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-white">
@@ -888,32 +820,7 @@ export default function Header() {
             <div className="flex items-center justify-between px-5 py-5 border-b border-gray-100 bg-gradient-to-r from-[#531575] via-[#6b1e96] to-[#531575] relative overflow-hidden">
               <div className="absolute -left-10 -top-10 w-24 h-24 bg-[#c3ff00]/10 rounded-full blur-xl"></div>
               <div className="flex items-center gap-2.5 relative z-10">
-                {headerSection.brand_logo ? (
-                  <div className="w-8 h-8 flex items-center justify-center">
-                    <img
-                      src={headerSection.brand_logo}
-                      alt="Logo"
-                      loading="eager"
-                      className="w-full h-full object-contain rounded-lg"
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                        const sibling = e.target.nextSibling;
-                        if (sibling) sibling.style.display = "flex";
-                      }}
-                    />
-                    <div className="hidden w-full h-full rounded-lg bg-[#c3ff00] items-center justify-center shadow-sm">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-[#531575]">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                      </svg>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-8 h-8 rounded-lg bg-[#c3ff00] flex items-center justify-center shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-[#531575]">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                  </div>
-                )}
+                <LogoMarca src={headerSection.brand_logo} className="w-8 h-8" placa />
                 <div className="flex flex-col">
                   <span className="text-lg font-extrabold tracking-widest text-white uppercase leading-none">{brandName}</span>
                   <span className="text-[10px] text-purple-200 font-semibold tracking-wider mt-0.5">Categorías</span>

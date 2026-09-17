@@ -6,7 +6,8 @@ import PanelNotificationBell from "../../notifications/PanelNotificationBell";
 import toast from "react-hot-toast";
 import { useStore } from "../../../context/StoreContext";
 import { useAuth } from "../../../context/AuthContext";
-import { AutoTour, TOUR_IDS } from "../../tour";
+import { AutoTour, TOUR_IDS } from "../../tour";
+import LogoMarca from "../../common/LogoMarca";
 
 export default function StoreLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -209,12 +210,7 @@ export default function StoreLayout() {
           </svg>
         </button>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-[#c3ff00] flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-[#531575]">
-              <path d="M5.223 2.25h13.554a.75.75 0 0 1 .724.95l-.965 3.57a1.5 1.5 0 0 1-1.448 1.105H6.912a1.5 1.5 0 0 1-1.448-1.105l-.965-3.57a.75.75 0 0 1 .724-.95Z" />
-              <path fillRule="evenodd" d="M3.087 9h17.826a.75.75 0 0 1 .743.858l-1.53 11.25a1.5 1.5 0 0 1-1.486 1.142H5.36a1.5 1.5 0 0 1-1.486-1.142L2.344 9.858A.75.75 0 0 1 3.087 9Z" clipRule="evenodd" />
-            </svg>
-          </div>
+          <LogoMarca className="w-6 h-6" placa />
           <span className="font-bold text-sm tracking-widest uppercase flex items-center gap-1.5">
             Forcepx 
             <span className="font-normal text-[#c3ff00]/70 text-[10px] tracking-[0.15em]">Store</span>
@@ -244,12 +240,7 @@ export default function StoreLayout() {
             {/* Drawer Header */}
             <div className="h-14 flex items-center justify-between px-5" style={{ background: 'rgba(0,0,0,0.2)' }}>
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[#c3ff00] flex items-center justify-center shadow-lg shadow-[#c3ff00]/20">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#531575]">
-                    <path d="M5.223 2.25h13.554a.75.75 0 0 1 .724.95l-.965 3.57a1.5 1.5 0 0 1-1.448 1.105H6.912a1.5 1.5 0 0 1-1.448-1.105l-.965-3.57a.75.75 0 0 1 .724-.95Z" />
-                    <path fillRule="evenodd" d="M3.087 9h17.826a.75.75 0 0 1 .743.858l-1.53 11.25a1.5 1.5 0 0 1-1.486 1.142H5.36a1.5 1.5 0 0 1-1.486-1.142L2.344 9.858A.75.75 0 0 1 3.087 9Z" clipRule="evenodd" />
-                  </svg>
-                </div>
+                <LogoMarca className="w-7 h-7" placa />
                 <div className="flex flex-col">
                   <span className="text-sm font-bold tracking-widest text-white uppercase leading-tight">Forcepx</span>
                   <span className="text-[9px] font-medium tracking-[0.15em] text-[#c3ff00]/60 uppercase flex items-center gap-1.5">
