@@ -1,6 +1,8 @@
 // Rutas a las que el asistente puede llevar al usuario. Misma lista que el backend
 // (backend/src/services/bot/botReglas.js): si se cambia una, hay que cambiar la otra.
 // El navegador vuelve a comprobarla porque la acción viene de la respuesta de una IA.
+// Los paneles (/clinic, /store, /delivery, /admin) el backend solo los ofrece si el tipo de
+// cuenta entra; aquí se aceptan como destino y los sigue protegiendo ProtectedRoute.
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -11,6 +13,7 @@ const RUTAS_FIJAS = new Set([
   "/account", "/account/orders", "/account/favorites", "/account/downloads", "/account/reviews",
   "/account/notifications", "/account/password", "/account/addresses", "/account/payment-methods",
   "/account/support", "/account/posts", "/account/professional-verification",
+  "/clinic", "/store", "/delivery", "/admin",
 ]);
 
 const RUTAS_CON_ID = [
@@ -66,6 +69,10 @@ const NOMBRES = {
   "/account/notifications": "Notificaciones",
   "/account/password": "Contraseña",
   "/account/professional-verification": "Verificación profesional",
+  "/clinic": "Gestión Clínica",
+  "/store": "Panel de tienda",
+  "/delivery": "Panel de repartidor",
+  "/admin": "Panel de administración",
 };
 
 export function nombreRuta(ruta) {

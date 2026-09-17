@@ -49,7 +49,10 @@ function Linea({ texto, onNavegar }) {
 
 export default function TextoBot({ texto, onNavegar }) {
   const bloques = [];
-  for (const cruda of String(texto || "").split("\n")) {
+  // El modelo a veces pone la ruta en negrita («**/account/orders**») o entre comillas invertidas:
+  // sin quitarlas no se reconocía y no salía el botón de acceso directo.
+  const limpio = String(texto || "").replace(/(\*\*|`)(\/[a-z][\w\-/]*(?:\?[\w=&%+-]*)?)\1/gi, "$2");
+  for (const cruda of limpio.split("\n")) {
     const linea = cruda.trimEnd();
     const item = linea.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)$/);
     const anterior = bloques[bloques.length - 1];

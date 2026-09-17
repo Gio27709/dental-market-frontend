@@ -125,6 +125,16 @@ export default function ChatbotWidget() {
   const [historial, setHistorial] = useState(() => leerHistorial(userId));
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
+  // La IA gratuita a veces tarda 15–30 s: pasado un rato se avisa para que no parezca colgado.
+  const [demorado, setDemorado] = useState(false);
+  useEffect(() => {
+    if (!enviando) {
+      setDemorado(false);
+      return undefined;
+    }
+    const temporizador = setTimeout(() => setDemorado(true), 8000);
+    return () => clearTimeout(temporizador);
+  }, [enviando]);
 
   const listaRef = useRef(null);
   const entradaRef = useRef(null);
@@ -162,10 +172,24 @@ export default function ChatbotWidget() {
     guardarHistorial(userId, historial);
   }, [historial, userId]);
 
-  // Siempre abajo del todo al llegar un mensaje.
+  // Una respuesta nueva del asistente se muestra desde su inicio: con respuestas largas, bajar
+  // al final dejaba el comienzo fuera de la vista y parecía que el chat «borraba» texto. El resto
+  // (mensaje propio, «escribiendo…», notas) baja al final.
+  const ultimoMensaje = historial.mensajes[historial.mensajes.length - 1];
+  const ultimoId = ultimoMensaje?.id;
+  const ultimoEsBot = ultimoMensaje?.rol === "bot";
   useEffect(() => {
-    if (abierto && listaRef.current) listaRef.current.scrollTop = listaRef.current.scrollHeight;
-  }, [historial.mensajes.length, enviando, abierto]);
+    const lista = listaRef.current;
+    if (!abierto || !lista) return;
+    if (!enviando && ultimoEsBot && ultimoId) {
+      const burbuja = [...lista.querySelectorAll("[data-mensaje-id]")].find((el) => el.dataset.mensajeId === ultimoId);
+      if (burbuja) {
+        lista.scrollTop = Math.max(0, burbuja.offsetTop - 12);
+        return;
+      }
+    }
+    lista.scrollTop = lista.scrollHeight;
+  }, [ultimoId, ultimoEsBot, enviando, abierto]);
 
   useEffect(() => {
     if (abierto && !esMovil()) entradaRef.current?.focus();
@@ -339,7 +363,7 @@ export default function ChatbotWidget() {
             </button>
           </header>
 
-          <div ref={listaRef} className="flex-1 overflow-y-auto px-3 py-4 space-y-3" aria-live="polite">
+          <div ref={listaRef} className="relative flex-1 overflow-y-auto px-3 py-4 space-y-3" aria-live="polite">
             {mensajes.map((m) => {
               if (m.rol === "usuario") {
                 return (
@@ -356,7 +380,7 @@ export default function ChatbotWidget() {
                 );
               }
               return (
-                <div key={m.id} className="space-y-2">
+                <div key={m.id} data-mensaje-id={m.id} className="space-y-2">
                   <div className="max-w-[90%] rounded-2xl rounded-bl-md border border-fx-line bg-white px-3 py-2 text-[14px] leading-relaxed text-fx-text">
                     <TextoBot texto={m.texto} onNavegar={irA} />
                   </div>
@@ -423,10 +447,13 @@ export default function ChatbotWidget() {
             )}
 
             {enviando && (
-              <div className="inline-flex items-center gap-1 rounded-2xl rounded-bl-md border border-fx-line bg-white px-3 py-3" aria-label="El asistente está escribiendo">
-                {[0, 150, 300].map((d) => (
-                  <span key={d} className="h-2 w-2 animate-bounce rounded-full bg-[#6b1e96]/60" style={{ animationDelay: `${d}ms` }} />
-                ))}
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1 rounded-2xl rounded-bl-md border border-fx-line bg-white px-3 py-3" aria-label="El asistente está escribiendo">
+                  {[0, 150, 300].map((d) => (
+                    <span key={d} className="h-2 w-2 animate-bounce rounded-full bg-[#6b1e96]/60" style={{ animationDelay: `${d}ms` }} />
+                  ))}
+                </div>
+                {demorado && <p className="pl-1 text-[12px] text-fx-muted">Sigo buscando la mejor respuesta, dame unos segundos…</p>}
               </div>
             )}
           </div>
