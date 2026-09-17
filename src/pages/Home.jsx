@@ -16,8 +16,11 @@ import DualBanners from "../components/home/DualBanners";
 import CatalogSection from "../components/home/CatalogSection";
 import BlogSection from "../components/home/BlogSection";
 import Reveal from "../components/Reveal";
+import useEsMovil from "../hooks/useEsMovil";
+import InicioMovil from "../components/home/InicioMovil";
 
 export default function Home() {
+  const esMovil = useEsMovil();
   const { products, loading, error, applyFilters } = useProducts();
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 400);
@@ -30,6 +33,10 @@ export default function Home() {
   }, [debouncedSearchTerm, maxPrice, applyFilters]);
 
   useSearchTracking(debouncedSearchTerm, products.length, loading);
+
+  // En el teléfono manda el inicio tipo app (buscador, accesos rápidos y productos reales);
+  // la página larga de marketing se queda para el escritorio.
+  if (esMovil) return <InicioMovil />;
 
   if (loading) {
     return (

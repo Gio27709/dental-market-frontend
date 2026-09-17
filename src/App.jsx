@@ -23,6 +23,8 @@ import ChatbotWidget from "./components/bot/ChatbotWidget";
 import BannerInstalarApp from "./components/pwa/BannerInstalarApp";
 import ActualizacionPwa from "./components/pwa/ActualizacionPwa";
 import EstadoConexion from "./components/pwa/EstadoConexion";
+import BarraInferior from "./components/app/BarraInferior";
+import { esAppInstalada } from "./components/pwa/instalarApp";
 import AccountLayout from "./components/layout/account/AccountLayout";
 import AdminLayout from "./components/layout/admin/AdminLayout";
 import StoreLayout from "./components/layout/store/StoreLayout";
@@ -133,15 +135,21 @@ function EcommerceLayout() {
     <div className="min-h-screen flex flex-col font-sans">
       <Header />
       <BannerInstalarApp />
-      <main className="flex-grow bg-gray-50">
+      {/* El padding inferior deja sitio a la barra de navegación del teléfono. */}
+      <main className="flex-grow bg-gray-50 pb-16 md:pb-0">
         <Outlet />
       </main>
-      <Footer />
-      {/* Botones flotantes de la esquina: WhatsApp encima y el asistente con IA debajo. */}
-      <div className="fixed bottom-5 right-5 z-[80] flex flex-col items-end gap-3">
+      {/* En la app instalada el pie (mapa del sitio) sobra en el teléfono: ya está la barra. */}
+      <div className={esAppInstalada() ? "hidden md:block" : ""}>
+        <Footer />
+      </div>
+      {/* Botones flotantes de la esquina: WhatsApp encima y el asistente con IA debajo. En el
+          teléfono suben para no quedar debajo de la barra de navegación. */}
+      <div className="fixed bottom-20 right-4 z-[80] flex flex-col items-end gap-3 md:bottom-5 md:right-5">
         <WhatsAppButton />
         <ChatbotWidget />
       </div>
+      <BarraInferior />
     </div>
   );
 }
@@ -150,7 +158,9 @@ function EcommerceLayout() {
 function HomeConGuia() {
   return (
     <>
-      <AutoTour id={TOUR_IDS.COMPRADOR} esperarUbicacion />
+      {/* En la app instalada no se lanza sola la guía de 7 pasos: habla del menú ☰ del navegador
+          y tapa la pantalla al abrir. Sigue disponible desde «Guía» en el encabezado. */}
+      {!esAppInstalada() && <AutoTour id={TOUR_IDS.COMPRADOR} esperarUbicacion />}
       <Home />
     </>
   );
@@ -186,6 +196,9 @@ function landingVistaEnSesion() {
  * (todos los modos la enseñarían); si ya la vio, se espera al ajuste para no parpadear.
  */
 function HomeGate() {
+  // En la app instalada se entra directo a la tienda: quien la instaló ya conoce Forcepx y la
+  // bienvenida de marketing (8 pantallas) solo estorba.
+  const [esApp] = useState(esAppInstalada);
   const [mode, setMode] = useState(null);
   const [vistaNavegador] = useState(landingVistaEnNavegador);
   const [vistaSesion] = useState(landingVistaEnSesion);
@@ -216,6 +229,7 @@ function HomeGate() {
     }
   }, [mode, vistaSesion]);
 
+  if (esApp) return <HomeConGuia />;
   if (mode === null) {
     return vistaNavegador ? <LoadingSkeleton /> : <Landing />;
   }

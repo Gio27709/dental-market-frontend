@@ -345,7 +345,7 @@ export default function ChatbotWidget() {
         <section
           role="dialog"
           aria-label="Asistente de Forcepx"
-          className="fixed inset-0 z-[90] flex flex-col bg-fx-base sm:inset-auto sm:bottom-5 sm:right-5 sm:w-[380px] sm:h-[min(620px,calc(100vh-2.5rem))] sm:rounded-2xl sm:shadow-2xl sm:shadow-black/25 sm:border sm:border-fx-line overflow-hidden"
+          className="fixed inset-0 z-[110] flex flex-col bg-fx-base sm:inset-auto sm:bottom-5 sm:right-5 sm:w-[380px] sm:h-[min(620px,calc(100vh-2.5rem))] sm:rounded-2xl sm:shadow-2xl sm:shadow-black/25 sm:border sm:border-fx-line overflow-hidden"
         >
           <header className="flex items-center gap-3 bg-[#6b1e96] px-4 py-3 text-white" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#c3ff00]">
