@@ -143,14 +143,13 @@ export default function PostDetail() {
             <ArrowLeft className="w-4 h-4" />
             <span>Volver al Feed</span>
           </Link>
-          <button 
-            onClick={handleShare}
+          <ShareButton
+            title={post.title}
+            text={`${post.title} — Forcepx`}
+            url={`${SITE_URL}/news/${post.id}`}
             className="p-2 hover:bg-slate-50 text-gray-500 hover:text-gray-700 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold"
-            title="Compartir enlace"
-          >
-            <Share2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Compartir</span>
-          </button>
+            iconClassName="w-4 h-4"
+          />
         </div>
       </div>
 

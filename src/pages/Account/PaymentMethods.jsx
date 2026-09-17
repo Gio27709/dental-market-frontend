@@ -37,10 +37,13 @@ const VENEZUELAN_BANKS = [
 export default function PaymentMethods() {
   const { user } = useAuth();
 
-  // Redirigir a los compradores comunes (no tienen billetera) para que no configuren cuentas de retiro
-  if (user && !["store", "store/owner", "delivery", "admin", "owner"].includes(user.role)) {
-    return <Navigate to="/account" replace />;
-  }
+  // Los compradores comunes no tienen billetera: no configuran cuentas de retiro.
+  //
+  // La redirección va DESPUÉS de los hooks. Antes estaba arriba del todo y tumbaba la página:
+  // el primer pintado ocurre con `user` todavía sin resolver, así que React registraba los 14
+  // useState y el useEffect; cuando llegaba el usuario y salía por el return, esos hooks ya no
+  // se llamaban y React cortaba el render con «Rendered fewer hooks than expected».
+  const puedeCobrar = !user || ["store", "store/owner", "delivery", "admin", "owner"].includes(user.role);
 
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,8 +78,14 @@ export default function PaymentMethods() {
   };
 
   useEffect(() => {
+    // Se espera a saber quién entra: al comprador se le redirige abajo y pedir sus cuentas daría 403.
+    if (!user || !puedeCobrar) return;
     fetchPaymentMethods();
-  }, []);
+  }, [user, puedeCobrar]);
+
+  if (!puedeCobrar) {
+    return <Navigate to="/account" replace />;
+  }
 
   const openAddModal = () => {
     setEditingMethod(null);
