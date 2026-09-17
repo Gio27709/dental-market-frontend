@@ -3,7 +3,7 @@ import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
 
 // Barra de navegación fija abajo, estilo app, solo en teléfono (md: la oculta). Lleva lo más
-// usado: inicio, catálogo, carrito, pedidos y cuenta. Se esconde en el pago y en la pantalla de
+// usado: inicio, catálogo, carrito, publicaciones y cuenta. Se esconde en el pago y en la pantalla de
 // «pedido listo» para no competir con los botones de esas pantallas.
 
 const OCULTA_EN = ["/checkout", "/order-success", "/login", "/register"];
@@ -22,8 +22,10 @@ export default function BarraInferior() {
     { ruta: "/inicio", icono: "home", texto: "Inicio", activa: pathname === "/" || pathname === "/inicio" },
     { ruta: "/store-catalog", icono: "storefront", texto: "Catálogo", activa: pathname.startsWith("/store-catalog") || pathname.startsWith("/product/") },
     { ruta: "/cart", icono: "shopping_cart", texto: "Carrito", activa: pathname.startsWith("/cart"), globo: itemCount },
-    { ruta: user ? "/account/orders" : "/login?redirect=/account/orders", icono: "local_shipping", texto: "Pedidos", activa: pathname.startsWith("/account/orders") },
-    { ruta: user ? "/account" : "/login", icono: "person", texto: "Cuenta", activa: pathname === "/account" || (pathname.startsWith("/account") && !pathname.startsWith("/account/orders")) },
+    // «Publicaciones» no cabe en 1/5 de pantalla a 360 px: se acorta en el rótulo y va completo
+    // en el aria-label. Los pedidos quedan en el acceso rápido del inicio y en el menú Cuenta.
+    { ruta: "/news", icono: "newspaper", texto: "Publica.", nombre: "Publicaciones", activa: pathname.startsWith("/news") },
+    { ruta: user ? "/account" : "/login", icono: "person", texto: "Cuenta", activa: pathname.startsWith("/account") },
   ];
 
   return (
@@ -37,6 +39,7 @@ export default function BarraInferior() {
           <li key={e.texto} className="flex-1">
             <Link
               to={e.ruta}
+              aria-label={e.nombre || undefined}
               aria-current={e.activa ? "page" : undefined}
               className={`flex h-14 flex-col items-center justify-center gap-0.5 text-[10.5px] font-semibold leading-none transition-colors ${
                 e.activa ? "text-[#6b1e96]" : "text-fx-muted"
