@@ -21,6 +21,21 @@ const LANDING_MODES = [
   },
 ];
 
+const BCV_SOURCE_LABELS = {
+  bcv: "web del BCV (automática)",
+  dolarapi: "API de respaldo (el BCV no respondió)",
+  auto_cron: "API externa (sistema anterior)",
+  manual: "cargada a mano",
+};
+
+// La Fecha Valor llega como "2026-09-17T00:00:00-04:00": se muestra el día tal cual lo
+// publica el BCV, sin pasarla por la zona horaria del navegador.
+const formatFechaValor = (iso) => {
+  const [y, m, d] = String(iso).slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("es-VE", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+};
+
 export default function PlatformSettings() {
   const [allowOpenReviews, setAllowOpenReviews] = useState(true);
   const [landingMode, setLandingMode] = useState("always");
@@ -33,6 +48,8 @@ export default function PlatformSettings() {
   const [bcvInput, setBcvInput] = useState("");
   const [bcvLastUpdated, setBcvLastUpdated] = useState(null);
   const [bcvLastChecked, setBcvLastChecked] = useState(null);
+  const [bcvSource, setBcvSource] = useState(null);
+  const [bcvFechaValor, setBcvFechaValor] = useState(null);
   const [savingBcv, setSavingBcv] = useState(false);
   const [fetchingBcv, setFetchingBcv] = useState(false);
 
@@ -82,6 +99,8 @@ export default function PlatformSettings() {
         setBcvInput(String(bcvValue.rate));
         setBcvLastUpdated(bcvValue.updated_at || null);
         setBcvLastChecked(bcvValue.last_checked_at || bcvValue.updated_at || null);
+        setBcvSource(bcvValue.source || null);
+        setBcvFechaValor(bcvValue.fecha_valor || null);
       }
 
       // Store Fee
@@ -191,6 +210,8 @@ export default function PlatformSettings() {
       const nowStr = new Date().toISOString();
       setBcvLastUpdated(nowStr);
       setBcvLastChecked(nowStr);
+      setBcvSource("manual");
+      setBcvFechaValor(null);
       // Actualizar localStorage para que el frontend muestre la tasa nueva inmediatamente
       localStorage.setItem("bcv_rate", numericRate);
       toast.success(`Tasa BCV actualizada a ${numericRate} Bs/$`);
@@ -204,21 +225,22 @@ export default function PlatformSettings() {
     }
   };
 
+  // La tasa se lee en el servidor: el navegador no puede abrir bcv.org.ve directamente.
   const fetchOfficialBCVRate = async () => {
     try {
       setFetchingBcv(true);
-      const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
-      if (!response.ok) throw new Error("Error en la conexión con dolarapi");
-      const data = await response.json();
-
-      if (data.promedio) {
-        setBcvInput(String(data.promedio));
-        toast.success(`Tasa BCV obtenida: ${data.promedio.toFixed(2)} Bs/$`);
-      } else {
-        toast.error('La API no devolvió una tasa válida.');
+      const { data } = await api.get("/admin/settings/bcv-rate/official");
+      const { rate, fecha_valor, fuente } = data?.data || {};
+      if (!rate) {
+        toast.error("No llegó una tasa válida.");
+        return;
       }
+      setBcvInput(String(rate));
+      const origen = fuente === "bcv" ? "web del BCV" : "API de respaldo (el BCV no respondió)";
+      const valor = fecha_valor ? ` · Fecha valor ${formatFechaValor(fecha_valor)}` : "";
+      toast.success(`Tasa obtenida de la ${origen}: ${Number(rate).toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} Bs/$${valor}`);
     } catch (error) {
-      toast.error('Error al consultar la API del BCV.');
+      toast.error(error?.response?.data?.error || "No se pudo consultar la tasa del BCV.");
       console.error("Error fetching bcv rate:", error);
     } finally {
       setFetchingBcv(false);
@@ -263,6 +285,9 @@ export default function PlatformSettings() {
               <p className="text-gray-600 text-[15px] leading-relaxed mb-6 max-w-xl">
                 Define la tasa de cambio oficial del Banco Central de Venezuela. Este valor se usa para mostrar los precios en Bolívares en toda la plataforma y se <strong>congela en cada orden</strong> al momento de la compra.
               </p>
+              <p className="text-gray-500 text-sm leading-relaxed -mt-4 mb-6 max-w-xl">
+                Se lee sola de la web del BCV todos los días a las <strong>7:00 a. m.</strong> y a las <strong>6:00 p. m.</strong> (hora de Venezuela). Si el BCV no responde, se usa una API de respaldo.
+              </p>
 
               {/* Tasa Actual */}
               <div className="flex flex-col gap-4">
@@ -280,6 +305,12 @@ export default function PlatformSettings() {
                     {bcvLastChecked && (
                       <span className="text-sm text-blue-500/70 block">
                         Última verificación: {new Date(bcvLastChecked).toLocaleDateString("es-VE", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    )}
+                    {bcvSource && (
+                      <span className="text-sm text-gray-500 block">
+                        Fuente: {BCV_SOURCE_LABELS[bcvSource] || bcvSource}
+                        {bcvFechaValor && ` · Fecha valor: ${formatFechaValor(bcvFechaValor)}`}
                       </span>
                     )}
                   </div>
