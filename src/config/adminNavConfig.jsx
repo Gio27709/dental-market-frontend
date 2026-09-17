@@ -44,6 +44,13 @@ export const navGroups = [
           <span className="material-symbols-outlined text-[20px]">support_agent</span>
         )
       },
+      {
+        name: 'Asistente IA',
+        path: '/admin/bot',
+        icon: (
+          <span className="material-symbols-outlined text-[20px]">smart_toy</span>
+        )
+      },
     ]
   },
   {

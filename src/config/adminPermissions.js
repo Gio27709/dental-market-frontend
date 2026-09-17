@@ -20,6 +20,7 @@ export const PATH_PERMISSIONS = {
   "/admin/users": "manage_users",
   "/admin/professional-verifications": "manage_users",
   "/admin/support": "manage_support",
+  "/admin/bot": "manage_support",
   "/admin/payment-approvals": "manage_orders",
   "/admin/payment-history": "manage_orders",
   "/admin/orders": "manage_orders",

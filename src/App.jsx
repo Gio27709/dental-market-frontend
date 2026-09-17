@@ -19,6 +19,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ScrollToTop from "./components/ScrollToTop";
 import { RouteMeta } from "./lib/seo";
 import WhatsAppButton from "./components/common/WhatsAppButton";
+import ChatbotWidget from "./components/bot/ChatbotWidget";
 import AccountLayout from "./components/layout/account/AccountLayout";
 import AdminLayout from "./components/layout/admin/AdminLayout";
 import StoreLayout from "./components/layout/store/StoreLayout";
@@ -64,6 +65,7 @@ const AdminRefunds = lazy(() => import("./pages/Admin/AdminRefunds"));
 const AdminPenalties = lazy(() => import("./pages/Admin/AdminPenalties"));
 const AdminPayouts = lazy(() => import("./pages/Admin/AdminPayouts"));
 const AdminSupport = lazy(() => import("./pages/Admin/AdminSupport"));
+const AdminBot = lazy(() => import("./pages/Admin/AdminBot"));
 const AdminPromotions = lazy(() => import("./pages/Admin/AdminPromotions"));
 const ProfessionalVerification = lazy(() => import("./pages/Account/ProfessionalVerification"));
 const ProfessionalVerifications = lazy(() => import("./pages/Admin/ProfessionalVerifications"));
@@ -131,7 +133,11 @@ function EcommerceLayout() {
         <Outlet />
       </main>
       <Footer />
-      <WhatsAppButton />
+      {/* Botones flotantes de la esquina: WhatsApp encima y el asistente con IA debajo. */}
+      <div className="fixed bottom-5 right-5 z-[80] flex flex-col items-end gap-3">
+        <WhatsAppButton />
+        <ChatbotWidget />
+      </div>
     </div>
   );
 }
@@ -274,6 +280,7 @@ export default function App() {
                         <Route path="notifications" element={<AdminNotifications />} />
                         <Route path="home-content" element={<HomeContentManager />} />
                         <Route path="support" element={<AdminSupport />} />
+                        <Route path="bot" element={<AdminBot />} />
                         <Route path="promotions" element={<AdminPromotions />} />
                         <Route path="professional-verifications" element={<ProfessionalVerifications />} />
                       </Route>

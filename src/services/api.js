@@ -540,3 +540,15 @@ export const approveClinicMembershipAPI = (id) => api.put(`/admin/clinic-members
 export const rejectClinicMembershipAPI = (id, reason) => api.put(`/admin/clinic-memberships/${id}/reject`, { reason });
 export const revokeClinicMembershipAPI = (id, reason) => api.put(`/admin/clinic-memberships/${id}/revoke`, { reason });
 export const updateClinicMembershipSettingsAPI = (data) => api.put("/admin/settings/clinic-membership", data);
+
+// ── Chatbot (admin) ──────────────────────────────────────────────────────────
+// Panel /admin/bot: revisión de respuestas, base de conocimiento y uso del asistente IA.
+export const getBotResumenAPI = (dias = 14) => api.get("/admin/bot/resumen", { params: { dias } });
+export const getBotRevisionAPI = (estado = "pending") => api.get("/admin/bot/revision", { params: { estado } });
+export const getBotConversacionAPI = (id) => api.get(`/admin/bot/conversaciones/${id}`);
+export const resolverBotRevisionAPI = (id, datos) => api.post(`/admin/bot/revision/${id}/resolver`, datos);
+export const descartarBotRevisionAPI = (id) => api.post(`/admin/bot/revision/${id}/descartar`);
+export const getBotConocimientoAPI = (q) => api.get("/admin/bot/conocimiento", { params: { q: q || undefined } });
+export const crearBotConocimientoAPI = (datos) => api.post("/admin/bot/conocimiento", datos);
+export const actualizarBotConocimientoAPI = (id, datos) => api.put(`/admin/bot/conocimiento/${id}`, datos);
+export const borrarBotConocimientoAPI = (id) => api.delete(`/admin/bot/conocimiento/${id}`);
