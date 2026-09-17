@@ -2,6 +2,36 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { recargarSiBuildViejo, recargaPendiente } from '../lib/staleBuildReload';
 
+// El cartel dice «Hemos notificado el problema»: esto es lo que lo cumple. Manda el error al
+// backend, que lo deja en su log (`grep "[ClientError]"`). Con `keepalive` llega aunque el
+// usuario cierre la pestaña enseguida, y va con fetch directo —sin axios ni sus
+// interceptores— para que un fallo aquí no pueda encadenar otro error.
+let yaAvisado = "";
+
+function avisarAlServidor(error, errorInfo) {
+  try {
+    const url = import.meta.env.VITE_API_URL;
+    if (!url) return;
+    const firma = `${error?.message || error}|${window.location.pathname}`;
+    if (yaAvisado === firma) return; // el mismo fallo puede repintar varias veces
+    yaAvisado = firma;
+    fetch(`${url}/client-errors`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      keepalive: true,
+      body: JSON.stringify({
+        message: String(error?.message || error || "").slice(0, 300),
+        stack: String(error?.stack || "").slice(0, 1200),
+        componentStack: String(errorInfo?.componentStack || "").slice(0, 400),
+        path: window.location.pathname + window.location.search,
+        build: document.querySelector('script[type="module"][src]')?.getAttribute("src") || "",
+      }),
+    }).catch(() => {});
+  } catch {
+    // Avisar nunca debe empeorar la caída.
+  }
+}
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -18,6 +48,7 @@ class ErrorBoundary extends React.Component {
     // mostrar la pantalla de error.
     if (recargarSiBuildViejo(error)) return;
     console.error("ErrorBoundary atrapó un error detectado en la UI:", error, errorInfo);
+    avisarAlServidor(error, errorInfo);
   }
 
   render() {
