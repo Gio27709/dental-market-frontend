@@ -272,7 +272,7 @@ export default function PrivacyPolicy() {
                 </p>
               </div>
               <a
-                href="mailto:privacidad@forcepx.com"
+                href="mailto:support@forcepx.com?subject=Privacidad%20de%20datos"
                 className="flex items-center gap-2 bg-[#c3ff00] hover:bg-[#bcf600] text-[#151f00] font-bold py-3.5 px-6 rounded-xl transition-all shadow-md active:transform active:scale-95 font-inter text-sm whitespace-nowrap"
               >
                 <Mail className="w-4 h-4" />

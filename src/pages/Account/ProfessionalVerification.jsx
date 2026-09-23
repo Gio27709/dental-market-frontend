@@ -168,7 +168,7 @@ export default function ProfessionalVerification() {
           </div>
           <h2 className="text-xl font-bold text-amber-800 mb-2">¡Odontólogo Verificado!</h2>
           <p className="text-amber-700 text-sm max-w-md leading-relaxed mb-6">
-            Tu matrícula ha sido revisada y aprobada por nuestro equipo administrativo. Ya tienes acceso exclusivo a todos los insumos médicos a precio mayorista.
+            Tu matrícula ha sido revisada y aprobada por nuestro equipo administrativo. Tu perfil ya muestra el sello de profesional verificado ante las tiendas y otros usuarios.
           </p>
           {status?.signed_url && (
             <a

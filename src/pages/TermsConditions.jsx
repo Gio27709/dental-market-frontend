@@ -33,7 +33,7 @@ export default function TermsConditions() {
       content: (
         <div className="space-y-3">
           <p>
-            El acceso a la compra de insumos de uso clínico odontológico está restringido exclusivamente a profesionales de la salud oral calificados.
+            Cualquier persona mayor de edad puede registrarse y comprar en Forcepx. Los insumos de uso clínico deben ser utilizados por profesionales de la salud oral o bajo su supervisión, y el comprador es responsable de ese uso.
           </p>
           <ul className="list-disc pl-6 space-y-2 text-gray-600 text-sm">
             <li>
@@ -63,10 +63,10 @@ export default function TermsConditions() {
               Al realizar una compra, el dinero se retiene en las cuentas de Forcepx y no se transfiere directamente al vendedor.
             </li>
             <li>
-              Una vez que recibas el producto, tienes un plazo de <strong>48 horas</strong> para confirmar que todo está conforme y liberar los fondos a la tienda.
+              Una vez que recibas el producto, tienes un plazo de <strong>48 horas corridas</strong> (se cuentan todos los días, no solo los hábiles) para confirmar que todo está conforme y liberar los fondos a la tienda.
             </li>
             <li>
-              Si no confirmas la entrega ni abres una disputa dentro de las 48 horas posteriores al reporte de entrega de la empresa de transporte, el sistema realizará la <strong>auto-confirmación y liberación automática de fondos</strong> a favor del vendedor.
+              Si no confirmas la entrega ni abres una disputa dentro de las 48 horas corridas posteriores al reporte de entrega, el sistema realizará la <strong>auto-confirmación y liberación automática de fondos</strong> a favor del vendedor. Una disputa o devolución abierta detiene esa liberación hasta que se resuelva.
             </li>
           </ul>
         </div>
@@ -83,7 +83,7 @@ export default function TermsConditions() {
           </p>
           <ul className="list-disc pl-6 space-y-2 text-gray-600 text-sm">
             <li>
-              Las tarifas de envío se calculan automáticamente según la distancia geográfica del vendedor respecto a tu ubicación.
+              El envío se paga según la modalidad que elijas: con empresa de encomienda el costo se cobra a destino al retirar el paquete; con delivery local la tienda aplica su tarifa fija, que ves antes de pagar; el retiro en tienda no tiene costo.
             </li>
             <li>
               Los tiempos estimados de entrega son referenciales y Forcepx no se hace responsable por retrasos fortuitos o de fuerza mayor ajenos a su operación.
@@ -105,7 +105,7 @@ export default function TermsConditions() {
           </p>
           <ul className="list-disc pl-6 space-y-2 text-gray-600 text-sm">
             <li>
-              Debes proporcionar información fiscal real (RIF, registro de comercio) y crear un perfil formal.
+              Debes proporcionar información fiscal real (RIF y datos de contacto verificables) y crear un perfil formal. Forcepx puede solicitar documentación adicional antes de aprobar la tienda.
             </li>
             <li>
               Todos los productos publicados deben contar con descripciones veraces, especificar marcas originales, precios reales y el stock disponible actual.
@@ -133,7 +133,7 @@ export default function TermsConditions() {
               <strong>Comisión de Comprador (Buyer Fee):</strong> Cargo de gestión que se suma al total del carrito al momento del checkout del cliente.
             </li>
             <li>
-              Los balances se acumulan en tu wallet virtual de la plataforma y puedes solicitar retiros que son procesados en un plazo de 24 a 48 horas hábiles.
+              Los balances se acumulan en tu wallet virtual de la plataforma y puedes solicitar retiros, que un administrador procesa manualmente en un plazo habitual de 24 a 48 horas.
             </li>
           </ul>
         </div>
@@ -149,7 +149,7 @@ export default function TermsConditions() {
           </p>
           <ul className="list-disc pl-6 space-y-2 text-gray-600 text-sm">
             <li>
-              Las tiendas tienen un límite de <strong>{slaHoras} horas hábiles</strong> para despachar los pedidos una vez que el pago ha sido aprobado por administración.
+              Las tiendas tienen un límite de <strong>{slaHoras} horas corridas</strong> (se cuentan todos los días, incluidos fines de semana y feriados) para despachar los pedidos una vez que el pago ha sido aprobado por administración.
             </li>
             <li>
               Las demoras injustificadas que violen los Acuerdos de Nivel de Servicio (SLA) darán lugar a multas automáticas aplicadas en la wallet o la suspensión temporal del catálogo de la tienda.

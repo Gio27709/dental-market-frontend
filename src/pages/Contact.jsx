@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, Send, CheckCircle } from 'lucide-react';
+import { Mail, Send, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createTicketAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -113,28 +113,10 @@ export default function Contact() {
                 </div>
                 <div className="ml-6">
                   <h3 className="text-sm font-semibold text-[#e6b4ff] uppercase tracking-widest font-inter mb-1">Correo Electrónico</h3>
-                  <p className="text-2xl font-bold font-manrope text-white">soporte@forcepx.com</p>
-                </div>
-              </div>
-
-              <div className="flex items-start">
-                <div className="flex-shrink-0 bg-[#c3ff00] p-4 rounded-2xl shadow-lg">
-                  <Phone className="w-6 h-6 text-[#30004a]" />
-                </div>
-                <div className="ml-6">
-                  <h3 className="text-sm font-semibold text-[#e6b4ff] uppercase tracking-widest font-inter mb-1">Teléfono</h3>
-                  <p className="text-2xl font-bold font-manrope text-white">+1 800 555 0199</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start">
-                <div className="flex-shrink-0 bg-[#c3ff00] p-4 rounded-2xl shadow-lg">
-                  <MapPin className="w-6 h-6 text-[#30004a]" />
-                </div>
-                <div className="ml-6">
-                  <h3 className="text-sm font-semibold text-[#e6b4ff] uppercase tracking-widest font-inter mb-1">Ubicación Principal</h3>
-                  <p className="text-xl font-semibold font-manrope text-white">Forcepx HQ</p>
-                  <p className="text-[#e6b4ff] font-inter mt-1">Av. Las Américas, Centro Empresarial Médico</p>
+                  <p className="text-2xl font-bold font-manrope text-white break-all">support@forcepx.com</p>
+                  <p className="text-[#e6b4ff] font-inter mt-2 text-sm">
+                    Respondemos por correo y por el formulario de esta página. También puedes abrir un ticket desde tu cuenta.
+                  </p>
                 </div>
               </div>
             </div>

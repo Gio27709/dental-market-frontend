@@ -171,18 +171,20 @@ export default function StoreDiscounts() {
         max_uses: form.max_uses ? parseInt(form.max_uses) : null,
       };
 
+      // El backend avisa en `message` que el descuento queda pendiente de aprobación y no se
+      // aplica hasta que un administrador lo apruebe.
       if (editingId) {
-        await updateDiscountAPI(editingId, payload);
-        toast.success("Descuento actualizado");
+        const { data } = await updateDiscountAPI(editingId, payload);
+        toast.success(data?.message || "Descuento actualizado", { duration: 6000 });
       } else {
-        await createDiscountAPI(payload);
-        toast.success("Descuento creado exitosamente");
+        const { data } = await createDiscountAPI(payload);
+        toast.success(data?.message || "Descuento creado exitosamente", { duration: 6000 });
       }
       refreshProducts();
       setShowForm(false);
       fetchDiscounts();
     } catch (err) {
-      toast.error(err.message || "Error guardando descuento");
+      toast.error(err.response?.data?.error || err.message || "Error guardando descuento");
     } finally {
       setSubmitting(false);
     }
@@ -195,7 +197,8 @@ export default function StoreDiscounts() {
       fetchDiscounts();
       toast.success("Estado actualizado");
     } catch (err) {
-      toast.error(err.message || "Error actualizando estado");
+      // 409 DISCOUNT_NOT_APPROVED: el servidor explica por qué no se puede activar.
+      toast.error(err.response?.data?.error || err.message || "Error actualizando estado", { duration: 6000 });
     }
   };
 
@@ -316,7 +319,10 @@ export default function StoreDiscounts() {
       ) : (
         <div className="grid gap-4">
           {filtered.map((d) => {
-            const isActive = d.is_active && d.is_started && !d.is_expired;
+            // «Activo» solo si de verdad se aplica a los compradores: el backend exige
+            // approval_status = approved además de is_active y fechas vigentes.
+            const aprobado = d.approval_status === "approved";
+            const isActive = d.is_active && d.is_started && !d.is_expired && aprobado;
             const scopeLabel = SCOPE_OPTIONS.find((s) => s.value === d.scope)?.label || d.scope;
 
             return (
@@ -339,6 +345,10 @@ export default function StoreDiscounts() {
                       ) : d.is_expired ? (
                         <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200 rounded-full">
                           Expirado
+                        </span>
+                      ) : d.is_active && !aprobado ? (
+                        <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200 rounded-full" title="No se aplica a los compradores hasta que un administrador lo apruebe">
+                          Sin aplicar
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200 rounded-full">
@@ -363,11 +373,19 @@ export default function StoreDiscounts() {
                           Aprobado
                         </span>
                       )}
+
                       {/* Discount value badge */}
                       <span className="px-2.5 py-0.5 text-xs font-black bg-[#6b1e96]/10 text-[#6b1e96] rounded-full">
                         {d.discount_type === "percentage" ? `-${d.discount_value}%` : `-$${d.discount_value}`}
                       </span>
                     </div>
+                    {!aprobado && (
+                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1.5 mb-2">
+                        {d.approval_status === "rejected"
+                          ? "Un administrador rechazó este descuento: no se aplica a los compradores. Edítalo para enviarlo de nuevo a revisión."
+                          : "Este descuento no se aplica a los compradores hasta que un administrador lo apruebe."}
+                      </p>
+                    )}
 
                     <div className="flex items-center gap-4 text-[11px] text-slate-500 flex-wrap">
                       <span className="flex items-center gap-1">

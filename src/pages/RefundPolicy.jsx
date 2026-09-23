@@ -9,7 +9,7 @@ export default function RefundPolicy() {
     {
       num: "01",
       title: "Recepción e Inspección",
-      desc: "Tienes un plazo de 48 horas desde la entrega física para revisar que el pedido esté completo y correcto.",
+      desc: "Revisa el pedido en cuanto lo recibas. Tienes 48 horas corridas desde la entrega antes de que el pago se libere solo a la tienda; después de eso, cualquier reclamo se evalúa caso por caso.",
       icon: PackageOpen,
     },
     {
@@ -21,13 +21,13 @@ export default function RefundPolicy() {
     {
       num: "03",
       title: "Mediación de Soporte",
-      desc: "El vendedor evalúa tu caso. Si no hay acuerdo en 24 horas, un administrador de Forcepx interviene.",
+      desc: "Un administrador de Forcepx revisa tu caso y las evidencias, puede pedir información a la tienda, y decide si procede la devolución. Mientras esté abierta, el pago a la tienda queda detenido.",
       icon: RefreshCw,
     },
     {
       num: "04",
       title: "Reembolso Directo",
-      desc: "Una vez autorizada la disputa, procesamos tu reembolso de forma inmediata a tu método original de pago.",
+      desc: "Si se aprueba, te pedimos a qué cuenta enviarte el dinero (Pago Móvil, transferencia bancaria o Zelle) y un administrador realiza la transferencia con su comprobante.",
       icon: ShieldCheck,
     },
   ];
@@ -49,7 +49,7 @@ export default function RefundPolicy() {
       items: [
         "Insumos clínicos desechables cuyo empaque sellado de fábrica haya sido abierto (por normativas de bioseguridad).",
         "Productos dañados por maltrato, caída o uso indebido por parte del odontólogo.",
-        "Solicitudes realizadas fuera del plazo mandatorio de 48 horas desde la recepción.",
+        "Solicitudes presentadas cuando el pago ya se liberó a la tienda por conformidad implícita, salvo que el administrador considere que hay motivos fundados.",
         "Materiales sensibles a la temperatura que no hayan sido almacenados según las indicaciones oficiales.",
       ],
     },
@@ -62,11 +62,11 @@ export default function RefundPolicy() {
     },
     {
       q: "¿Cuánto tiempo tarda en reflejarse el dinero en mi cuenta?",
-      a: "Una vez que el administrador o la tienda aprueban el reembolso, la liberación en la wallet o la orden de transferencia bancaria/Zelle se realiza en un plazo máximo de 24 a 48 horas hábiles.",
+      a: "Cuando el administrador aprueba el reembolso, te pedimos los datos de cobro (Pago Móvil, transferencia bancaria o Zelle). Con los datos en mano, la transferencia se realiza normalmente en 24 a 48 horas y verás la referencia del pago en tu pedido.",
     },
     {
-      q: "¿Qué pasa si expira el plazo de 48 horas y no reporté el problema?",
-      a: "Transcurridas las 48 horas de la entrega, el sistema asume conformidad implícita y realiza la auto-confirmación, liberando los fondos de forma irrevocable al vendedor. Por ello, te recomendamos inspeccionar tus insumos el mismo día que los recibas.",
+      q: "¿Qué pasa si pasan las 48 horas y no reporté el problema?",
+      a: "Transcurridas 48 horas corridas desde la entrega sin reclamo, el sistema asume conformidad implícita y libera los fondos al vendedor. Después de eso todavía puedes escribirnos y un administrador evaluará el caso, pero la devolución ya no es automática. Por ello, te recomendamos inspeccionar tus insumos el mismo día que los recibas.",
     },
   ];
 

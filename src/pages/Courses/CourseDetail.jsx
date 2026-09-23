@@ -139,12 +139,19 @@ export default function CourseDetail() {
                   <h3 className="text-3xl font-black text-gray-900 mb-2">
                     {course.is_free ? 'Completamente Gratis' : `$${course.price}`}
                   </h3>
-                  <button className="w-full py-4 bg-[#c3ff00] hover:bg-[#aee600] text-[#111111] font-bold text-lg rounded-2xl transition-colors shadow-lg shadow-[#c3ff00]/20 flex items-center justify-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
-                    </svg>
-                    {course.is_free ? 'Iniciar Curso Ahora' : 'Comprar Acceso'}
-                  </button>
+                  {course.is_free ? (
+                    <button className="w-full py-4 bg-[#c3ff00] hover:bg-[#aee600] text-[#111111] font-bold text-lg rounded-2xl transition-colors shadow-lg shadow-[#c3ff00]/20 flex items-center justify-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+                      </svg>
+                      Iniciar Curso Ahora
+                    </button>
+                  ) : (
+                    // La compra de cursos aún no está habilitada: el botón «Comprar Acceso» no hacía nada.
+                    <div className="w-full py-4 bg-gray-100 text-gray-500 font-bold text-base rounded-2xl flex items-center justify-center gap-2 cursor-not-allowed" aria-disabled="true">
+                      Inscripciones próximamente
+                    </div>
+                  )}
                 </div>
                 
                 <div className="mb-6">
