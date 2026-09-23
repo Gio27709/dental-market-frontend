@@ -556,3 +556,13 @@ export const borrarBotConocimientoAPI = (id) => api.delete(`/admin/bot/conocimie
 // ── Ficha de producto: relacionados ──────────────────────────────────────────
 // GET /products/:id/related → { success, data: [productos con product_variations, store_profiles, brands, active_discount] }
 export const getRelatedProductsAPI = (id, limit = 8) => api.get(`/products/${id}/related`, { params: { limit } });
+
+// ── Comunidad (admin): moderación de reseñas y preguntas ─────────────────────
+// Panel /admin/community.
+export const getAdminCommunityReviewsAPI = (params) => api.get("/admin/community/reviews", { params });
+export const hideCommunityReviewAPI = (id, reason) => api.patch(`/admin/community/reviews/${id}/hide`, { reason });
+export const unhideCommunityReviewAPI = (id) => api.patch(`/admin/community/reviews/${id}/unhide`);
+export const deleteCommunityReviewAPI = (id) => api.delete(`/admin/community/reviews/${id}`);
+export const getAdminCommunityQuestionsAPI = (params) => api.get("/admin/community/questions", { params });
+export const updateCommunityQuestionStatusAPI = (id, status) => api.patch(`/admin/community/questions/${id}`, { status });
+export const deleteCommunityQuestionAPI = (id) => api.delete(`/admin/community/questions/${id}`);
