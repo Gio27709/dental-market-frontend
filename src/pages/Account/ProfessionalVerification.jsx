@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { getProfessionalStatusAPI, uploadProfessionalLicenseAPI } from "../../services/api";
 import toast from "react-hot-toast";
-import { useAuth } from "../../context/AuthContext";
 
 export default function ProfessionalVerification() {
-  const { user } = useAuth();
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [file, setFile] = useState(null);
@@ -222,7 +220,7 @@ export default function ProfessionalVerification() {
           {status?.license_review_notes && (
             <div className="p-4 bg-white/80 rounded-xl border border-red-100 text-sm text-red-900 mb-4 font-medium">
               <span className="font-bold text-red-950 block mb-1">Motivo del rechazo:</span>
-              "{status.license_review_notes}"
+              &ldquo;{status.license_review_notes}&rdquo;
             </div>
           )}
           <p className="text-xs text-red-600">Por favor, vuelve a subir un documento válido para intentar de nuevo.</p>
