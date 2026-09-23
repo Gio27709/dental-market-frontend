@@ -1,56 +1,132 @@
 import { useState } from "react";
-import { useFavorites } from "../../context/FavoriteContext";
+import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
+import { useFavorites } from "../../context/FavoriteContext";
 import { useProducts } from "../../context/ProductContext";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
-import toast from "react-hot-toast";
+import PriceDisplay from "../../components/products/PriceDisplay";
+
+const BTN_PRIMARY =
+  "bg-[#6b1e96] hover:bg-[#4f0077] text-white font-bold rounded-xl px-5 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b1e96] focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+const BTN_SECONDARY =
+  "border border-[#6b1e96] text-[#6b1e96] hover:bg-[#6b1e96]/5 font-semibold rounded-xl px-5 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b1e96]";
+
+const UNAVAILABLE_LABELS = {
+  out_of_stock: "Agotado",
+  store_suspended: "Tienda suspendida",
+  inactive: "No disponible",
+  not_approved: "No disponible",
+};
+
+const isDefaultVariation = (v) =>
+  v.attribute_name === "default" ||
+  v.attribute_value === '{"_default":"default"}' ||
+  v.attribute_value === "default";
+
+const HeartIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+  </svg>
+);
+HeartIcon.propTypes = { className: PropTypes.string };
+
+// Une el favorito con el producto del catálogo (trae los datos de la tienda que usa el carrito)
+// y calcula precio, descuento y disponibilidad con lo que manda /api/wishlist.
+function buildItem(fav, allProducts) {
+  const raw = fav.products;
+  if (!raw) return null;
+  const catalog = allProducts.find((p) => p.id === raw.id);
+  const variations = raw.product_variations || catalog?.variations || catalog?.product_variations || [];
+  const store = catalog?.store || raw.store_profiles || null;
+  const discount = raw.active_discount !== undefined ? raw.active_discount : catalog?.active_discount || null;
+
+  // Disponibilidad: el backend la manda; si no viene, la deducimos como antes.
+  let available = raw.available;
+  let reason = raw.unavailable_reason || null;
+  if (typeof available !== "boolean") {
+    const suspended = !!(store?.is_suspended || raw.store_profiles?.is_suspended);
+    available = !suspended;
+    reason = suspended ? "store_suspended" : null;
+  }
+  if (!available && !reason) reason = "inactive";
+
+  const realVariations = variations.filter((v) => !isDefaultVariation(v));
+  const originalPrice = Number(discount?.original_price ?? raw.price) || 0;
+  const finalPrice = discount?.final_price != null ? Number(discount.final_price) : originalPrice;
+  let percent = null;
+  if (discount) {
+    if (discount.discount_type === "percentage" && discount.discount_value) {
+      percent = Math.round(Number(discount.discount_value));
+    } else if (originalPrice > 0 && finalPrice < originalPrice) {
+      percent = Math.round(((originalPrice - finalPrice) / originalPrice) * 100);
+    }
+  }
+
+  return {
+    favId: fav.id,
+    product: {
+      ...(catalog || {}),
+      ...raw,
+      variations,
+      store,
+      active_discount: discount,
+    },
+    storeName: store?.business_name || "Tienda",
+    image: raw.images?.[0] || catalog?.images?.[0] || null,
+    available,
+    reason,
+    hasRealVariations: realVariations.length > 0,
+    defaultVariation: variations.find(isDefaultVariation) || variations[0] || null,
+    originalPrice,
+    finalPrice,
+    hasDiscount: !!discount && finalPrice < originalPrice,
+    percent,
+  };
+}
+
+function SkeletonGrid() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" aria-busy="true" aria-label="Cargando favoritos">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden animate-pulse">
+          <div className="h-52 bg-gray-100" />
+          <div className="p-5 space-y-3">
+            <div className="h-3 w-1/3 bg-gray-100 rounded" />
+            <div className="h-4 w-4/5 bg-gray-100 rounded" />
+            <div className="h-6 w-1/4 bg-gray-100 rounded" />
+            <div className="h-11 w-full bg-gray-100 rounded-xl" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function Favorites() {
-  const { favorites, loading, toggleFavorite } = useFavorites();
+  const { favorites, loading, error, toggleFavorite, fetchFavorites } = useFavorites();
   const { allProducts } = useProducts();
   const { addToCart } = useCart();
   const { user } = useAuth();
   const [addingIds, setAddingIds] = useState(new Set());
+  const [removingIds, setRemovingIds] = useState(new Set());
 
-  if (loading) {
-    return (
-      <div style={{ background: "#ffffff", borderRadius: "1.5rem", padding: "4rem", textAlign: "center", minHeight: "400px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: "2.5rem", height: "2.5rem", border: "3px solid #6b1e96", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
-      </div>
-    );
-  }
+  const items = favorites.map((fav) => buildItem(fav, allProducts || [])).filter(Boolean);
 
-  // Enriched product data from allProducts
-  const enrichedFavorites = favorites.map(fav => {
-    const product = fav.products;
-    if (!product) return null;
-    const fullProduct = allProducts.find(p => p.id === product.id);
-    if (fullProduct) {
-      return { ...fav, product: fullProduct };
-    }
-    // Fallback mapped for products from suspended/offline stores
-    const mappedProduct = {
-      ...product,
-      variations: product.product_variations || [],
-      store: product.store_profiles || null,
-      brand: product.brands || null,
-    };
-    return { ...fav, product: mappedProduct };
-  }).filter(Boolean);
-
-  const handleAddToCart = async (product) => {
+  const handleAddToCart = async (item) => {
+    const { product } = item;
     if (user?.id === product.store_id) {
       toast.error("No puedes agregar tu propio producto al carrito.");
       return;
     }
     if (addingIds.has(product.id)) return;
-    setAddingIds(prev => new Set(prev).add(product.id));
+    setAddingIds((prev) => new Set(prev).add(product.id));
     try {
-      const success = await addToCart(product, product.variations?.[0] || null, 1);
-      if (success) toast.success("Agregado a la bolsa");
+      const success = await addToCart(product, item.defaultVariation, 1);
+      if (success) toast.success("Añadido al carrito");
     } finally {
-      setAddingIds(prev => {
+      setAddingIds((prev) => {
         const next = new Set(prev);
         next.delete(product.id);
         return next;
@@ -58,321 +134,177 @@ export default function Favorites() {
     }
   };
 
-  return (
-    <div style={{ fontFamily: "'Inter', sans-serif" }}>
-      {/* ── Header Section ── */}
-      <div style={{
-        background: "#ffffff",
-        borderRadius: "1.5rem",
-        padding: "2.5rem 3rem",
-        marginBottom: "2rem",
-        boxShadow: "0px 20px 40px rgba(25, 28, 32, 0.04)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" strokeWidth="1.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
-          <h1 style={{
-            fontFamily: "'Manrope', 'Inter', sans-serif",
-            fontSize: "1.75rem",
-            fontWeight: "800",
-            color: "#191c20",
-            letterSpacing: "-0.02em",
-            margin: 0,
-          }}>
-            Mis Favoritos
-          </h1>
-        </div>
-        <p style={{ fontSize: "0.875rem", color: "#7f7382", margin: 0, paddingLeft: "2.75rem" }}>
-          {enrichedFavorites.length} {enrichedFavorites.length === 1 ? "producto guardado" : "productos guardados"}
-        </p>
+  const handleRemove = async (productId) => {
+    if (removingIds.has(productId)) return;
+    setRemovingIds((prev) => new Set(prev).add(productId));
+    try {
+      await toggleFavorite(productId);
+    } finally {
+      setRemovingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(productId);
+        return next;
+      });
+    }
+  };
+
+  let content;
+  if (loading) {
+    content = <SkeletonGrid />;
+  } else if (error) {
+    content = (
+      <div role="alert" className="bg-white rounded-2xl border border-gray-100 px-4 py-12 sm:p-12 text-center">
+        <span className="material-symbols-outlined text-gray-300 text-[48px] mb-2" aria-hidden="true">cloud_off</span>
+        <h2 className="text-lg font-bold font-['Manrope'] text-[#191c20] mb-1">No pudimos cargar tus favoritos</h2>
+        <p className="text-sm text-gray-500 mb-5">{error}</p>
+        <button type="button" onClick={() => fetchFavorites()} className={BTN_SECONDARY}>
+          Reintentar
+        </button>
       </div>
-
-      {/* ── Content ── */}
-      {enrichedFavorites.length === 0 ? (
-        /* ── Empty State ── */
-        <div style={{
-          background: "#ffffff",
-          borderRadius: "1.5rem",
-          padding: "5rem 3rem",
-          textAlign: "center",
-          boxShadow: "0px 20px 40px rgba(25, 28, 32, 0.04)",
-        }}>
-          {/* Heart Illustration */}
-          <div style={{
-            width: "120px",
-            height: "120px",
-            borderRadius: "50%",
-            background: "linear-gradient(135deg, #f5d9ff 0%, #ffdad7 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 auto 2rem",
-          }}>
-            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#6b1e96" strokeWidth="1.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </div>
-
-          <h3 style={{
-            fontFamily: "'Manrope', 'Inter', sans-serif",
-            fontSize: "1.5rem",
-            fontWeight: "700",
-            color: "#191c20",
-            marginBottom: "0.75rem",
-          }}>
-            Aún no tienes favoritos
-          </h3>
-          <p style={{
-            fontSize: "0.9375rem",
-            color: "#7f7382",
-            maxWidth: "360px",
-            margin: "0 auto 2rem",
-            lineHeight: "1.6",
-          }}>
-            Explora nuestro catálogo y guarda los productos que más te gusten dándole clic al corazón.
-          </p>
-          <Link
-            to="/store-catalog"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
-              padding: "0.875rem 2rem",
-              borderRadius: "0.75rem",
-              background: "linear-gradient(135deg, #6b1e96 0%, #4f0077 100%)",
-              color: "#ffffff",
-              fontWeight: "700",
-              fontSize: "0.9375rem",
-              textDecoration: "none",
-              transition: "all 0.2s ease",
-              boxShadow: "0 4px 12px rgba(107, 30, 150, 0.3)",
-            }}
-          >
-            Explorar Catálogo
-          </Link>
+    );
+  } else if (items.length === 0) {
+    content = (
+      <div className="bg-white rounded-2xl border border-gray-100 px-4 py-12 sm:p-16 text-center">
+        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-[#6b1e96]/10 flex items-center justify-center mx-auto mb-6">
+          <HeartIcon className="w-12 h-12 text-[#6b1e96]" />
         </div>
-      ) : (
-        /* ── Product Grid ── */
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-          gap: "1.5rem",
-        }}>
-          {enrichedFavorites.map(({ id, product }) => {
-            const storeName = product.store?.business_name || product.store_profiles?.business_name || "Tienda";
-            const hasImage = product.images && product.images.length > 0;
-            const price = Number(product.price) || 0;
-            const isSuspended = product.store?.is_suspended || product.store_profiles?.is_suspended || false;
+        <h2 className="text-xl sm:text-2xl font-bold font-['Manrope'] text-[#191c20] mb-2">Aún no tienes favoritos</h2>
+        <p className="text-sm sm:text-base text-gray-500 max-w-md mx-auto mb-6">
+          Cuando veas un producto que te interese, toca el corazón para guardarlo aquí y encontrarlo rápido después.
+        </p>
+        <Link to="/store-catalog" className={`${BTN_PRIMARY} inline-block`}>
+          Explorar el catálogo
+        </Link>
+      </div>
+    );
+  } else {
+    content = (
+      <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {items.map((item) => {
+          const { product } = item;
+          const isAdding = addingIds.has(product.id);
+          const isRemoving = removingIds.has(product.id);
+          return (
+            <li
+              key={item.favId || product.id}
+              className={`group relative flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden transition-shadow hover:shadow-md ${
+                item.available ? "" : "opacity-75"
+              }`}
+            >
+              {/* Imagen */}
+              <div className="relative h-52 bg-[#f3f3f9] p-6 flex items-center justify-center">
+                <Link
+                  to={`/product/${product.id}`}
+                  className="flex items-center justify-center w-full h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b1e96]"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                >
+                  {item.image ? (
+                    <img
+                      src={item.image}
+                      alt=""
+                      loading="lazy"
+                      className={`max-w-full max-h-full object-contain mix-blend-multiply ${item.available ? "" : "grayscale"}`}
+                    />
+                  ) : (
+                    <span className="text-sm italic text-gray-400">Sin imagen</span>
+                  )}
+                </Link>
 
-            return (
-              <div
-                key={id}
-                style={{
-                  background: "#ffffff",
-                  borderRadius: "1rem",
-                  overflow: "hidden",
-                  transition: "all 0.3s ease",
-                  boxShadow: "0px 4px 16px rgba(25, 28, 32, 0.04)",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-4px)";
-                  e.currentTarget.style.boxShadow = "0px 20px 40px rgba(25, 28, 32, 0.08)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0px 4px 16px rgba(25, 28, 32, 0.04)";
-                }}
-              >
-                {/* Image Section */}
-                <div style={{ position: "relative", background: "#f3f3f9", padding: "1.5rem", display: "flex", alignItems: "center", justifyContent: "center", height: "220px" }}>
-                  <Link to={`/product/${product.id}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
-                    {hasImage ? (
-                      <img
-                        src={product.images[0]}
-                        alt={product.name}
-                        loading="lazy"
-                        style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", mixBlendMode: "multiply" }}
-                      />
-                    ) : (
-                      <span style={{ color: "#d0c2d3", fontSize: "0.875rem", fontStyle: "italic" }}>Sin Imagen</span>
-                    )}
-                  </Link>
-
-                  {/* Heart Button (Filled) */}
-                  <button
-                    onClick={() => toggleFavorite(product.id)}
-                    style={{
-                      position: "absolute",
-                      top: "1rem",
-                      right: "1rem",
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "50%",
-                      border: "none",
-                      background: "rgba(255,255,255,0.9)",
-                      backdropFilter: "blur(8px)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                    }}
-                    title="Quitar de favoritos"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </button>
+                <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
+                  {!item.available && (
+                    <span className="text-xs font-bold bg-gray-800 text-white px-2 py-1 rounded-full">
+                      {UNAVAILABLE_LABELS[item.reason] || "No disponible"}
+                    </span>
+                  )}
+                  {item.available && item.hasDiscount && item.percent > 0 && (
+                    <span className="text-xs font-bold bg-[#c3ff00] text-[#191c20] px-2 py-1 rounded-full">
+                      -{item.percent}%
+                    </span>
+                  )}
                 </div>
 
-                {/* Card Body */}
-                <div style={{ padding: "1.25rem 1.5rem", flex: 1, display: "flex", flexDirection: "column" }}>
-                  {/* Store Name */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
-                    <span style={{
-                      fontSize: "0.6875rem",
-                      fontWeight: "600",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      color: isSuspended ? "#ef4444" : "#6b1e96",
-                    }}>
-                      {storeName}
-                    </span>
-                    {isSuspended && (
-                      <span style={{
-                        fontSize: "0.625rem",
-                        fontWeight: "700",
-                        padding: "0.125rem 0.375rem",
-                        borderRadius: "0.25rem",
-                        background: "#fee2e2",
-                        color: "#ef4444",
-                        textTransform: "uppercase",
-                      }}>
-                        Suspendida
-                      </span>
-                    )}
-                  </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(product.id)}
+                  disabled={isRemoving}
+                  aria-label={`Quitar de favoritos: ${product.name}`}
+                  title="Quitar de favoritos"
+                  className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b1e96] disabled:opacity-50"
+                >
+                  <HeartIcon className="w-5 h-5" />
+                </button>
+              </div>
 
-                  {/* Product Name */}
-                  <Link
-                    to={`/product/${product.id}`}
-                    style={{
-                      fontSize: "0.9375rem",
-                      fontWeight: "600",
-                      color: "#191c20",
-                      textDecoration: "none",
-                      lineHeight: "1.4",
-                      marginBottom: "0.75rem",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {product.name}
-                  </Link>
+              {/* Cuerpo */}
+              <div className="flex flex-col flex-1 p-4 sm:p-5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#6b1e96] truncate mb-1">{item.storeName}</p>
+                <Link
+                  to={`/product/${product.id}`}
+                  className="font-bold font-['Manrope'] text-[#191c20] leading-snug line-clamp-2 hover:text-[#6b1e96] transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b1e96] mb-3"
+                >
+                  {product.name}
+                </Link>
 
-                  {/* Price */}
-                  <p style={{
-                    fontFamily: "'Manrope', 'Inter', sans-serif",
-                    fontSize: "1.25rem",
-                    fontWeight: "800",
-                    color: "#191c20",
-                    margin: "0 0 1rem 0",
-                    marginTop: "auto",
-                  }}>
-                    ${price.toFixed(2)}
-                  </p>
+                <div className="mb-4">
+                  {item.hasDiscount && (
+                    <PriceDisplay
+                      amountUSD={item.originalPrice}
+                      hideSwitcher
+                      priceClassName="text-sm text-gray-400 line-through"
+                    />
+                  )}
+                  <PriceDisplay
+                    amountUSD={item.finalPrice}
+                    hideSwitcher
+                    priceClassName="text-xl font-extrabold font-['Manrope'] text-[#191c20]"
+                  />
+                </div>
 
-                  {/* Add to Cart Button */}
-                  <button
-                    onClick={() => handleAddToCart(product)}
-                    disabled={addingIds.has(product.id) || isSuspended}
-                    style={{
-                      width: "100%",
-                      padding: "0.75rem",
-                      borderRadius: "0.75rem",
-                      border: "none",
-                      background: isSuspended
-                        ? "#e2e8f0"
-                        : addingIds.has(product.id)
-                        ? "linear-gradient(135deg, #531575 0%, #3a0055 100%)"
-                        : "linear-gradient(135deg, #6b1e96 0%, #4f0077 100%)",
-                      color: isSuspended ? "#94a3b8" : "#ffffff",
-                      fontWeight: "700",
-                      fontSize: "0.8125rem",
-                      cursor: isSuspended ? "not-allowed" : addingIds.has(product.id) ? "wait" : "pointer",
-                      transition: "all 0.2s ease",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "0.5rem",
-                      boxShadow: isSuspended ? "none" : "0 2px 8px rgba(107, 30, 150, 0.2)",
-                      marginBottom: "0.5rem",
-                      opacity: addingIds.has(product.id) ? 0.85 : 1,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!addingIds.has(product.id) && !isSuspended) {
-                        e.currentTarget.style.boxShadow = "0 4px 16px rgba(107, 30, 150, 0.35)";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSuspended) {
-                        e.currentTarget.style.boxShadow = "0 2px 8px rgba(107, 30, 150, 0.2)";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }
-                    }}
-                  >
-                    {isSuspended ? (
-                      "Tienda Suspendida"
-                    ) : addingIds.has(product.id) ? (
-                      <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 1s linear infinite" }}>
-                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25"></circle>
-                          <path fill="currentColor" opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Agregando...
-                      </>
-                    ) : (
-                      <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                        </svg>
-                        Añadir a la bolsa
-                      </>
-                    )}
-                  </button>
-
-                  {/* Remove Link */}
-                  <button
-                    onClick={() => toggleFavorite(product.id)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      fontSize: "0.75rem",
-                      color: "#7f7382",
-                      cursor: "pointer",
-                      padding: "0.25rem",
-                      textAlign: "center",
-                      transition: "color 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.color = "#ef4444"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.color = "#7f7382"; }}
-                  >
-                    Eliminar de favoritos
-                  </button>
+                <div className="mt-auto">
+                  {!item.available ? (
+                    <p className="text-sm text-gray-500 text-center py-3">
+                      {item.reason === "out_of_stock"
+                        ? "Te conviene revisar más adelante si vuelve a haber existencias."
+                        : "Este producto no se puede comprar por ahora."}
+                    </p>
+                  ) : item.hasRealVariations ? (
+                    <Link to={`/product/${product.id}`} className={`${BTN_SECONDARY} block w-full text-center`}>
+                      Elegir opciones
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleAddToCart(item)}
+                      disabled={isAdding}
+                      className={`${BTN_PRIMARY} w-full`}
+                    >
+                      {isAdding ? "Añadiendo..." : "Añadir al carrito"}
+                    </button>
+                  )}
                 </div>
               </div>
-            );
-          })}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
+  return (
+    <div className="space-y-6 pb-8">
+      <header className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-6 sm:px-8 sm:py-8">
+        <div className="flex items-center gap-3">
+          <HeartIcon className="w-7 h-7 text-red-500" />
+          <h1 className="text-2xl sm:text-3xl font-extrabold font-['Manrope'] text-[#191c20] tracking-tight">Mis favoritos</h1>
         </div>
-      )}
+        {!loading && !error && (
+          <p className="mt-2 text-sm text-gray-500">
+            {items.length} {items.length === 1 ? "producto guardado" : "productos guardados"}
+          </p>
+        )}
+      </header>
+      {content}
     </div>
   );
 }

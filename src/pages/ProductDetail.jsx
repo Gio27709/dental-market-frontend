@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { useProducts } from "../context/ProductContext";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoriteContext";
@@ -17,10 +17,63 @@ import toast from "react-hot-toast";
 import { track } from "../services/tracking";
 import { useSeo, stripHtml, SITE_URL } from "../lib/seo";
 import ShareButton from "../components/common/ShareButton";
+import { getRelatedProductsAPI } from "../services/api";
+
+const isLegacyDefault = (v) =>
+  v.attribute_name === "default" ||
+  v.attribute_value === '{"_default":"default"}' ||
+  v.attribute_value === "default";
+
+// Precio final de un precio original con el descuento activo del producto.
+function applyDiscount(origPrice, discount) {
+  if (!discount) return origPrice;
+  const discountAmount =
+    discount.discount_type === "percentage"
+      ? (origPrice * discount.discount_value) / 100
+      : Math.min(discount.discount_value, origPrice);
+  return Math.max(0, Math.round((origPrice - discountAmount) * 100) / 100);
+}
+
+// Igual que ProductContext: la API trae product_variations/store_profiles/brands.
+const mapProduct = (p) => ({
+  ...p,
+  variations: p.product_variations || p.variations || [],
+  store: p.store_profiles || p.store || null,
+  brand: p.brands || p.brand || null,
+});
+
+// «Vistos recientemente»: ids en localStorage (sobrevive al cerrar la pestaña), máximo 8.
+const RECENT_KEY = "forcepx_recently_viewed";
+const RECENT_MAX = 8;
+const RECENT_SHOWN = 4;
+function readRecentIds() {
+  try {
+    const ids = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+    return Array.isArray(ids) ? ids.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+function saveRecentId(productId) {
+  try {
+    const key = String(productId);
+    const ids = [key, ...readRecentIds().filter((x) => x !== key)].slice(0, RECENT_MAX);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(ids));
+  } catch {
+    // almacenamiento bloqueado (modo privado): la sección simplemente no aparece
+  }
+}
+
+const TABS = [
+  { key: "description", label: "Descripción" },
+  { key: "reviews", label: "Reseñas" },
+  { key: "qa", label: "Preguntas y respuestas" },
+];
 
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const {
     fetchProductById,
     allProducts,
@@ -30,7 +83,8 @@ export default function ProductDetail() {
   const { addToCart, items: cartItems } = useCart();
   const { toggleFavorite, favoriteIds } = useFavorites();
   const { user } = useAuth();
-  const { addViewed, getViewedProducts } = useRecentlyViewed();
+  // El carrito sigue leyendo los vistos de la sesión: se registra también ahí.
+  const { addViewed } = useRecentlyViewed();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,42 +97,11 @@ export default function ProductDetail() {
   const [isAdding, setIsAdding] = useState(false);
 
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [recentViews, setRecentViews] = useState([]);
+  const tabsRef = useRef(null);
 
-  // SEO: título, descripción, imagen y ficha Product (precio) para Google.
   const storeName = product?.store?.business_name || product?.store_profiles?.business_name || null;
-  useSeo(
-    product
-      ? {
-          title: product.name,
-          description:
-            stripHtml(product.description) ||
-            `${product.name}${storeName ? ` de ${storeName}` : ""}. Insumo odontológico en Forcepx con compra protegida y envío a toda Venezuela.`,
-          image: Array.isArray(product.images) && product.images[0] ? product.images[0] : undefined,
-          path: `/product/${product.id}`,
-          type: "product",
-          jsonLd: {
-            "@context": "https://schema.org",
-            "@type": "Product",
-            name: product.name,
-            image: Array.isArray(product.images) ? product.images.filter(Boolean) : [],
-            description: stripHtml(product.description).slice(0, 500),
-            sku: product.id,
-            ...(storeName ? { brand: { "@type": "Brand", name: storeName } } : {}),
-            offers: {
-              "@type": "Offer",
-              url: `${SITE_URL}/product/${product.id}`,
-              priceCurrency: "USD",
-              price: Number(product.price || 0).toFixed(2),
-              availability:
-                product.stock_status === "Agotado" || Number(product.stock) === 0
-                  ? "https://schema.org/OutOfStock"
-                  : "https://schema.org/InStock",
-              ...(storeName ? { seller: { "@type": "Organization", name: storeName } } : {}),
-            },
-          },
-        }
-      : null,
-  );
 
   useEffect(() => {
     if (globalLoading) return;
@@ -137,6 +160,55 @@ export default function ProductDetail() {
     if (id) addViewed(id);
   }, [id, addViewed]);
 
+  // Vistos recientemente: se leen los anteriores (sin esta ficha) y luego se guarda esta.
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    const ids = readRecentIds().filter((x) => x !== String(id)).slice(0, RECENT_SHOWN);
+    saveRecentId(id);
+    Promise.all(
+      ids.map((rid) => {
+        const cached = allProducts.find((p) => String(p.id) === rid);
+        if (cached) return Promise.resolve(cached);
+        return fetchProductById(rid).catch(() => null); // borrado o suspendido: se omite
+      }),
+    ).then((list) => {
+      if (active) setRecentViews(list.filter(Boolean));
+    });
+    return () => {
+      active = false;
+    };
+    // allProducts solo sirve de caché: no hace falta repetir la carga cuando cambia
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, fetchProductById]);
+
+  // Relacionados reales del backend; si el endpoint falla, los de la misma categoría del catálogo.
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    setRelatedProducts([]);
+    getRelatedProductsAPI(id, 8)
+      .then((res) => {
+        const list = res.data?.data || [];
+        if (active) setRelatedProducts(list.map(mapProduct));
+      })
+      .catch(() => {
+        if (!active) return;
+        const current = allProducts.find((p) => String(p.id) === String(id));
+        setRelatedProducts(
+          current?.category_id
+            ? allProducts
+                .filter((p) => String(p.id) !== String(id) && p.category_id === current.category_id)
+                .slice(0, 8)
+            : [],
+        );
+      });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
   // Se espera a que el producto cargue para poder atribuir la vista a su tienda y categoría.
   // El ref evita emitir el evento de nuevo en cada re-render de la misma ficha.
   const viewTrackedFor = useRef(null);
@@ -153,13 +225,7 @@ export default function ProductDetail() {
 
   const validVariations = useMemo(() => {
     if (!product?.variations) return [];
-    return product.variations.filter((v) => {
-      const isLegacyDefault =
-        v.attribute_name === "default" ||
-        v.attribute_value === '{"_default":"default"}' ||
-        v.attribute_value === "default";
-      return !isLegacyDefault;
-    });
+    return product.variations.filter((v) => !isLegacyDefault(v));
   }, [product?.variations]);
 
   const hasVariations = validVariations.length > 0;
@@ -173,12 +239,7 @@ export default function ProductDetail() {
   const defaultVariation = useMemo(() => {
     if (hasVariations) return null; // User must select from visible variations
     // Find the _default variation (hidden from UI but needed for cart consistency)
-    const defVar = product?.variations?.find(
-      (v) =>
-        v.attribute_name === "default" ||
-        v.attribute_value === '{"_default":"default"}' ||
-        v.attribute_value === "default"
-    );
+    const defVar = product?.variations?.find(isLegacyDefault);
     // If no named default, use the first variation available
     return defVar || product?.variations?.[0] || null;
   }, [product?.variations, hasVariations]);
@@ -191,17 +252,7 @@ export default function ProductDetail() {
 
     const discount = product.active_discount;
 
-    // Helper to calculate final price for a given original price
-    const getFinalPrice = (origPrice) => {
-      if (!discount) return origPrice;
-      let discountAmount = 0;
-      if (discount.discount_type === "percentage") {
-        discountAmount = (origPrice * discount.discount_value) / 100;
-      } else {
-        discountAmount = Math.min(discount.discount_value, origPrice);
-      }
-      return Math.max(0, Math.round((origPrice - discountAmount) * 100) / 100);
-    };
+    const getFinalPrice = (origPrice) => applyDiscount(origPrice, discount);
 
     if (hasVariations) {
       if (selectedVariation) {
@@ -278,28 +329,24 @@ export default function ProductDetail() {
   }, [product, hasVariations, selectedVariation, validVariations]);
 
 
+  // Stock real: null = la API no lo trae (se muestra «Disponible» sin cifra, nunca se inventa).
+  const toStock = (v) => (v == null || v === "" || Number.isNaN(Number(v)) ? null : Number(v));
   const currentStock = hasVariations
     ? selectedVariation
-      ? selectedVariation.stock
+      ? toStock(selectedVariation.stock) ?? 0
       : 0
-    : (() => {
-        if (defaultVariation?.stock != null) return defaultVariation.stock;
-        return product?.stock ?? 99;
-      })();
+    : toStock(defaultVariation?.stock) ?? toStock(product?.stock);
 
   const isInactive = product?.is_active === false;
-  const effectiveStock = isInactive ? 0 : (product?.stock_status === "Sin stock" ? 0 : currentStock);
+  const isSoldOut = product?.stock_status === "Sin stock";
+  const effectiveStock = isInactive || isSoldOut ? 0 : currentStock;
+  const stockKnown = effectiveStock != null;
+  const hasStockElsewhere = hasVariations && validVariations.some((v) => Number(v.stock) > 0);
   const isOwnProduct = user?.id === product?.store_id;
 
   const hasRealVariations = useMemo(() => {
     const variations = product?.product_variations || product?.variations || [];
-    return variations.filter((v) => {
-      const isLegacyDefault =
-        v.attribute_name === "default" ||
-        v.attribute_value === '{"_default":"default"}' ||
-        v.attribute_value === "default";
-      return !isLegacyDefault;
-    }).length > 0;
+    return variations.filter((v) => !isLegacyDefault(v)).length > 0;
   }, [product]);
 
   // Check cart quantity: count only the selected variation if product has real variations
@@ -317,8 +364,98 @@ export default function ProductDetail() {
     }
   }, [cartItems, product, hasRealVariations, selectedVariation]);
 
-  const isCartAtMax = effectiveStock > 0 && totalCartQtyForProduct >= effectiveStock;
-  const remainingStock = Math.max(0, effectiveStock - totalCartQtyForProduct);
+  const isCartAtMax = stockKnown && effectiveStock > 0 && totalCartQtyForProduct >= effectiveStock;
+  // Sin dato de stock se limita la cantidad en pantalla; el backend valida el stock real al añadir.
+  const remainingStock = stockKnown ? Math.max(0, effectiveStock - totalCartQtyForProduct) : 99;
+  const canBuy = stockKnown ? effectiveStock > 0 : !isInactive;
+
+  // La cantidad nunca supera lo que queda de la opción elegida.
+  useEffect(() => {
+    setQuantity((q) => Math.min(Math.max(1, q), remainingStock || 1));
+  }, [selectedVariationId, remainingStock]);
+
+  // SEO: título, descripción, imagen y ficha Product (precio final y disponibilidad reales).
+  const seoPrice = product
+    ? hasVariations
+      ? applyDiscount(Number(product.price) || 0, product.active_discount)
+      : Number(product.active_discount?.final_price ?? product.price) || 0
+    : 0;
+  const seoOutOfStock =
+    isInactive ||
+    isSoldOut ||
+    product?.stock_status === "Agotado" ||
+    (hasVariations
+      ? validVariations.every((v) => Number(v.stock) <= 0)
+      : (toStock(defaultVariation?.stock) ?? toStock(product?.stock)) === 0);
+  const brandName = product?.brand?.name || product?.brands?.name || null;
+  useSeo(
+    product
+      ? {
+          title: product.name,
+          description:
+            stripHtml(product.description) ||
+            `${product.name}${storeName ? ` de ${storeName}` : ""}. Insumo odontológico en Forcepx con compra protegida y envío a toda Venezuela.`,
+          image: Array.isArray(product.images) && product.images[0] ? product.images[0] : undefined,
+          path: `/product/${product.id}`,
+          type: "product",
+          jsonLd: {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: product.name,
+            image: Array.isArray(product.images) ? product.images.filter(Boolean) : [],
+            description: stripHtml(product.description).slice(0, 500),
+            sku: product.id,
+            ...(brandName ? { brand: { "@type": "Brand", name: brandName } } : {}),
+            offers: {
+              "@type": "Offer",
+              url: `${SITE_URL}/product/${product.id}`,
+              priceCurrency: "USD",
+              price: seoPrice.toFixed(2),
+              availability: seoOutOfStock ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+              ...(storeName ? { seller: { "@type": "Organization", name: storeName } } : {}),
+            },
+          },
+        }
+      : null,
+  );
+
+  const isFavorite = favoriteIds?.has(product?.id);
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      toast("Inicia sesión para guardar favoritos", { id: "favorites-auth" });
+      navigate(`/login?redirect=${encodeURIComponent(pathname)}`);
+      return;
+    }
+    // Los errores (límite, red) ya los avisa FavoriteContext con su propio toast.
+    await toggleFavorite(product.id);
+  };
+
+  const goToQuestions = () => {
+    setActiveTab("qa");
+    // se espera al render de la pestaña para desplazarse
+    requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
+  // Presentaciones con stock, para la ficha técnica.
+  const availablePresentations = useMemo(
+    () =>
+      validVariations
+        .filter((v) => Number(v.stock) > 0)
+        .map((v) => {
+          try {
+            const parsed = JSON.parse(v.attribute_value);
+            if (parsed && typeof parsed === "object") {
+              return Object.values(parsed)
+                .map((x) => (typeof x === "string" && x.includes("|") ? x.split("|")[0] : x))
+                .join(" / ");
+            }
+          } catch {
+            // texto simple
+          }
+          return v.attribute_value;
+        }),
+    [validVariations],
+  );
 
   const handleAddToCart = async () => {
     if (isOwnProduct || isAdding || isCartAtMax) return;
@@ -326,6 +463,7 @@ export default function ProductDetail() {
       toast.error("Por favor selecciona una variación primero.");
       return;
     }
+    if (!canBuy) return;
 
     setIsAdding(true);
     try {
@@ -361,16 +499,6 @@ export default function ProductDetail() {
     }
   };
 
-  // Real recently viewed products (tracked via sessionStorage)
-  const recentViews = useMemo(() => {
-    const excludeSet = new Set([product?.id].filter(Boolean));
-    return getViewedProducts(allProducts, excludeSet, 3);
-  }, [allProducts, product?.id, getViewedProducts]);
-
-  const relatedProducts = useMemo(() => {
-    // Return up to 5 products distinct from the current one
-    return allProducts.filter((p) => String(p.id) !== String(product?.id)).slice(0, 5);
-  }, [allProducts, product?.id]);
 
   if (loading) {
     return (
@@ -401,9 +529,9 @@ export default function ProductDetail() {
         </p>
         <button
           onClick={() => navigate("/")}
-          className="bg-[#6b1e96] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#531575] transition-colors"
+          className="bg-[#6b1e96] hover:bg-[#4f0077] text-white font-bold rounded-xl px-5 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b1e96] focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Explorar el Catálogo
+          Explorar el catálogo
         </button>
       </div>
     );
@@ -413,12 +541,12 @@ export default function ProductDetail() {
     <div className="bg-white min-h-screen">
       {/* Breadcrumbs */}
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <nav className="flex text-sm text-gray-500 font-medium">
-          <button onClick={() => navigate("/")} className="hover:text-[#6b1e96] transition-colors">Inicio</button>
-          <span className="mx-2">/</span>
-          <button onClick={() => navigate("/store-catalog")} className="hover:text-[#6b1e96] transition-colors">Tienda</button>
-          <span className="mx-2">/</span>
-          <span className="text-gray-900 truncate max-w-[200px] md:max-w-none">{product.name}</span>
+        <nav aria-label="Ruta de navegación" className="flex items-center text-sm text-gray-500 font-medium min-w-0">
+          <Link to="/" className="hover:text-[#6b1e96] transition-colors shrink-0">Inicio</Link>
+          <span className="mx-2" aria-hidden="true">/</span>
+          <Link to="/store-catalog" className="hover:text-[#6b1e96] transition-colors shrink-0">Tienda</Link>
+          <span className="mx-2" aria-hidden="true">/</span>
+          <span className="text-[#191c20] truncate min-w-0" aria-current="page">{product.name}</span>
         </nav>
       </div>
 
@@ -428,11 +556,11 @@ export default function ProductDetail() {
           
           {/* COLUMN 1: Image Gallery (40%) */}
           <div className="w-full lg:w-[40%]">
-            <ProductGallery images={product.images || []} />
+            <ProductGallery key={product.id} images={product.images || []} />
           </div>
 
           {/* COLUMN 2: Product Info (40%) */}
-          <div className="w-full lg:w-[40%] flex flex-col">
+          <div className="w-full lg:w-[40%] flex flex-col min-w-0">
             {trendingProductIds?.has(product.id) && (
               <div className="mb-2">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold tracking-wider uppercase bg-orange-500 text-white shadow-sm rounded-md w-max">
@@ -441,12 +569,12 @@ export default function ProductDetail() {
                 </span>
               </div>
             )}
-            <h1 className="text-[28px] lg:text-[32px] font-bold text-gray-900 leading-tight mb-1">
+            <h1 className="text-[24px] sm:text-[28px] lg:text-[32px] font-extrabold text-[#191c20] font-['Manrope'] leading-tight mb-1 break-words">
               {product.name}
             </h1>
             
             {(product.store?.business_name || product.store_profiles?.business_name) && (
-              <p className="text-gray-500 mb-4 flex items-center gap-1 text-[15px]">
+              <p className="text-gray-500 mb-4 flex flex-wrap items-center gap-1 text-[15px]">
                 Vendido por: 
                 <Link to={`/store/${product.store_id}`} className="text-[#6b1e96] font-bold hover:underline flex items-center gap-1 bg-purple-50 px-2 py-0.5 rounded-md">
                   <span className="material-symbols-outlined text-[16px]">storefront</span>
@@ -458,13 +586,13 @@ export default function ProductDetail() {
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-4">
               {priceDetails?.isRange ? (
                 <>
-                  <PriceDisplay amountUSD={priceDetails.minFinal} priceClassName="text-[28px] font-bold text-[#2563eb]" hideSwitcher={true} />
-                  <span className="text-[28px] font-bold text-[#2563eb]">-</span>
-                  <PriceDisplay amountUSD={priceDetails.maxFinal} priceClassName="text-[28px] font-bold text-[#2563eb]" hideSwitcher={true} />
+                  <PriceDisplay amountUSD={priceDetails.minFinal} priceClassName="text-[26px] sm:text-[28px] font-extrabold text-[#191c20]" hideSwitcher={true} />
+                  <span className="text-[26px] sm:text-[28px] font-extrabold text-[#191c20]">-</span>
+                  <PriceDisplay amountUSD={priceDetails.maxFinal} priceClassName="text-[26px] sm:text-[28px] font-extrabold text-[#191c20]" hideSwitcher={true} />
 
                   {priceDetails.discount && (
                     <>
-                      <span className="text-lg text-gray-300 line-through decoration-gray-300 font-medium ml-1">
+                      <span className="text-lg text-gray-500 line-through font-medium ml-1">
                         ${priceDetails.minOrig.toFixed(2)} - ${priceDetails.maxOrig.toFixed(2)}
                       </span>
                       <span className="px-2.5 py-1 text-[11px] font-black uppercase tracking-wide bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-lg flex items-center gap-1">
@@ -476,18 +604,18 @@ export default function ProductDetail() {
                     </>
                   )}
                   {!priceDetails.discount && priceDetails.minComp && priceDetails.minComp > priceDetails.minFinal && (
-                    <span className="text-lg text-gray-300 line-through decoration-gray-300 font-medium ml-1">
+                    <span className="text-lg text-gray-500 line-through font-medium ml-1">
                       ${priceDetails.minComp.toFixed(2)} - ${priceDetails.maxComp.toFixed(2)}
                     </span>
                   )}
                 </>
               ) : (
                 <>
-                  <PriceDisplay amountUSD={priceDetails?.finalPrice} priceClassName="text-[28px] font-bold text-[#2563eb]" hideSwitcher={true} />
+                  <PriceDisplay amountUSD={priceDetails?.finalPrice} priceClassName="text-[26px] sm:text-[28px] font-extrabold text-[#191c20]" hideSwitcher={true} />
 
                   {priceDetails?.discount ? (
                     <>
-                      <span className="text-lg text-gray-300 line-through decoration-gray-300 font-medium ml-1">
+                      <span className="text-lg text-gray-500 line-through font-medium ml-1">
                         ${priceDetails.originalPrice.toFixed(2)}
                       </span>
                       <span className="px-2.5 py-1 text-[11px] font-black uppercase tracking-wide bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-lg flex items-center gap-1">
@@ -499,7 +627,7 @@ export default function ProductDetail() {
                     </>
                   ) : (
                     priceDetails?.compareAtPrice && priceDetails.compareAtPrice > priceDetails.finalPrice && (
-                      <span className="text-lg text-gray-300 line-through decoration-gray-300 font-medium ml-1">
+                      <span className="text-lg text-gray-500 line-through font-medium ml-1">
                         ${priceDetails.compareAtPrice.toFixed(2)}
                       </span>
                     )
@@ -522,8 +650,8 @@ export default function ProductDetail() {
             {/* Switcher is displayed here if needed but keeping it hidden for pure matching. The currency switcher logic is kept within PriceDisplay without hideSwitcher for full compatibility, replacing with true for visual accuracy to mockup */}
 
             {product.description && (
-              <p className="text-gray-500 text-[16px] leading-relaxed mb-6 line-clamp-3">
-                {product.description.replace(/<[^>]*>/g, '').substring(0, 200)}{product.description.replace(/<[^>]*>/g, '').length > 200 ? '...' : ''}
+              <p className="text-gray-600 text-[16px] leading-relaxed mb-6 line-clamp-3">
+                {stripHtml(product.description)}
               </p>
             )}
 
@@ -531,6 +659,7 @@ export default function ProductDetail() {
             {validVariations.length > 0 && (
               <div className="mb-6">
                 <ProductVariationSelector
+                  key={product.id}
                   variations={validVariations}
                   onChange={setSelectedVariationId}
                 />
@@ -551,47 +680,49 @@ export default function ProductDetail() {
 
             {/* Quantity and CTA */}
             <div className="flex flex-col sm:flex-row items-stretch gap-4 mt-2">
-              <div className="flex items-center border-[1.5px] border-gray-300 rounded-md overflow-hidden h-12 w-full sm:w-[130px] flex-shrink-0 bg-white">
-                <button 
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={isInactive}
-                  className="w-12 h-full flex items-center justify-center text-gray-400 hover:text-[#2563eb] bg-[#f8f9fa] transition-colors disabled:opacity-50"
+              <div className="flex items-center border-[1.5px] border-gray-300 rounded-xl overflow-hidden h-12 w-full sm:w-[130px] flex-shrink-0 bg-white">
+                <button
+                  type="button"
+                  aria-label="Disminuir cantidad"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  disabled={isInactive || quantity <= 1}
+                  className="w-12 h-full flex items-center justify-center text-gray-500 hover:text-[#6b1e96] bg-[#f8f9fa] transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#6b1e96]"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
+                  <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
                 </button>
-                <input 
-                  type="text" 
-                  value={quantity} 
-                  readOnly 
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  aria-label="Cantidad"
+                  value={quantity}
+                  readOnly
                   className="flex-1 w-full text-center font-medium text-gray-700 focus:outline-none pointer-events-none text-base bg-transparent px-2 disabled:text-gray-400"
                 />
-                <button 
-                  onClick={() => setQuantity(Math.min(remainingStock || 1, quantity + 1))}
-                  disabled={isInactive || quantity >= remainingStock || remainingStock === 0}
-                  className="w-12 h-full flex items-center justify-center text-gray-400 hover:text-[#2563eb] bg-[#f8f9fa] transition-colors disabled:opacity-50 disabled:hover:text-gray-400"
+                <button
+                  type="button"
+                  aria-label="Aumentar cantidad"
+                  onClick={() => setQuantity((q) => Math.min(remainingStock || 1, q + 1))}
+                  disabled={isInactive || !canBuy || quantity >= remainingStock || remainingStock === 0}
+                  className="w-12 h-full flex items-center justify-center text-gray-500 hover:text-[#6b1e96] bg-[#f8f9fa] transition-colors disabled:opacity-50 disabled:hover:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#6b1e96]"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                  <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                 </button>
               </div>
 
               {isInactive ? (
-                <button disabled className="flex-1 w-full bg-gray-100 text-gray-400 font-semibold h-12 rounded-md cursor-not-allowed text-[15px] border-[1.5px] border-gray-200">
+                <button disabled className="flex-1 w-full bg-gray-100 text-gray-500 font-semibold h-12 rounded-xl cursor-not-allowed text-[15px] border-[1.5px] border-gray-200">
                   No disponible
                 </button>
               ) : isOwnProduct ? (
-                <button disabled className="flex-1 w-full bg-gray-100 text-gray-400 font-semibold h-12 rounded-md cursor-not-allowed text-[15px] border-[1.5px] border-gray-200">
-                  Producto Propio
+                <button disabled className="flex-1 w-full bg-gray-100 text-gray-500 font-semibold h-12 rounded-xl cursor-not-allowed text-[15px] border-[1.5px] border-gray-200">
+                  Producto propio
                 </button>
               ) : (
                 <button
                   onClick={handleAddToCart}
-                  disabled={(hasVariations && !selectedVariation) || effectiveStock <= 0 || isCartAtMax || isAdding}
-                  className={`flex-1 w-full h-12 rounded-md font-medium text-[15px] flex items-center justify-center gap-2 transition-all shadow-sm
-                    ${effectiveStock <= 0 || isCartAtMax
-                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                      : isAdding
-                      ? "bg-[#2563eb] text-white cursor-wait opacity-80"
-                      : "bg-[#2563eb] hover:bg-blue-700 text-white active:scale-[0.98]"}`}
+                  disabled={(hasVariations && !selectedVariation) || !canBuy || isCartAtMax || isAdding}
+                  aria-busy={isAdding}
+                  className="bg-[#6b1e96] hover:bg-[#4f0077] text-white font-bold rounded-xl px-5 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b1e96] focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex-1 w-full h-12 !py-0 text-[15px] flex items-center justify-center gap-2"
                 >
                   {isAdding ? (
                     <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -603,24 +734,36 @@ export default function ProductDetail() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                     </svg>
                   )}
-                  {effectiveStock <= 0 ? "Agotado" : isCartAtMax ? "Máximo en carrito" : isAdding ? "Agregando..." : "Añadir a la bolsa"}
+                  {!canBuy
+                    ? hasStockElsewhere
+                      ? "Selecciona otra opción"
+                      : "Agotado"
+                    : isCartAtMax
+                      ? "Máximo en carrito"
+                      : isAdding
+                        ? "Agregando…"
+                        : "Añadir a la bolsa"}
                 </button>
               )}
 
               {!isOwnProduct && (
                 <button
-                  onClick={() => toggleFavorite(product.id)}
-                  className={`h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-md border-[1.5px] transition-colors ${
-                    favoriteIds?.has(product.id)
+                  type="button"
+                  onClick={handleToggleFavorite}
+                  className={`hidden sm:flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border-[1.5px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b1e96] focus-visible:ring-offset-2 ${
+                    isFavorite
                       ? "border-rose-200 bg-rose-50 text-rose-500"
-                      : "border-gray-300 text-gray-400 hover:text-rose-500 hover:border-rose-300 hover:bg-rose-50"
+                      : "border-gray-300 text-gray-500 hover:text-rose-500 hover:border-rose-300 hover:bg-rose-50"
                   }`}
-                  title={favoriteIds?.has(product.id) ? "Quitar de favoritos" : "Agregar a favoritos"}
+                  title={isFavorite ? "Quitar de favoritos" : "Guardar en favoritos"}
+                  aria-label={isFavorite ? "Quitar de favoritos" : "Guardar en favoritos"}
+                  aria-pressed={isFavorite}
                 >
-                  <svg 
-                    className={`w-5 h-5 transition-all duration-300 ${favoriteIds?.has(product.id) ? "fill-current scale-110" : "fill-none scale-100"}`} 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24" 
+                  <svg
+                    aria-hidden="true"
+                    className={`w-5 h-5 transition-all duration-300 ${isFavorite ? "fill-current scale-110" : "fill-none scale-100"}`}
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                   </svg>
@@ -628,8 +771,16 @@ export default function ProductDetail() {
               )}
             </div>
             <p className="text-sm text-gray-500 mt-3 font-medium flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${effectiveStock > 0 && !isInactive ? "bg-[#c3ff00]" : "bg-red-500"}`}></span>
-              {isInactive ? "Sin disponibilidad temporal" : (effectiveStock > 0 ? `Quedan ${effectiveStock} unidades en stock` : "Sin disponibilidad temporal")}
+              <span aria-hidden="true" className={`w-2 h-2 rounded-full ${canBuy && !isInactive ? "bg-[#c3ff00] ring-1 ring-[#6b1e96]/30" : "bg-red-500"}`}></span>
+              {isInactive
+                ? "Sin disponibilidad temporal"
+                : !canBuy
+                  ? hasStockElsewhere
+                    ? "Esta opción está agotada: selecciona otra"
+                    : "Agotado"
+                  : stockKnown && effectiveStock <= 5
+                    ? `¡Quedan solo ${effectiveStock} unidad${effectiveStock !== 1 ? "es" : ""}!`
+                    : "Disponible"}
             </p>
             {/* Amazon-style: Show warning when cart has max stock */}
             {isCartAtMax && (
@@ -646,123 +797,168 @@ export default function ProductDetail() {
               </p>
             )}
 
-            {/* Utility Actions */}
-            <div className="flex items-center gap-6 mt-4">
-              <button
-                onClick={() => toggleFavorite(product.id)}
-                className={`flex items-center gap-2 transition-colors text-[15px] ${
-                  favoriteIds?.has(product.id)
-                    ? "text-rose-500"
-                    : "text-gray-600 hover:text-rose-500"
-                }`}
-              >
-                <svg
-                  className={`w-5 h-5 transition-all duration-300 ${favoriteIds?.has(product.id) ? "fill-current scale-110" : "fill-none scale-100"}`}
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+            {/* Acciones */}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mt-4">
+              {!isOwnProduct && (
+                <button
+                  type="button"
+                  onClick={handleToggleFavorite}
+                  aria-pressed={isFavorite}
+                  className={`flex items-center gap-2 transition-colors text-[15px] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b1e96] focus-visible:ring-offset-2 ${
+                    isFavorite ? "text-rose-500" : "text-gray-600 hover:text-rose-500"
+                  }`}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-                {favoriteIds?.has(product.id) ? "En tus favoritos" : "Añadir a favorito"}
-              </button>
+                  <svg
+                    aria-hidden="true"
+                    className={`w-5 h-5 transition-all duration-300 ${isFavorite ? "fill-current scale-110" : "fill-none scale-100"}`}
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  {isFavorite ? "Quitar de favoritos" : "Guardar en favoritos"}
+                </button>
+              )}
               <ShareButton
                 title={product.name}
                 text={`${product.name}${storeName ? ` de ${storeName}` : ""} en Forcepx`}
                 url={`${SITE_URL}/product/${product.id}`}
                 className="flex items-center gap-2 text-gray-600 hover:text-[#6b1e96] transition-colors text-[15px]"
               />
-              <button className="flex items-center gap-2 text-gray-600 hover:text-[#2563eb] transition-colors text-[15px]">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <button
+                type="button"
+                onClick={goToQuestions}
+                className="flex items-center gap-2 text-gray-600 hover:text-[#6b1e96] transition-colors text-[15px] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b1e96] focus-visible:ring-offset-2"
+              >
+                <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 Hacer una pregunta
               </button>
               {!isOwnProduct && (
                 <button
+                  type="button"
                   onClick={() => setIsCompareModalOpen(true)}
-                  className="flex items-center gap-2 text-gray-600 hover:text-[#2563eb] transition-colors text-[15px]"
+                  className="flex items-center gap-2 text-gray-600 hover:text-[#6b1e96] transition-colors text-[15px] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b1e96] focus-visible:ring-offset-2"
                   title="Buscar y comparar con otros vendedores"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 6l3 1m0 0l-3 9a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0022.5 16l-3-9m-3-1l-3 1m0 0l3 9" /></svg>
+                  <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 6l3 1m0 0l-3 9a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0022.5 16l-3-9m-3-1l-3 1m0 0l3 9" /></svg>
                   Comparar
                 </button>
               )}
             </div>
             
-            <div className="mt-8 flex flex-col gap-3">
-              <div className="flex items-center gap-3 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                <span>Envío estimado: <strong className="text-gray-900 border-b border-gray-900">2 a 4 días hábiles</strong></span>
-              </div>
-            </div>
-
-            <div className="mt-6 flex items-center gap-4 text-sm text-gray-500 pb-2">
-              <span className="font-medium">Compartir:</span>
-              <div className="flex items-center gap-3">
-                <button className="text-gray-400 hover:text-[#2563eb] transition-colors"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg></button>
-                <button className="text-gray-400 hover:text-[#2563eb] transition-colors"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></button>
-              </div>
+            {/* Envío: solo lo que la tienda ofrece de verdad */}
+            <div className="mt-8 rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <h2 className="text-sm font-bold text-[#191c20] font-['Manrope'] mb-3">Opciones de entrega</h2>
+              <ul className="flex flex-col gap-2.5 text-sm text-gray-600">
+                {product.store?.offers_pickup && (
+                  <li className="flex items-start gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-[#6b1e96]" aria-hidden="true">storefront</span>
+                    <span>Retiro en tienda{product.store?.business_address ? `: ${product.store.business_address}` : ""}</span>
+                  </li>
+                )}
+                {product.store?.offers_local_delivery && (
+                  <li className="flex items-start gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-[#6b1e96]" aria-hidden="true">two_wheeler</span>
+                    <span>
+                      Delivery local{product.store?.state ? ` en ${product.store.state}` : ""}
+                      {Number(product.store?.default_delivery_fee) > 0 && (
+                        <> (tarifa <PriceDisplay amountUSD={Number(product.store.default_delivery_fee)} priceClassName="inline font-semibold text-[#191c20]" hideSwitcher={true} />)</>
+                      )}
+                    </span>
+                  </li>
+                )}
+                <li className="flex items-start gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-[#6b1e96]" aria-hidden="true">local_shipping</span>
+                  <span>Envío nacional: se paga al retirar en la agencia</span>
+                </li>
+              </ul>
             </div>
           </div>
 
           {/* COLUMN 3: Recent Views */}
-          <div className="w-full lg:w-[22%] hidden lg:flex flex-col border-l border-gray-100 pl-6">
-            <h3 className="text-[15px] font-bold text-gray-900 mb-5">Vistos Recientemente</h3>
-            <div className="flex flex-col divide-y divide-gray-100">
-              {recentViews.length > 0 ? (
-                recentViews.map(p => (
+          {recentViews.length > 0 && (
+            <aside className="w-full lg:w-[22%] hidden lg:flex flex-col border-l border-gray-100 pl-6" aria-label="Vistos recientemente">
+              <h2 className="text-[15px] font-bold text-[#191c20] font-['Manrope'] mb-5">Vistos recientemente</h2>
+              <div className="flex flex-col divide-y divide-gray-100">
+                {recentViews.map((p) => (
                   <div key={p.id} className="py-3 first:pt-0">
                     <SmallProductCard product={p} />
                   </div>
-                ))
-              ) : (
-                <p className="text-gray-400 text-sm">No hay productos recientes.</p>
-              )}
-            </div>
-          </div>
+                ))}
+              </div>
+            </aside>
+          )}
         </div>
 
         {/* --- TABS SECTION --- */}
-        <div className="mt-16 lg:mt-24 border-t border-gray-200">
-          {/* Tab Headers */}
-          <div className="flex space-x-12 border-b border-gray-200 overflow-x-auto overflow-y-hidden" aria-label="Tabs">
-            <button
-              onClick={() => setActiveTab("description")}
-              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-[15px] transition-colors ${activeTab === 'description' ? 'border-[#6b1e96] text-[#6b1e96]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-            >
-              Descripción
-            </button>
-            <button
-              onClick={() => setActiveTab("reviews")}
-              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-[15px] transition-colors ${activeTab === 'reviews' ? 'border-[#6b1e96] text-[#6b1e96]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-            >
-              Reseñas ({product.review_count || 0})
-            </button>
-            <button
-              onClick={() => setActiveTab("qa")}
-              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-[15px] transition-colors ${activeTab === 'qa' ? 'border-[#6b1e96] text-[#6b1e96]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-            >
-              Preguntas & Respuestas
-            </button>
+        <div ref={tabsRef} className="mt-16 lg:mt-24 border-t border-gray-200 scroll-mt-24">
+          <div role="tablist" aria-label="Información del producto" className="flex gap-8 sm:gap-12 border-b border-gray-200 overflow-x-auto overflow-y-hidden">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                id={`tab-${t.key}`}
+                aria-selected={activeTab === t.key}
+                aria-controls={`panel-${t.key}`}
+                onClick={() => setActiveTab(t.key)}
+                className={`whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#6b1e96] ${
+                  activeTab === t.key
+                    ? "border-[#6b1e96] text-[#6b1e96]"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                {t.label}
+                {t.key === "reviews" ? ` (${product.review_count || 0})` : ""}
+              </button>
+            ))}
           </div>
 
           {/* Tab Content */}
-          <div className="py-10">
+          <div className="py-10" role="tabpanel" id={`panel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
             {activeTab === "description" && (
               <div className="flex flex-col lg:flex-row gap-12 items-start">
                 <div className="w-full lg:w-1/2">
-                  <h3 className="text-xl font-bold text-gray-900 mb-6 font-serif">Especificaciones Técnicas</h3>
-                  {/* Fake spec table simulating the image */}
+                  <h3 className="text-xl font-bold text-[#191c20] mb-6 font-['Manrope']">Ficha técnica</h3>
                   <div className="border border-gray-200 rounded-xl overflow-hidden mb-8">
                     <table className="w-full text-sm text-left text-gray-600">
-                      <tbody>
-                        <tr className="border-b border-gray-200 bg-gray-50"><th className="px-6 py-4 font-semibold text-gray-900 w-1/3">Marca</th><td className="px-6 py-4">{product.store?.business_name || "FORCEPX Certified"}</td></tr>
-                        <tr className="border-b border-gray-200"><th className="px-6 py-4 font-semibold text-gray-900">Modelo</th><td className="px-6 py-4">{product.name}</td></tr>
-                        <tr className="border-b border-gray-200 bg-gray-50"><th className="px-6 py-4 font-semibold text-gray-900">Categoría</th><td className="px-6 py-4">Equipamiento Clínico</td></tr>
-                        <tr className="border-b border-gray-200"><th className="px-6 py-4 font-semibold text-gray-900">Condición</th><td className="px-6 py-4">Nuevo / Sellado de Fábrica</td></tr>
+                      <tbody className="[&>tr:nth-child(odd)]:bg-gray-50 [&>tr]:border-b [&>tr]:border-gray-200 [&>tr:last-child]:border-b-0">
+                        <tr><th scope="row" className="px-4 sm:px-6 py-4 font-semibold text-[#191c20] w-1/3">Marca</th><td className="px-4 sm:px-6 py-4">{brandName || "No especificada"}</td></tr>
+                        {product.categories?.name && (
+                          <tr><th scope="row" className="px-4 sm:px-6 py-4 font-semibold text-[#191c20]">Categoría</th><td className="px-4 sm:px-6 py-4">{product.categories.name}</td></tr>
+                        )}
+                        {storeName && (
+                          <tr>
+                            <th scope="row" className="px-4 sm:px-6 py-4 font-semibold text-[#191c20]">Tienda</th>
+                            <td className="px-4 sm:px-6 py-4">
+                              <Link to={`/store/${product.store_id}`} className="text-[#6b1e96] font-semibold hover:underline">{storeName}</Link>
+                            </td>
+                          </tr>
+                        )}
+                        {product.store?.state && (
+                          <tr><th scope="row" className="px-4 sm:px-6 py-4 font-semibold text-[#191c20]">Estado de la tienda</th><td className="px-4 sm:px-6 py-4">{product.store.state}</td></tr>
+                        )}
+                        {hasVariations && (
+                          <tr>
+                            <th scope="row" className="px-4 sm:px-6 py-4 font-semibold text-[#191c20] align-top">Presentaciones disponibles</th>
+                            <td className="px-4 sm:px-6 py-4">
+                              {availablePresentations.length > 0 ? (
+                                <ul className="flex flex-wrap gap-1.5">
+                                  {availablePresentations.map((label, i) => (
+                                    <li key={i} className="px-2 py-0.5 rounded-md bg-white border border-gray-200 text-gray-700">{label}</li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                "Todas agotadas por ahora"
+                              )}
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
 
-                  <h3 className="text-xl font-bold text-gray-900 mb-6 font-serif">Sobre el Producto</h3>
+                  <h3 className="text-xl font-bold text-[#191c20] mb-6 font-['Manrope']">Sobre el producto</h3>
                   <div 
                     className="text-gray-600 leading-relaxed prose prose-sm md:prose-base max-w-none 
                               prose-p:mt-0 prose-p:mb-5 prose-ul:list-disc prose-ol:list-decimal 
@@ -772,19 +968,23 @@ export default function ProductDetail() {
                 </div>
                 
                 {/* Navigable Image Preview */}
-                <div className="w-full lg:w-1/2 relative rounded-2xl overflow-hidden bg-gray-50 aspect-[4/3] flex items-center justify-center border border-gray-100 p-8 shadow-inner group">
+                <div className="w-full lg:w-1/2 relative rounded-2xl overflow-hidden bg-gray-50 aspect-[4/3] flex items-center justify-center border border-gray-100 p-4 sm:p-8 shadow-inner group">
                   {product.images && product.images.length > 0 ? (
                     <>
-                      <img src={product.images[descImageIndex]} alt={`Vista ${descImageIndex + 1}`} className="w-full h-full object-contain mix-blend-multiply transition-opacity duration-300" />
+                      <img src={product.images[descImageIndex] || product.images[0]} alt={`${product.name}, vista ${descImageIndex + 1}`} className="w-full h-full object-contain mix-blend-multiply transition-opacity duration-300" />
                       {product.images.length > 1 && (
                         <>
                           <button
+                            type="button"
+                            aria-label="Imagen anterior"
                             onClick={() => setDescImageIndex(prev => prev > 0 ? prev - 1 : product.images.length - 1)}
                             className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white hover:bg-gray-50 text-gray-500 hover:text-[#6b1e96] rounded-full shadow-md border border-gray-200 flex items-center justify-center transition-colors"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
                           </button>
                           <button
+                            type="button"
+                            aria-label="Imagen siguiente"
                             onClick={() => setDescImageIndex(prev => prev < product.images.length - 1 ? prev + 1 : 0)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white hover:bg-gray-50 text-gray-500 hover:text-[#6b1e96] rounded-full shadow-md border border-gray-200 flex items-center justify-center transition-colors"
                           >
@@ -792,14 +992,14 @@ export default function ProductDetail() {
                           </button>
                           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                             {product.images.map((_, i) => (
-                              <button key={i} onClick={() => setDescImageIndex(i)} className={`w-2 h-2 rounded-full transition-all ${i === descImageIndex ? 'bg-[#6b1e96] w-4' : 'bg-gray-300 hover:bg-gray-400'}`} />
+                              <button key={i} type="button" aria-label={`Ver imagen ${i + 1}`} onClick={() => setDescImageIndex(i)} className={`w-2 h-2 rounded-full transition-all ${i === descImageIndex ? 'bg-[#6b1e96] w-4' : 'bg-gray-300 hover:bg-gray-400'}`} />
                             ))}
                           </div>
                         </>
                       )}
                     </>
                   ) : (
-                    <span className="text-gray-400 font-medium">Buscando previsualización...</span>
+                    <span className="text-gray-400 font-medium">Sin imágenes disponibles</span>
                   )}
                 </div>
               </div>
@@ -821,28 +1021,26 @@ export default function ProductDetail() {
           </div>
         </div>
 
-        {/* --- RELATED PRODUCTS SECTION --- */}
+        {/* --- PRODUCTOS RELACIONADOS --- */}
         {relatedProducts.length > 0 && (
-          <div className="mt-20 pt-10">
-            <h2 className="text-[17px] font-semibold text-gray-800 mb-3 ml-1">Related products</h2>
-            <div className="w-full h-[1px] bg-blue-300 mb-6"></div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {relatedProducts.slice(0, 5).map((p, i) => {
-                let badgeMock = null;
-                if (i === 1) badgeMock = "SALE";
-                if (i === 4 || i === 2) badgeMock = "NEW";
-                return <RelatedProductCard key={p.id} product={p} badge={badgeMock} />;
-              })}
+          <section className="mt-16 pt-10" aria-labelledby="related-title">
+            <h2 id="related-title" className="text-xl font-bold text-[#191c20] font-['Manrope'] mb-3 ml-1">Productos relacionados</h2>
+            <div className="w-full h-[2px] bg-[#6b1e96]/15 mb-6"></div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {relatedProducts.slice(0, 8).map((p) => (
+                <RelatedProductCard key={p.id} product={p} />
+              ))}
             </div>
-          </div>
+          </section>
         )}
-        
       </div>
 
       <ComparePricesModal 
         isOpen={isCompareModalOpen}
         onClose={() => setIsCompareModalOpen(false)}
         baseProduct={product}
+        basePrice={priceDetails?.finalPrice}
+        baseOriginalPrice={priceDetails?.originalPrice}
       />
     </div>
   );

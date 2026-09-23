@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import PropTypes from "prop-types";
 import { useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { track } from "../../services/tracking";
@@ -97,3 +98,12 @@ export default function ShareButton({ title, text, url, className = "", iconClas
     </div>
   );
 }
+
+ShareButton.propTypes = {
+  title: PropTypes.string,
+  text: PropTypes.string,
+  url: PropTypes.string,
+  className: PropTypes.string,
+  iconClassName: PropTypes.string,
+  label: PropTypes.string,
+};

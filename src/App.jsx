@@ -72,6 +72,7 @@ const AdminPayouts = lazy(() => import("./pages/Admin/AdminPayouts"));
 const AdminSupport = lazy(() => import("./pages/Admin/AdminSupport"));
 const AdminBot = lazy(() => import("./pages/Admin/AdminBot"));
 const AdminPromotions = lazy(() => import("./pages/Admin/AdminPromotions"));
+const AdminCommunity = lazy(() => import("./pages/Admin/AdminCommunity"));
 const ProfessionalVerification = lazy(() => import("./pages/Account/ProfessionalVerification"));
 const ProfessionalVerifications = lazy(() => import("./pages/Admin/ProfessionalVerifications"));
 
@@ -304,6 +305,7 @@ export default function App() {
                         <Route path="support" element={<AdminSupport />} />
                         <Route path="bot" element={<AdminBot />} />
                         <Route path="promotions" element={<AdminPromotions />} />
+                        <Route path="community" element={<AdminCommunity />} />
                         <Route path="professional-verifications" element={<ProfessionalVerifications />} />
                       </Route>
 

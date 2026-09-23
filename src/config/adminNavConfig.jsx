@@ -190,6 +190,13 @@ export const navGroups = [
         )
       },
       {
+        name: 'Reseñas y preguntas',
+        path: '/admin/community',
+        icon: (
+          <span className="material-symbols-outlined text-[20px]">reviews</span>
+        )
+      },
+      {
         name: 'Promociones',
         path: '/admin/promotions',
         icon: (

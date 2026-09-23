@@ -75,7 +75,8 @@ const SmallProductCard = memo(function SmallProductCard({ product, badge }) {
 
   const isRange = cardPriceDetails.isRange;
   const price = isRange ? cardPriceDetails.minFinal : (discount ? Number(discount.final_price) : (Number(product.price) || 0));
-  const originalPrice = isRange ? cardPriceDetails.minOrig : (discount ? Number(discount.original_price) : (product.originalPrice || Math.round(price * 1.35 * 100) / 100));
+  // Tachado solo con un precio anterior real (descuento o compare_at_price), nunca inventado.
+  const originalPrice = isRange ? cardPriceDetails.minOrig : (discount ? Number(discount.original_price) : (Number(product.compare_at_price || product.originalPrice) || 0));
 
   const discountBadgeText = discount 
     ? (discount.discount_type === "percentage" ? `-${discount.discount_value}%` : `-$${discount.discount_value}`)
@@ -89,7 +90,7 @@ const SmallProductCard = memo(function SmallProductCard({ product, badge }) {
   return (
     <Link
       to={`/product/${product.id}`}
-      className="flex items-center gap-3 py-3 px-2 rounded-xl hover:bg-gray-50 transition-colors group"
+      className="flex items-center gap-3 py-3 px-2 rounded-xl hover:bg-gray-50 transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b1e96]"
     >
       {/* Imagen pequeña con badge opcional */}
       <div className="relative w-[72px] h-[72px] flex-shrink-0 bg-white rounded-lg border border-gray-100 flex items-center justify-center overflow-hidden">
@@ -114,7 +115,7 @@ const SmallProductCard = memo(function SmallProductCard({ product, badge }) {
                 : badge === "SALE"
                 ? "bg-red-500"
                 : badge === "NEW"
-                ? "bg-blue-500"
+                ? "bg-[#6b1e96]"
                 : isTrending
                 ? "bg-orange-500"
                 : "bg-emerald-500"
@@ -174,7 +175,7 @@ const SmallProductCard = memo(function SmallProductCard({ product, badge }) {
           </span>
           {isRange ? (
             cardPriceDetails.minOrig !== cardPriceDetails.minFinal && (
-              <span className="text-[11px] text-gray-400 line-through">
+              <span className="text-[11px] text-gray-500 line-through">
                 {isVES ? (
                   `${formatCurrencyVES(cardPriceDetails.minOrig * (Number(bcvRate) || 1))} - ${formatCurrencyVES(cardPriceDetails.maxOrig * (Number(bcvRate) || 1))}`
                 ) : (
@@ -183,8 +184,8 @@ const SmallProductCard = memo(function SmallProductCard({ product, badge }) {
               </span>
             )
           ) : (
-            (discount || originalPrice > price) && (
-              <span className="text-[11px] text-gray-400 line-through">
+            originalPrice > price && (
+              <span className="text-[11px] text-gray-500 line-through">
                 {formatPrice(originalPrice)}
               </span>
             )
@@ -201,8 +202,9 @@ SmallProductCard.propTypes = {
   product: PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     name: PropTypes.string.isRequired,
-    price: PropTypes.number.isRequired,
+    price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     originalPrice: PropTypes.number,
+    compare_at_price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     images: PropTypes.arrayOf(PropTypes.string),
     store_profiles: PropTypes.shape({
       state: PropTypes.string,

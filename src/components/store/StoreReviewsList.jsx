@@ -52,7 +52,7 @@ export default function StoreReviewsList({ data, onClose }) {
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
         <div className="flex items-center gap-2">
           <span className="material-symbols-outlined text-[20px] text-[#6b1e96]">reviews</span>
-          <h3 className="text-lg font-bold text-[#160a22] font-['Manrope']">
+          <h3 className="text-lg font-bold text-[#191c20] font-['Manrope']">
             Todas las Reseñas de la Tienda
           </h3>
         </div>
@@ -88,7 +88,7 @@ export default function StoreReviewsList({ data, onClose }) {
             onClick={() => setVerifiedOnly(!verifiedOnly)}
             className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
               verifiedOnly
-                ? "bg-emerald-500 text-white shadow-sm"
+                ? "bg-[#6b1e96] text-white shadow-sm"
                 : "bg-gray-100 text-gray-500 hover:bg-gray-200"
             }`}
           >
@@ -173,7 +173,7 @@ export default function StoreReviewsList({ data, onClose }) {
                         {review.product.name}
                       </Link>
                       {review.is_verified_purchase && (
-                        <span className="flex-shrink-0 text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                        <span className="flex-shrink-0 text-[10px] bg-[#6b1e96]/5 text-[#6b1e96] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
                           <span className="material-symbols-outlined text-[11px]">verified</span>
                           Verificada
                         </span>
@@ -189,9 +189,9 @@ export default function StoreReviewsList({ data, onClose }) {
                       <span className="text-gray-300">·</span>
                       <span className="text-xs text-gray-400">
                         {new Date(review.created_at).toLocaleDateString("es-VE", {
-                          year: "numeric",
+                          day: "2-digit",
                           month: "short",
-                          day: "numeric",
+                          year: "numeric",
                         })}
                       </span>
                     </div>

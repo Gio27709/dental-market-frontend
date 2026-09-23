@@ -552,3 +552,7 @@ export const getBotConocimientoAPI = (q) => api.get("/admin/bot/conocimiento", {
 export const crearBotConocimientoAPI = (datos) => api.post("/admin/bot/conocimiento", datos);
 export const actualizarBotConocimientoAPI = (id, datos) => api.put(`/admin/bot/conocimiento/${id}`, datos);
 export const borrarBotConocimientoAPI = (id) => api.delete(`/admin/bot/conocimiento/${id}`);
+
+// ── Ficha de producto: relacionados ──────────────────────────────────────────
+// GET /products/:id/related → { success, data: [productos con product_variations, store_profiles, brands, active_discount] }
+export const getRelatedProductsAPI = (id, limit = 8) => api.get(`/products/${id}/related`, { params: { limit } });

@@ -150,7 +150,7 @@ export default function Reviews() {
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
     return new Date(dateStr).toLocaleDateString("es-VE", {
-      day: "numeric",
+      day: "2-digit",
       month: "short",
       year: "numeric",
     });
@@ -165,7 +165,7 @@ export default function Reviews() {
             <span className="material-symbols-outlined text-[28px] fill-current">star</span>
           </div>
           <div>
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-800">
+            <h1 className="text-xl md:text-2xl font-bold font-['Manrope'] tracking-tight text-[#191c20]">
               {activeTab === "received" ? "Reseñas de mis Productos" : "Opiniones que he Escrito"}
             </h1>
             <p className="text-sm text-slate-400 mt-0.5">
@@ -375,8 +375,7 @@ export default function Reviews() {
                       <button
                         onClick={() => handleSaveEdit(review.id)}
                         disabled={saving}
-                        className="flex items-center gap-1 px-4 py-2 rounded-xl text-xs font-black text-white transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                        style={{ background: "#6b1e96" }}
+                        className="flex items-center gap-1 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#6b1e96] hover:bg-[#4f0077] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b1e96] focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       >
                         {saving ? (
                           <>
@@ -417,7 +416,7 @@ export default function Reviews() {
               <button
                 onClick={handleLoadMore}
                 disabled={loadingMore}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold border border-slate-200 bg-white text-[#6b1e96] hover:bg-purple-50 transition-all shadow-xs cursor-pointer"
+                className="inline-flex items-center gap-2 border border-[#6b1e96] text-[#6b1e96] hover:bg-[#6b1e96]/5 font-semibold rounded-xl px-5 py-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b1e96] disabled:opacity-50 cursor-pointer"
               >
                 {loadingMore ? (
                   <>
@@ -426,7 +425,7 @@ export default function Reviews() {
                   </>
                 ) : (
                   <>
-                    Cargar más reseñas
+                    Ver más
                   </>
                 )}
               </button>
