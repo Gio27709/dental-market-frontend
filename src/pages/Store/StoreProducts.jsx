@@ -171,11 +171,12 @@ export default function StoreProducts() {
         category_id: product.category_id,
         price: product.price,
         images: product.images || [],
+        // Sin `stock`: pausar/activar no debe tocar el inventario. Mandarlo escribía el
+        // número que tenía la lista al cargarse y pisaba las ventas hechas desde entonces.
         variations: (product.product_variations || []).map(v => ({
           id: v.id,
           attribute_name: v.attribute_name,
           attribute_value: v.attribute_value,
-          stock: v.stock,
           price_modifier: v.price_modifier,
           sku: v.sku
         })),

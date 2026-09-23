@@ -71,6 +71,9 @@ export default function ProductForm() {
       setFetchingProduct(true);
       fetchProductById(id)
         .then((product) => {
+          // Se recuerda el stock con el que se cargó cada variación: el backend aplica la
+          // diferencia (no el número absoluto) para no pisar ventas hechas mientras se editaba.
+          product.variations = (product.variations || []).map((v) => ({ ...v, stock_loaded: v.stock }));
           let isDefault = false;
           let parsedOptions = [{ name: "Size", values: [] }];
           let mappedVariations = [];
@@ -159,6 +162,7 @@ export default function ProductForm() {
             images: product.images || [],
             hasVariations: !isDefault,
             simpleStock: isDefault && product.variations?.length ? product.variations[0].stock : 0,
+            simpleStockLoaded: isDefault && product.variations?.length ? product.variations[0].stock : null,
             simpleSku: isDefault && product.variations?.length ? product.variations[0].sku : "",
             variations: mappedVariations,
             status: product.stock_status === "Sin stock" 
@@ -330,6 +334,7 @@ export default function ProductForm() {
             attribute_value: v.attribute_value,
             sku: v.sku || "",
             stock: parseInt(v.stock) || 0,
+            stock_loaded: v.id && v.stock_loaded !== undefined && v.stock_loaded !== null ? parseInt(v.stock_loaded) || 0 : null,
             price_modifier: v.v_price !== undefined ? parseFloat(v.v_price) - parseFloat(form.price) : 0,
           }))
         : [
@@ -339,6 +344,7 @@ export default function ProductForm() {
               attribute_value: '{"_default":"default"}',
               sku: form.simpleSku || "",
               stock: parseInt(form.simpleStock) || 0,
+              stock_loaded: form.simpleStockLoaded !== undefined && form.simpleStockLoaded !== null ? parseInt(form.simpleStockLoaded) || 0 : null,
               price_modifier: 0,
             },
           ],
