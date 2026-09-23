@@ -32,7 +32,9 @@ const serverError = (err, fallback) => err?.response?.data?.error || err?.respon
 const productOf = (row) => row.product || row.products || null;
 const storeOf = (row) =>
   row.store || row.store_profiles || productOf(row)?.store_profiles || productOf(row)?.store || null;
-const authorOf = (row) => row.author || row.user || row.users || row.asker || null;
+const authorOf = (row) =>
+  row.author || row.user || row.users || row.asker ||
+  (row.author_name || row.asker_name ? { full_name: row.author_name || row.asker_name } : null);
 const isHidden = (row) => Boolean(row.is_hidden ?? row.hidden ?? row.hidden_at);
 
 const QUESTION_STATUS = {
