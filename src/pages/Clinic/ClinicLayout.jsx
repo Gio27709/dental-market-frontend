@@ -7,6 +7,7 @@ import { AutoTour, useTour, TOUR_IDS } from "../../components/tour";
 const NAV_ITEMS = [
   { to: "/clinic", end: true, icon: "dashboard", label: "Resumen Ejecutivo" },
   { to: "/clinic/inventory", icon: "inventory_2", label: "Mi Inventario Clínico" },
+  { to: "/clinic/procedures", icon: "dentistry", label: "Consumo de Resina" },
   { to: "/clinic/subscriptions", icon: "sync", label: "Suscripciones Recurrentes" },
   { to: "/clinic/profitability", icon: "payments", label: "Rentabilidad & Gastos" },
 ];

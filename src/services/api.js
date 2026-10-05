@@ -189,6 +189,13 @@ export const getInventoryAlertsAPI = () => api.get("/inventory/alerts");
 export const upsertInventoryAlertAPI = (data) => api.post("/inventory/alerts", data);
 export const updateInventoryAlertAPI = (id, data) => api.put(`/inventory/alerts/${id}`, data);
 export const deleteInventoryAlertAPI = (id) => api.delete(`/inventory/alerts/${id}`);
+export const finishInventoryUnitAPI = (id) => api.post(`/inventory/alerts/${id}/finish-unit`);
+// Consumo de resina por procedimiento (migración 088).
+export const getClinicProceduresAPI = () => api.get("/inventory/procedures");
+export const updateClinicMaterialSettingsAPI = (data) => api.put("/inventory/procedures/settings", data);
+export const getClinicProcedureLogsAPI = (days = 30) => api.get("/inventory/procedures/logs", { params: { days } });
+export const createClinicProcedureLogAPI = (data) => api.post("/inventory/procedures/logs", data);
+export const deleteClinicProcedureLogAPI = (id) => api.delete(`/inventory/procedures/logs/${id}`);
 export const getInventorySuggestionsAPI = () => api.get("/inventory/suggestions");
 export const getClinicSubscriptionsAPI = () => api.get("/inventory/subscriptions");
 export const createClinicSubscriptionAPI = (data) => api.post("/inventory/subscriptions", data);

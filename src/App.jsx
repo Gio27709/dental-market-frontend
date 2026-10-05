@@ -120,6 +120,7 @@ const ClinicLayout = lazy(() => import("./pages/Clinic/ClinicLayout"));
 const ClinicDashboard = lazy(() => import("./pages/Clinic/ClinicDashboard"));
 const ClinicInventory = lazy(() => import("./pages/Clinic/ClinicInventory"));
 const ClinicSubscriptions = lazy(() => import("./pages/Clinic/ClinicSubscriptions"));
+const ClinicProcedures = lazy(() => import("./pages/Clinic/ClinicProcedures"));
 const ClinicProfitability = lazy(() => import("./pages/Clinic/ClinicProfitability"));
 const ClinicMembership = lazy(() => import("./pages/Clinic/ClinicMembership"));
 const ClinicMembershipGate = lazy(() => import("./components/clinic/ClinicMembershipGate"));
@@ -371,6 +372,7 @@ export default function App() {
                         <Route element={<ClinicMembershipGate />}>
                           <Route index element={<ClinicDashboard />} />
                           <Route path="inventory" element={<ClinicInventory />} />
+                          <Route path="procedures" element={<ClinicProcedures />} />
                           <Route path="subscriptions" element={<ClinicSubscriptions />} />
                           <Route path="profitability" element={<ClinicProfitability />} />
                         </Route>

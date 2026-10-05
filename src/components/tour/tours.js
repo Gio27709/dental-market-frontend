@@ -204,13 +204,19 @@ const clinica = {
       mobile: {
         target: "clinic-menu",
         title: "Resumen e inventario",
-        text: "En «Resumen Ejecutivo» ves qué insumos están críticos o por agotarse. En «Mi Inventario Clínico» registras cada insumo con su mínimo y el panel te avisa cuando baje.",
+        text: "En «Resumen Ejecutivo» ves qué insumos están críticos o por agotarse. En «Mi Inventario Clínico» registras cada insumo con su mínimo y el panel te avisa cuando baje. En «Consumo de Resina» anotas tus procedimientos y se descuenta la resina estimada.",
       },
     },
     {
       target: "clinic-nav-/clinic/inventory",
       title: "Tu inventario clínico",
       text: "Registra cada insumo con su stock actual y su mínimo. Cuando baje de ese umbral, el panel te avisa para que compres a tiempo.",
+      mobile: false,
+    },
+    {
+      target: "clinic-nav-/clinic/procedures",
+      title: "Consumo de resina",
+      text: "Anota lo que haces («2 clase II medianas») y el panel descuenta de tu inventario la resina estimada, te dice cuánto te cuesta cada procedimiento y cuántos días te dura la jeringa.",
       mobile: false,
     },
     {

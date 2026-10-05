@@ -7,6 +7,7 @@ import {
   upsertInventoryAlertAPI,
   updateInventoryAlertAPI,
   deleteInventoryAlertAPI,
+  finishInventoryUnitAPI,
   preloadRestockCartAPI,
   getProducts,
 } from "../../services/api";
@@ -28,6 +29,65 @@ function StockBadge({ status }) {
   );
 }
 StockBadge.propTypes = { status: PropTypes.string };
+
+// «Resina Z350 4g» → 4. Igual que sugerirGramosPorUnidad del backend.
+function gramosDelNombre(nombre) {
+  const m = String(nombre || "").match(/(\d+(?:[.,]\d+)?)\s*(?:g|gr|grs|gramos)\b/i);
+  const n = m ? Number(m[1].replace(",", ".")) : null;
+  return n > 0 && n <= 100 ? n : null;
+}
+const pareceResina = (nombre) => /resina|composite|composito|z350|z250|filtek|flow/i.test(String(nombre || ""));
+const gramosTxt = (n) => `${Number(n || 0).toLocaleString("es-VE", { maximumFractionDigits: 2 })} g`;
+
+/** Tipo de resina y gramos por unidad: activa el descuento por procedimiento (Consumo de Resina). */
+function ControlGramos({ materialKind, setMaterialKind, gramsPerUnit, setGramsPerUnit }) {
+  return (
+    <div className="bg-[#f9f9ff] border border-[#cdc3d4]/30 rounded-2xl p-3 space-y-2">
+      <p className="text-xs font-bold text-[#111c2c]">Control en gramos (resinas)</p>
+      <p className="text-[11px] text-[#4b4452]">
+        Si lo activas, cada procedimiento que registres en «Consumo de Resina» descuenta los gramos estimados.
+      </p>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-[11px] font-bold text-[#111c2c]">Tipo</label>
+          <select
+            value={materialKind}
+            onChange={(e) => {
+              setMaterialKind(e.target.value);
+              if (!e.target.value) setGramsPerUnit("");
+              else if (!gramsPerUnit) setGramsPerUnit(4);
+            }}
+            className={fieldCls}
+          >
+            <option value="">No es resina</option>
+            <option value="resina">Resina</option>
+            <option value="resina_fluida">Resina fluida</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-[11px] font-bold text-[#111c2c]">Gramos por unidad</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            min="0.1"
+            disabled={!materialKind}
+            value={gramsPerUnit}
+            onChange={(e) => setGramsPerUnit(e.target.value)}
+            placeholder="4"
+            className={`${fieldCls} disabled:opacity-50`}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+ControlGramos.propTypes = {
+  materialKind: PropTypes.string.isRequired,
+  setMaterialKind: PropTypes.func.isRequired,
+  gramsPerUnit: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  setGramsPerUnit: PropTypes.func.isRequired,
+};
 
 // Campos de los modales: 16px en móvil para que iOS no haga zoom al enfocarlos.
 const fieldCls =
@@ -51,6 +111,8 @@ export default function ClinicInventory() {
   const [criticalThreshold, setCriticalThreshold] = useState(5);
   const [currentEstimatedStock, setCurrentEstimatedStock] = useState(10);
   const [unitType, setUnitType] = useState("cajas");
+  const [materialKind, setMaterialKind] = useState("");
+  const [gramsPerUnit, setGramsPerUnit] = useState("");
 
   const navigate = useNavigate();
 
@@ -89,6 +151,11 @@ export default function ClinicInventory() {
     }
   };
 
+  const controlGramosBody = () => ({
+    materialKind: materialKind || null,
+    gramsPerUnit: materialKind && gramsPerUnit !== "" ? Number(String(gramsPerUnit).replace(",", ".")) : null,
+  });
+
   const handleSaveAlert = async () => {
     if (!selectedProduct) {
       toast.error("Selecciona un producto del catálogo");
@@ -101,6 +168,7 @@ export default function ClinicInventory() {
         criticalThreshold,
         currentEstimatedStock,
         unitType,
+        ...controlGramosBody(),
       });
 
       if (res.data.success) {
@@ -125,6 +193,7 @@ export default function ClinicInventory() {
         criticalThreshold,
         currentEstimatedStock,
         unitType,
+        ...controlGramosBody(),
       });
 
       if (res.data.success) {
@@ -154,6 +223,24 @@ export default function ClinicInventory() {
     }
   };
 
+  // «Se acabó una»: corrige el stock y, con datos suficientes, ajusta el factor de desperdicio.
+  const handleFinishUnit = async (item) => {
+    if (!confirm(`¿Se te acabó una unidad de "${item.productName}"? Restamos una del stock.`)) return;
+    try {
+      const res = await finishInventoryUnitAPI(item.id);
+      const cal = res.data.data.calibration;
+      toast.success(`Listo: te quedan ${res.data.data.units} ${item.unitType}.`);
+      if (cal.applied) {
+        toast(`Ajustamos tu factor de desperdicio de ${cal.previousFactor} a ${cal.newFactor} con este dato real.`, { icon: "🎯", duration: 6000 });
+      } else if (cal.reason === "faltan_registros") {
+        toast("Registraste muy poco de esta jeringa: parece que faltan procedimientos por anotar, así que no ajustamos el desperdicio.", { icon: "ℹ️", duration: 6000 });
+      }
+      fetchInventory();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "No se pudo actualizar el insumo.");
+    }
+  };
+
   const handleRestockSingle = async (item) => {
     try {
       const qty = Math.max(item.criticalThreshold * 2, 2);
@@ -176,6 +263,8 @@ export default function ClinicInventory() {
     setCriticalThreshold(item.criticalThreshold);
     setCurrentEstimatedStock(item.currentEstimatedStock);
     setUnitType(item.unitType);
+    setMaterialKind(item.materialKind || "");
+    setGramsPerUnit(item.gramsPerUnit ?? "");
     setIsEditModalOpen(true);
   };
 
@@ -207,6 +296,8 @@ export default function ClinicInventory() {
             setCriticalThreshold(5);
             setCurrentEstimatedStock(10);
             setUnitType("cajas");
+            setMaterialKind("");
+            setGramsPerUnit("");
             setIsAddModalOpen(true);
           }}
           className="w-full sm:w-auto flex-shrink-0 flex items-center justify-center gap-2 px-6 py-3.5 bg-[#541a97] hover:bg-[#6c38b0] text-white rounded-2xl font-bold text-sm shadow-md transition-all cursor-pointer"
@@ -262,6 +353,7 @@ export default function ClinicInventory() {
                     <div className="bg-[#f9f9ff] border border-[#cdc3d4]/20 rounded-xl px-3 py-2">
                       <p className="text-[11px] text-[#4b4452]">Stock estimado</p>
                       <p className="text-sm font-bold text-[#111c2c]">{item.currentEstimatedStock} {item.unitType}</p>
+                      {item.gramsPerUnit != null && <p className="text-[11px] text-[#541a97] font-semibold">≈ {gramosTxt(item.gramsRemaining)}</p>}
                     </div>
                     <div className="bg-[#f9f9ff] border border-[#cdc3d4]/20 rounded-xl px-3 py-2">
                       <p className="text-[11px] text-[#4b4452]">Umbral crítico</p>
@@ -277,6 +369,16 @@ export default function ClinicInventory() {
                       <span className="material-symbols-outlined text-[16px]">shopping_cart</span>
                       <span>Reponer</span>
                     </button>
+                    {item.gramsPerUnit != null && (
+                      <button
+                        onClick={() => handleFinishUnit(item)}
+                        aria-label="Se acabó una"
+                        title="Se acabó una unidad"
+                        className="p-2.5 text-[#541a97] border border-[#541a97]/20 hover:bg-[#541a97]/5 rounded-xl transition-colors cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[18px] block">hourglass_bottom</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => openEditModal(item)}
                       aria-label="Editar"
@@ -339,6 +441,9 @@ export default function ClinicInventory() {
 
                       <td className="p-5 font-bold text-[#111c2c]">
                         {item.currentEstimatedStock} {item.unitType}
+                        {item.gramsPerUnit != null && (
+                          <span className="block text-xs text-[#541a97] font-semibold">≈ {gramosTxt(item.gramsRemaining)}</span>
+                        )}
                       </td>
 
                       <td className="p-5 text-[#4b4452] font-semibold">
@@ -356,6 +461,15 @@ export default function ClinicInventory() {
                             <span>Reponer</span>
                           </button>
 
+                          {item.gramsPerUnit != null && (
+                            <button
+                              onClick={() => handleFinishUnit(item)}
+                              className="p-2 text-[#541a97] hover:bg-[#541a97]/5 rounded-xl transition-colors cursor-pointer"
+                              title="Se acabó una unidad (ajusta tu factor de desperdicio)"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">hourglass_bottom</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => openEditModal(item)}
                             className="p-2 text-[#4b4452] hover:text-[#541a97] hover:bg-[#f0f3ff] rounded-xl transition-colors cursor-pointer"
@@ -421,6 +535,11 @@ export default function ClinicInventory() {
                         setSelectedProduct(p);
                         setCatalogProducts([]);
                         setSearchQuery(p.name);
+                        if (pareceResina(p.name)) {
+                          setMaterialKind(/flow|fluida/i.test(p.name) ? "resina_fluida" : "resina");
+                          setGramsPerUnit(gramosDelNombre(p.name) ?? 4);
+                          setUnitType("jeringas");
+                        }
                       }}
                       className={`p-3 flex items-center gap-3 cursor-pointer hover:bg-[#f0f3ff] ${
                         selectedProduct?.id === p.id ? "bg-[#f0f3ff] font-bold" : ""
@@ -479,6 +598,13 @@ export default function ClinicInventory() {
               </select>
             </div>
 
+            <ControlGramos
+              materialKind={materialKind}
+              setMaterialKind={setMaterialKind}
+              gramsPerUnit={gramsPerUnit}
+              setGramsPerUnit={setGramsPerUnit}
+            />
+
             <div className="grid grid-cols-2 sm:flex sm:justify-end gap-3 pt-3">
               <button
                 onClick={() => setIsAddModalOpen(false)}
@@ -533,6 +659,18 @@ export default function ClinicInventory() {
                 />
               </div>
             </div>
+
+            <ControlGramos
+              materialKind={materialKind}
+              setMaterialKind={setMaterialKind}
+              gramsPerUnit={gramsPerUnit}
+              setGramsPerUnit={setGramsPerUnit}
+            />
+            {editItem.gramsPerUnit != null && (
+              <p className="text-[11px] text-[#4b4452]">
+                Si cambias el stock o los gramos por unidad, las unidades se toman como llenas.
+              </p>
+            )}
 
             <div className="grid grid-cols-2 sm:flex sm:justify-end gap-3 pt-2">
               <button
