@@ -10,6 +10,8 @@ import {
   rejectClinicMembershipAPI,
   revokeClinicMembershipAPI,
   updateClinicMembershipSettingsAPI,
+  searchClinicEligibleUsersAPI,
+  grantClinicMembershipAPI,
 } from "../../services/api";
 import { useAdminStats } from "../../context/AdminStatsContext";
 import usePaymentMethods from "../../hooks/usePaymentMethods";
@@ -142,7 +144,7 @@ function Estadisticas({ stats, loading, byKey }) {
             <ul className="space-y-2">
               {stats.por_metodo.map((m) => (
                 <li key={m.payment_method} className="flex items-center justify-between text-sm">
-                  <span className="text-[#33243d] font-semibold">{byKey[m.payment_method]?.icon} {byKey[m.payment_method]?.label || m.payment_method}</span>
+                  <span className="text-[#33243d] font-semibold">{m.payment_method === "asignada" ? "🎁 Asignadas a mano" : <>{byKey[m.payment_method]?.icon} {byKey[m.payment_method]?.label || m.payment_method}</>}</span>
                   <span className="text-[#5c5268]">{m.cantidad} · {usd(m.ingresos_usd)}</span>
                 </li>
               ))}
@@ -227,6 +229,7 @@ function Revision({ m, byKey, onClose, onApprove, onReject, onRevoke }) {
   const [busy, setBusy] = useState(false);
   const [zoom, setZoom] = useState(false);
   const esPdf = /\.pdf($|\?)/i.test(m.payment_proof_url || "");
+  const asignada = m.origen === "admin";
   const metodo = byKey[m.payment_method];
 
   const run = async (fn) => {
@@ -238,12 +241,18 @@ function Revision({ m, byKey, onClose, onApprove, onReject, onRevoke }) {
     <div className="fixed inset-0 z-[100] bg-[#33243d]/45 backdrop-blur-sm flex justify-end" onClick={(e) => e.target === e.currentTarget && !busy && onClose()} role="dialog" aria-modal="true">
       <div className="w-full max-w-4xl h-full bg-gray-50 shadow-2xl flex flex-col sm:flex-row animate-slide-in-right relative">
         <div className="w-full sm:w-3/5 h-56 sm:h-full bg-black flex items-center justify-center border-r border-gray-200 relative">
-          {esPdf ? (
+          {asignada ? (
+            <div className="text-center text-white/80 px-6">
+              <span className="material-symbols-outlined text-[40px]">card_membership</span>
+              <p className="text-sm font-bold mt-2">Asignada por un administrador</p>
+              <p className="text-xs opacity-70 mt-1">Sin comprobante de pago.</p>
+            </div>
+          ) : esPdf ? (
             <a href={m.payment_proof_url} target="_blank" rel="noreferrer" className="text-white text-sm font-bold underline">Abrir comprobante PDF</a>
           ) : (
             <img src={m.payment_proof_url} alt="Comprobante" onClick={() => setZoom(!zoom)} className={`cursor-zoom-in transition-all ${zoom ? "max-w-none w-auto h-auto" : "max-w-full max-h-full object-contain"}`} />
           )}
-          <a href={m.payment_proof_url} target="_blank" rel="noreferrer" className="absolute top-3 left-3 bg-white/90 text-xs font-bold px-3 py-1.5 rounded-lg text-gray-700">Abrir original</a>
+          {!asignada && <a href={m.payment_proof_url} target="_blank" rel="noreferrer" className="absolute top-3 left-3 bg-white/90 text-xs font-bold px-3 py-1.5 rounded-lg text-gray-700">Abrir original</a>}
         </div>
         <div className="flex-1 flex flex-col overflow-y-auto">
           <div className="p-6 border-b border-gray-200 flex items-start justify-between">
@@ -260,18 +269,24 @@ function Revision({ m, byKey, onClose, onApprove, onReject, onRevoke }) {
             <div className="grid grid-cols-2 gap-3">
               <div><p className="text-[10px] uppercase font-bold text-gray-400">Monto</p><p className="font-black text-gray-900 text-lg">{usd(m.price_usd)}</p></div>
               <div><p className="text-[10px] uppercase font-bold text-gray-400">Duración</p><p className="font-bold text-gray-800">{m.duration_days} días</p></div>
-              <div><p className="text-[10px] uppercase font-bold text-gray-400">Método</p><p className="font-bold text-gray-800">{metodo?.icon} {metodo?.label || m.payment_method}</p></div>
-              <div><p className="text-[10px] uppercase font-bold text-gray-400">Referencia</p><p className="font-bold text-gray-800 break-all">{m.reference_number}</p></div>
-              <div><p className="text-[10px] uppercase font-bold text-gray-400">Titular</p><p className="font-bold text-gray-800">{m.payer_name}</p></div>
+              {asignada ? (
+                <div className="col-span-2"><p className="text-[10px] uppercase font-bold text-gray-400">Origen</p><p className="font-bold text-gray-800">Asignada a mano {Number(m.price_usd) > 0 ? "(cobrada fuera de la web)" : "(cortesía)"}</p></div>
+              ) : (
+                <>
+                  <div><p className="text-[10px] uppercase font-bold text-gray-400">Método</p><p className="font-bold text-gray-800">{metodo?.icon} {metodo?.label || m.payment_method}</p></div>
+                  <div><p className="text-[10px] uppercase font-bold text-gray-400">Referencia</p><p className="font-bold text-gray-800 break-all">{m.reference_number}</p></div>
+                  <div><p className="text-[10px] uppercase font-bold text-gray-400">Titular</p><p className="font-bold text-gray-800">{m.payer_name}</p></div>
+                </>
+              )}
               {m.payer_cedula && <div><p className="text-[10px] uppercase font-bold text-gray-400">Cédula</p><p className="font-bold text-gray-800">{m.payer_cedula}</p></div>}
               {m.payer_phone && <div><p className="text-[10px] uppercase font-bold text-gray-400">Teléfono</p><p className="font-bold text-gray-800">{m.payer_phone}</p></div>}
               {m.payer_email && <div><p className="text-[10px] uppercase font-bold text-gray-400">Correo</p><p className="font-bold text-gray-800 break-all">{m.payer_email}</p></div>}
               {m.payment_date && <div><p className="text-[10px] uppercase font-bold text-gray-400">Fecha del pago</p><p className="font-bold text-gray-800">{m.payment_date}</p></div>}
-              <div><p className="text-[10px] uppercase font-bold text-gray-400">Enviado</p><p className="font-bold text-gray-800">{fechaHora(m.created_at)}</p></div>
+              <div><p className="text-[10px] uppercase font-bold text-gray-400">{asignada ? "Asignada" : "Enviado"}</p><p className="font-bold text-gray-800">{fechaHora(m.created_at)}</p></div>
               {m.starts_at && <div className="col-span-2"><p className="text-[10px] uppercase font-bold text-gray-400">Vigencia</p><p className="font-bold text-gray-800">{fecha(m.starts_at)} → {fecha(m.ends_at)}</p></div>}
               {m.review_reason && <div className="col-span-2"><p className="text-[10px] uppercase font-bold text-gray-400">Motivo</p><p className="text-gray-700">{m.review_reason}</p></div>}
             </div>
-            {metodo?.campos?.length > 0 && (
+            {!asignada && metodo?.campos?.length > 0 && (
               <div className="rounded-xl bg-[#6b1e96]/5 border border-[#6b1e96]/10 p-3">
                 <p className="text-[10px] uppercase font-bold text-[#6b1e96] mb-1.5">Cuenta donde debió llegar</p>
                 {metodo.campos.map((c) => <p key={c.etiqueta} className="text-xs text-gray-700"><span className="text-gray-400">{c.etiqueta}:</span> {c.valor}</p>)}
@@ -322,6 +337,129 @@ Revision.propTypes = {
   onRevoke: PropTypes.func.isRequired,
 };
 
+// ── Asignar a mano (sin comprobante) ────────────────────────────────────────
+
+function Asignar({ configuracion, onClose, onDone }) {
+  const [search, setSearch] = useState("");
+  const [resultados, setResultados] = useState([]);
+  const [buscando, setBuscando] = useState(false);
+  const [persona, setPersona] = useState(null);
+  const [days, setDays] = useState(String(configuracion?.duration_days || 30));
+  const [price, setPrice] = useState("0");
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  // Búsqueda con pausa: no una petición por tecla.
+  useEffect(() => {
+    if (persona || search.trim().length < 2) { setResultados([]); return undefined; }
+    const t = setTimeout(async () => {
+      try {
+        setBuscando(true);
+        const res = await searchClinicEligibleUsersAPI(search.trim());
+        setResultados(res.data?.data || []);
+      } catch {
+        setResultados([]);
+      } finally {
+        setBuscando(false);
+      }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [search, persona]);
+
+  const d = Number(days);
+  const p = Number(price || 0);
+  const valido = persona && Number.isInteger(d) && d >= 1 && d <= 366 && Number.isFinite(p) && p >= 0 && reason.trim().length >= 5;
+
+  const asignar = async () => {
+    if (!valido) return;
+    try {
+      setBusy(true);
+      const res = await grantClinicMembershipAPI({ user_id: persona.id, days: d, price_usd: p, reason: reason.trim() });
+      onDone(res.data?.message || "Membresía asignada.");
+    } catch (err) {
+      toast.error(err.response?.data?.error || "No se pudo asignar la membresía.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const inputCls = "w-full p-2.5 border rounded-xl text-base sm:text-sm text-[#33243d]";
+  return (
+    <div className="fixed inset-0 z-[100] bg-[#33243d]/45 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={(e) => e.target === e.currentTarget && !busy && onClose()} role="dialog" aria-modal="true">
+      <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92vh] overflow-y-auto">
+        <div className="p-5 border-b flex items-start justify-between" style={{ borderColor: "#ece5f7" }}>
+          <div>
+            <h3 className="text-lg font-black text-[#33243d]">Asignar membresía</h3>
+            <p className="text-xs text-[#877f92] mt-0.5">Activa el panel clínico sin comprobante: cortesía, pago en efectivo, compensación…</p>
+          </div>
+          <button onClick={onClose} disabled={busy} className="p-2 rounded-full hover:bg-gray-100 text-gray-500" aria-label="Cerrar">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[#877f92] mb-1">Odontólogo o estudiante</label>
+            {persona ? (
+              <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#f7f4fc] border" style={{ borderColor: "#dcd2ec" }}>
+                <div className="min-w-0">
+                  <p className="font-bold text-sm truncate">{persona.full_name || "Sin nombre"}</p>
+                  <p className="text-[11px] text-[#877f92] truncate">{persona.email} · {ROL[persona.role] || persona.role}</p>
+                  {persona.cubierto_hasta && <p className="text-[11px] font-bold text-[#3f7794] mt-0.5">Ya cubierto hasta el {fecha(persona.cubierto_hasta)}: los días se suman al final.</p>}
+                </div>
+                <button onClick={() => { setPersona(null); setSearch(""); }} disabled={busy} className="text-xs font-bold text-[#6b1e96] hover:underline flex-shrink-0">Cambiar</button>
+              </div>
+            ) : (
+              <>
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nombre o correo" className={inputCls} style={{ borderColor: "#dcd2ec" }} autoFocus />
+                {search.trim().length >= 2 && (
+                  <ul className="mt-2 border rounded-xl divide-y max-h-56 overflow-y-auto" style={{ borderColor: "#ece5f7" }}>
+                    {buscando && resultados.length === 0 && <li className="p-3 text-xs text-[#877f92]">Buscando...</li>}
+                    {!buscando && resultados.length === 0 && <li className="p-3 text-xs text-[#877f92]">Nadie con ese nombre o correo entre odontólogos y estudiantes.</li>}
+                    {resultados.map((u) => (
+                      <li key={u.id}>
+                        <button onClick={() => setPersona(u)} className="w-full text-left p-3 hover:bg-[#f7f4fc]">
+                          <p className="text-sm font-bold">{u.full_name || "Sin nombre"}</p>
+                          <p className="text-[11px] text-[#877f92]">{u.email} · {ROL[u.role] || u.role}{u.cubierto_hasta ? ` · cubierto hasta ${fecha(u.cubierto_hasta)}` : ""}</p>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-[#877f92] mb-1">Días</label>
+              <input type="number" min="1" max="366" step="1" value={days} onChange={(e) => setDays(e.target.value)} className={inputCls} style={{ borderColor: "#dcd2ec" }} />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-[#877f92] mb-1">Monto cobrado (USD)</label>
+              <input type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className={inputCls} style={{ borderColor: "#dcd2ec" }} />
+              <p className="text-[10px] text-[#877f92] mt-1">0 = cortesía (no cuenta como ingreso).</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[#877f92] mb-1">Motivo (interno)</label>
+            <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} className={inputCls} style={{ borderColor: "#dcd2ec" }} placeholder="Ej: pagó en efectivo en la oficina" />
+          </div>
+        </div>
+
+        <div className="p-5 border-t flex gap-3" style={{ borderColor: "#ece5f7" }}>
+          <button onClick={asignar} disabled={!valido || busy} className="flex-1 py-3 rounded-xl bg-[#6b1e96] hover:bg-[#531575] text-white font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed">
+            {busy ? "Asignando..." : persona ? `Asignar ${Number.isInteger(d) && d > 0 ? d : "—"} días` : "Asignar"}
+          </button>
+          <button onClick={onClose} disabled={busy} className="px-5 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+Asignar.propTypes = { configuracion: PropTypes.object, onClose: PropTypes.func.isRequired, onDone: PropTypes.func.isRequired };
+
 // ── Página ──────────────────────────────────────────────────────────────────
 
 const PER_PAGE = 15;
@@ -340,6 +478,7 @@ export default function AdminClinicMemberships() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [activa, setActiva] = useState(null);
+  const [asignando, setAsignando] = useState(false);
 
   const cargarStats = useCallback(async () => {
     try {
@@ -409,9 +548,14 @@ export default function AdminClinicMemberships() {
           <h1 className="text-2xl font-black">Membresías clínicas</h1>
           <p className="text-sm text-[#5c5268] mt-1">Acceso de pago al panel de Gestión Clínica (odontólogos y estudiantes).</p>
         </div>
-        <button onClick={() => { cargarStats(); cargarLista(); }} className="inline-flex items-center gap-1.5 text-xs font-bold text-[#6b1e96] hover:underline">
-          <span className="material-symbols-outlined text-[16px]">refresh</span>Actualizar
-        </button>
+        <div className="flex items-center gap-4">
+          <button onClick={() => { cargarStats(); cargarLista(); }} className="inline-flex items-center gap-1.5 text-xs font-bold text-[#6b1e96] hover:underline">
+            <span className="material-symbols-outlined text-[16px]">refresh</span>Actualizar
+          </button>
+          <button onClick={() => setAsignando(true)} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-[#6b1e96] hover:bg-[#531575] transition-colors">
+            <span className="material-symbols-outlined text-[18px]">card_membership</span>Asignar membresía
+          </button>
+        </div>
       </div>
 
       <Configuracion configuracion={stats?.configuracion} onSaved={cargarStats} />
@@ -456,8 +600,8 @@ export default function AdminClinicMemberships() {
                       <p className="text-[11px] text-[#877f92]">{m.user?.email} · {ROL[m.user?.role] || m.user?.role || "—"}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="font-bold">{usd(m.price_usd)} <span className="font-normal text-[#5c5268]">· {byKey[m.payment_method]?.label || m.payment_method}</span></p>
-                      <p className="text-[11px] text-[#877f92]">Ref. {m.reference_number}</p>
+                      <p className="font-bold">{usd(m.price_usd)} <span className="font-normal text-[#5c5268]">· {m.origen === "admin" ? "Asignada" : byKey[m.payment_method]?.label || m.payment_method}</span></p>
+                      <p className="text-[11px] text-[#877f92]">{m.origen === "admin" ? "Sin comprobante" : `Ref. ${m.reference_number}`}</p>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {m.starts_at ? <>{fecha(m.starts_at)} → {fecha(m.ends_at)}</> : <span className="text-[#877f92]">—</span>}
@@ -478,6 +622,13 @@ export default function AdminClinicMemberships() {
         )}
       </div>
 
+      {asignando && (
+        <Asignar
+          configuracion={stats?.configuracion}
+          onClose={() => setAsignando(false)}
+          onDone={(msg) => { setAsignando(false); setTab("active"); setPage(1); despues(msg); }}
+        />
+      )}
       {activa && <Revision m={activa} byKey={byKey} onClose={() => setActiva(null)} onApprove={aprobar} onReject={rechazar} onRevoke={revocar} />}
     </div>
   );

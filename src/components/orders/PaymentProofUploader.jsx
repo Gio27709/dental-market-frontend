@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import PropTypes from "prop-types";
 import { useOrder } from "../../context/OrderContext";
 import { validateFile } from "../../utils/validators";
+import { comprimirImagen } from "../../utils/comprimirImagen";
 import toast from "react-hot-toast";
 import PaymentInstructions from "./PaymentInstructions";
 import usePaymentMethods from "../../hooks/usePaymentMethods";
@@ -50,9 +51,11 @@ export default function PaymentProofUploader({
     ? activos
     : [...activos, byKey[pm] || { key: pm, label: pm, icon: "💳" }];
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (!selectedFile) return;
+  const handleFileChange = async (e) => {
+    const original = e.target.files[0];
+    if (!original) return;
+    // Una foto de cámara pasa de 5 MB con facilidad: se achica aquí antes de validar.
+    const selectedFile = await comprimirImagen(original);
 
     const validation = validateFile(selectedFile, 5, [
       "image/jpeg",

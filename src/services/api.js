@@ -540,6 +540,8 @@ export const approveClinicMembershipAPI = (id) => api.put(`/admin/clinic-members
 export const rejectClinicMembershipAPI = (id, reason) => api.put(`/admin/clinic-memberships/${id}/reject`, { reason });
 export const revokeClinicMembershipAPI = (id, reason) => api.put(`/admin/clinic-memberships/${id}/revoke`, { reason });
 export const updateClinicMembershipSettingsAPI = (data) => api.put("/admin/settings/clinic-membership", data);
+export const searchClinicEligibleUsersAPI = (search) => api.get("/admin/clinic-memberships/eligible-users", { params: { search } });
+export const grantClinicMembershipAPI = (data) => api.post("/admin/clinic-memberships/grant", data);
 
 // ── Chatbot (admin) ──────────────────────────────────────────────────────────
 // Panel /admin/bot: revisión de respuestas, base de conocimiento y uso del asistente IA.

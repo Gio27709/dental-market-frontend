@@ -7,6 +7,7 @@ import { requestClinicMembershipAPI } from "../../services/api";
 import usePaymentMethods from "../../hooks/usePaymentMethods";
 import PaymentInstructions from "../../components/orders/PaymentInstructions";
 import { validateFile } from "../../utils/validators";
+import { comprimirImagen } from "../../utils/comprimirImagen";
 
 /**
  * Mi membresía: estado del acceso al panel clínico, precio, y el formulario para pagar o
@@ -173,12 +174,16 @@ function FormularioPago({ configuracion, onEnviado, esRenovacion }) {
 
   const clear = (k) => errors[k] && setErrors((p) => ({ ...p, [k]: null }));
 
-  const handleFile = (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    const v = validateFile(f, 5, ["image/jpeg", "image/png", "image/webp", "application/pdf"]);
+  const handleFile = async (e) => {
+    const original = e.target.files[0];
+    // Permite volver a elegir el mismo archivo tras un error.
+    e.target.value = "";
+    if (!original) return;
+    // Las fotos de cámara pasan de 5 MB con facilidad: se achican aquí antes de validar.
+    const f = await comprimirImagen(original);
+    const v = validateFile(f, 10, ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"]);
     if (!v.valid) {
-      toast.error(v.error);
+      toast.error(f.size > 10 * 1024 * 1024 ? v.error : "Formato no admitido. Sube una captura JPG, PNG o WEBP, o un PDF.");
       return;
     }
     setFile(f);
@@ -335,7 +340,7 @@ function FormularioPago({ configuracion, onEnviado, esRenovacion }) {
               <div className="flex flex-col items-center justify-center py-2 px-4 text-center">
                 <span className="material-symbols-outlined text-[24px] text-slate-400 mb-1">cloud_upload</span>
                 <p className="text-xs text-slate-700 font-bold">{file ? "Cambiar comprobante" : "Haz clic para seleccionar archivo"}</p>
-                <p className="text-[10px] text-slate-400 font-bold">{file ? file.name : "PNG, JPG, WEBP o PDF (máx. 5MB)"}</p>
+                <p className="text-[10px] text-slate-400 font-bold">{file ? file.name : "PNG, JPG, WEBP o PDF (máx. 10MB)"}</p>
               </div>
               <input type="file" ref={fileInputRef} onChange={handleFile} accept="image/jpeg,image/png,image/webp,application/pdf" className="hidden" disabled={sending} />
             </label>
@@ -455,7 +460,7 @@ export default function ClinicMembership() {
                     <p className="text-sm text-slate-700">
                       {m.starts_at ? `${fecha(m.starts_at)} → ${fecha(m.ends_at)}` : `Enviado ${fecha(m.created_at)}`}
                     </p>
-                    <p className="text-xs text-slate-500">{m.payment_method}</p>
+                    <p className="text-xs text-slate-500">{m.origen === "admin" ? "Asignada por Forcepx" : m.payment_method}</p>
                     {m.review_reason && <p className="text-[11px] text-slate-500">{m.review_reason}</p>}
                   </li>
                 ))}
@@ -475,7 +480,7 @@ export default function ClinicMembership() {
                       <tr key={m.id}>
                         <td className="px-6 py-3"><Badge status={m.status} />{m.review_reason && <p className="text-[11px] text-slate-500 mt-1">{m.review_reason}</p>}</td>
                         <td className="px-4 py-3 text-slate-700 whitespace-nowrap">{m.starts_at ? `${fecha(m.starts_at)} → ${fecha(m.ends_at)}` : `Enviado ${fecha(m.created_at)}`}</td>
-                        <td className="px-4 py-3 text-slate-700">{m.payment_method}</td>
+                        <td className="px-4 py-3 text-slate-700">{m.origen === "admin" ? "Asignada por Forcepx" : m.payment_method}</td>
                         <td className="px-6 py-3 text-right font-bold text-slate-800">{usd(m.price_usd)}</td>
                       </tr>
                     ))}
