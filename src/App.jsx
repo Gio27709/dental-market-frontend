@@ -23,6 +23,7 @@ import ChatbotWidget from "./components/bot/ChatbotWidget";
 import BannerInstalarApp from "./components/pwa/BannerInstalarApp";
 import ActualizacionPwa from "./components/pwa/ActualizacionPwa";
 import EstadoConexion from "./components/pwa/EstadoConexion";
+import AvisoMudanza from "./components/pwa/AvisoMudanza";
 import BarraInferior from "./components/app/BarraInferior";
 import { esAppInstalada } from "./components/pwa/instalarApp";
 import AccountLayout from "./components/layout/account/AccountLayout";
@@ -263,6 +264,7 @@ export default function App() {
                   {/* App instalable: aviso de versión nueva y de pérdida de conexión, en todas las pantallas. */}
                   <ActualizacionPwa />
                   <EstadoConexion />
+                  <AvisoMudanza />
                   <Suspense fallback={<LoadingSkeleton />}>
                     <Routes>
                       {/* --- RUTAS PRIVADAS / PANELES INTERNOS (Sin Header/Footer públicos) --- */}
