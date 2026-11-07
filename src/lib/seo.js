@@ -5,7 +5,8 @@ import { useLocation, matchPath } from "react-router-dom";
 // No usa react-helmet: son ~15 etiquetas y así no entra una dependencia ni un Provider.
 // Google ejecuta JavaScript, por lo que lo que se escribe aquí es lo que indexa.
 
-export const SITE_URL = "https://forcepx.com";
+// Viene de VITE_SITE_URL (vite.config.js la fija; por defecto https://forcepx.com).
+export const SITE_URL = import.meta.env.VITE_SITE_URL || "https://forcepx.com";
 export const SITE_NAME = "Forcepx";
 export const DEFAULT_TITLE = "Forcepx | Insumos y equipos odontológicos en Venezuela";
 export const DEFAULT_DESCRIPTION =

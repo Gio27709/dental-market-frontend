@@ -1,7 +1,27 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import process from "node:process";
+
+// Dirección pública del sitio (canonical, Open Graph, JSON-LD, robots.txt). Sale de
+// VITE_SITE_URL; sin ella se queda forcepx.com, así un build sin configurar no cambia nada.
+// index.html y public/robots.txt usan el marcador __SITIO_URL__ y este plugin lo rellena.
+const MARCADOR = "__SITIO_URL__";
+const direccionDelSitio = (url) => ({
+  name: "forcepx-direccion-del-sitio",
+  transformIndexHtml: (html) => html.replaceAll(MARCADOR, url),
+  async writeBundle({ dir }) {
+    const robots = join(dir, "robots.txt");
+    try {
+      await writeFile(robots, (await readFile(robots, "utf8")).replaceAll(MARCADOR, url));
+    } catch (e) {
+      if (e.code !== "ENOENT") throw e;
+    }
+  },
+});
 
 // PWA (instalable en el teléfono). Criterios:
 // - Solo se guarda de antemano lo mínimo para abrir la app (HTML, CSS y JS de entrada, íconos):
@@ -99,8 +119,12 @@ const pwa = VitePWA({
 });
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [tailwindcss(), react(), pwa],
+export default defineConfig(({ mode }) => {
+  const sitioUrl = (loadEnv(mode, process.cwd(), "VITE_").VITE_SITE_URL || "https://forcepx.com").replace(/\/+$/, "");
+  return {
+  plugins: [tailwindcss(), react(), pwa, direccionDelSitio(sitioUrl)],
+  // Mismo valor en el código (lib/seo.js) que en index.html y robots.txt.
+  define: { "import.meta.env.VITE_SITE_URL": JSON.stringify(sitioUrl) },
   // Red de seguridad para llamadas relativas a "/api/*" en desarrollo. La capa normal
   // (services/api.js) usa VITE_API_URL absoluta y no pasa por aquí; esto evita que una
   // llamada relativa suelta reciba el index.html del SPA en vez de un error visible.
@@ -123,4 +147,5 @@ export default defineConfig({
       }
     }
   }
+  };
 });

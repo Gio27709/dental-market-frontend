@@ -27,4 +27,4 @@ Disallow: /store/discounts
 Disallow: /api/
 Allow: /api/sitemap.xml
 
-Sitemap: https://forcepx.com/api/sitemap.xml
+Sitemap: __SITIO_URL__/api/sitemap.xml
