@@ -14,6 +14,7 @@ const ENDPOINT = `${import.meta.env.VITE_API_URL}/track`;
 
 const ANON_KEY = "dm_anon_id";      // persiste entre visitas (localStorage)
 const SESSION_KEY = "dm_session_id"; // muere al cerrar la pestaña (sessionStorage)
+const CONTEXT_KEY = "dm_session_ctx"; // referrer y UTM de la sesión (sessionStorage)
 
 const FLUSH_INTERVAL_MS = 10000;
 const MAX_BATCH = 50;
@@ -42,7 +43,40 @@ const newId = () =>
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 export const getAnonymousId = () => safeStorage(localStorage, ANON_KEY, newId);
-export const getSessionKey = () => safeStorage(sessionStorage, SESSION_KEY, newId);
+
+/**
+ * La sesión caduca tras 30 minutos sin actividad (la misma cifra que SESSION_IDLE_MINUTES
+ * del backend). Antes la clave vivía mientras viviera la pestaña: una pestaña abierta días
+ * —o la app instalada, que casi nunca se cierra— era UNA sola sesión, con lo que se
+ * contaban de menos las sesiones y de más su duración y profundidad.
+ */
+const LAST_ACTIVITY_KEY = "dm_session_last";
+const SESSION_IDLE_MS = 30 * 60 * 1000;
+
+export function getSessionKey() {
+  try {
+    const now = Date.now();
+    const last = Number(sessionStorage.getItem(LAST_ACTIVITY_KEY)) || 0;
+    let key = sessionStorage.getItem(SESSION_KEY);
+    if (!key || (last > 0 && now - last > SESSION_IDLE_MS)) {
+      const caducada = Boolean(key);
+      key = newId();
+      sessionStorage.setItem(SESSION_KEY, key);
+      // La sesión nueva no llega desde el referrer ni la campaña de la primera carga de la
+      // pestaña: se reanuda desde la propia app.
+      if (caducada) {
+        sessionStorage.setItem(
+          CONTEXT_KEY,
+          JSON.stringify({ referrer: null, utm_source: null, utm_medium: null, utm_campaign: null })
+        );
+      }
+    }
+    sessionStorage.setItem(LAST_ACTIVITY_KEY, String(now));
+    return key;
+  } catch {
+    return newId();
+  }
+}
 
 /**
  * El contexto de campaña se captura una sola vez por sesión, en la primera carga.
@@ -50,7 +84,7 @@ export const getSessionKey = () => safeStorage(sessionStorage, SESSION_KEY, newI
  */
 function captureContext() {
   try {
-    const stored = sessionStorage.getItem("dm_session_ctx");
+    const stored = sessionStorage.getItem(CONTEXT_KEY);
     if (stored) return JSON.parse(stored);
 
     const params = new URLSearchParams(window.location.search);
@@ -60,7 +94,7 @@ function captureContext() {
       utm_medium: params.get("utm_medium"),
       utm_campaign: params.get("utm_campaign"),
     };
-    sessionStorage.setItem("dm_session_ctx", JSON.stringify(ctx));
+    sessionStorage.setItem(CONTEXT_KEY, JSON.stringify(ctx));
     return ctx;
   } catch {
     return {};
@@ -134,6 +168,29 @@ export function track(name, payload = {}) {
 }
 
 export const trackPageView = (path) => track("page_view", { path });
+
+/**
+ * Inicio de sesión real, una sola vez por cada inicio.
+ *
+ * supabase-js vuelve a emitir SIGNED_IN cada vez que la pestaña pasa de oculta a visible
+ * (`_onVisibilityChanged` → `_recoverAndRefresh`), así que contar cada SIGNED_IN daba hasta
+ * 197 "logins" en una sola sesión y sellaba `users.last_login_at` en cada cambio de pestaña.
+ * `last_sign_in_at` solo cambia cuando la persona se autentica de verdad: la pareja
+ * (usuario, last_sign_in_at) identifica cada inicio y se recuerda en localStorage.
+ */
+const LOGIN_MARK_KEY = "dm_login_tracked";
+
+export function trackLogin(user) {
+  if (!user?.id) return;
+  const mark = `${user.id}:${user.last_sign_in_at || ""}`;
+  try {
+    if (localStorage.getItem(LOGIN_MARK_KEY) === mark) return;
+    localStorage.setItem(LOGIN_MARK_KEY, mark);
+  } catch {
+    /* sin almacenamiento se cuenta como antes: de más, nunca de menos */
+  }
+  track("login");
+}
 
 /**
  * Eventos que solo deben contar UNA VEZ por publicación y sesión.

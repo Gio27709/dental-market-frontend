@@ -6,7 +6,6 @@ import DataTable from "./DataTable";
 import SkeletonLoader from "./SkeletonLoader";
 import FreshnessBadge from "./FreshnessBadge";
 import DateRangePicker from "./DateRangePicker";
-import CompareToggle from "./CompareToggle";
 import AnalyticsExportButton from "./AnalyticsExportButton";
 import RetentionCohortHeatmap from "./RetentionCohortHeatmap";
 import useDrilldown from "../../../hooks/useDrilldown";
@@ -23,7 +22,6 @@ export default function GrowthCommunityTab() {
   const [error, setError] = useState(null);
 
   const [period, setPeriod] = useState("30d");
-  const [isComparing, setIsComparing] = useState(false);
   const [chartMode, setChartMode] = useState("area");
   const drilldown = useDrilldown();
 
@@ -41,7 +39,8 @@ export default function GrowthCommunityTab() {
       }
     } catch (err) {
       console.error("Error cargando analíticas de growth:", err);
-      setError(err.response?.data?.message || err.message || "Error obteniendo datos de crecimiento.");
+      // El backend manda el motivo en `error`, no en `message`
+      setError(err.response?.data?.error || err.message || "Error obteniendo datos de crecimiento.");
     } finally {
       setLoading(false);
     }
@@ -83,8 +82,9 @@ export default function GrowthCommunityTab() {
     <div className="space-y-6">
       {/* Header Controls Row */}
       <div className="relative z-30 flex flex-col md:flex-row md:items-center justify-between gap-4 fx-card-sm">
+        {/* Sin interruptor "Comparar": el backend de esta pestaña no calcula período previo
+            y el interruptor no cambiaba nada en pantalla. */}
         <div className="flex items-center gap-3 flex-wrap">
-          <CompareToggle isComparing={isComparing} onToggle={setIsComparing} />
           <AnalyticsExportButton activeArea="growth" period={period} />
         </div>
 
@@ -105,21 +105,21 @@ export default function GrowthCommunityTab() {
           value={kpis.uniqueBuyersCount || 0}
           format="number"
           suffix=" compradores"
-          tooltip="Mapeado en M39: Cantidad total de usuarios únicos que realizaron al menos una compra en el período."
+          tooltip="Usuarios distintos con al menos una compra en el período: pago aprobado, pedido no cancelado y al menos un producto no cancelado."
           drilldownUrl="/admin/users"
         />
         <KpiCard
           title="Tasa de Recompra Recurrente"
-          value={kpis.repurchaseRatePct || 0}
+          value={kpis.repurchaseRatePct}
           format="percent"
-          tooltip="Mapeado en M41: Porcentaje de compradores que han realizado 2 o más pedidos en la plataforma."
+          tooltip={`Compradores del período con 2 o más compras dentro del mismo período: ${kpis.repeatBuyers || 0} de ${kpis.uniqueBuyersCount || 0}. Un pago con productos de varias tiendas cuenta como una sola compra.`}
           drilldownUrl="/admin/orders"
         />
         <KpiCard
           title="Riesgo Concentración Top 10"
-          value={kpis.top10RiskConcentrationPct || 0}
+          value={kpis.top10RiskConcentrationPct}
           format="percent"
-          tooltip="Mapeado en M42: Porcentaje de ventas brutas (GMV) concentradas en los 10 principales comercios."
+          tooltip={`Porcentaje de las ventas brutas (GMV) del período que hacen los 10 principales comercios. Hoy venden ${kpis.storesWithSales || 0} comercios: con 10 o menos, el valor es 100 % por definición.`}
           drilldownUrl="/admin/store-applications"
         />
         <KpiCard
@@ -184,7 +184,8 @@ export default function GrowthCommunityTab() {
       </ChartCard>
 
       {/* Mapa de Calor de Cohortes de Retención (M40 - RPC M0 a M3) */}
-      <RetentionCohortHeatmap cohortData={cohorts} />
+      {/* La prop del componente es `data`: con `cohortData` siempre pintaba "No hay datos". */}
+      <RetentionCohortHeatmap data={cohorts} />
 
       {/* Grid de ROI de Cupones y Top Compradores */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -235,7 +236,7 @@ export default function GrowthCommunityTab() {
               )
             },
             { header: "Email", accessor: "email", render: (r) => <span className="text-fx-faint font-mono text-xs">{r.email}</span> },
-            { header: "Órdenes Totales", accessor: "total_orders", render: (r) => <span className="font-semibold text-fx-accent">{parseInt(r.total_orders || 0).toLocaleString()}</span> },
+            { header: "Compras", accessor: "total_orders", render: (r) => <span className="font-semibold text-fx-accent">{parseInt(r.total_orders || 0).toLocaleString()}</span> },
             { header: "Gasto Acumulado", accessor: "total_spent", render: (r) => `$${parseFloat(r.total_spent || 0).toFixed(2)}` }
           ]}
           data={topBuyers}

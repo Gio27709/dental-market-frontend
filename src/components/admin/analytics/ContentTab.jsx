@@ -94,7 +94,7 @@ export default function ContentTab() {
         />
         <KpiCard
           title="Tasa de Interacción"
-          value={kpis.engagementRatePct || 0}
+          value={kpis.engagementRatePct}
           format="percent"
           tooltip="Suma de likes, comentarios y guardados dividida entre las lecturas del período."
           onDrilldown={() =>
@@ -247,7 +247,7 @@ export default function ContentTab() {
           { header: "Likes", accessor: "likes" },
           { header: "Comentarios", accessor: "comments" },
           { header: "Guardados", accessor: "saves" },
-          { header: "Interacción", accessor: "engagement_rate_pct", render: (r) => `${parseFloat(r.engagement_rate_pct || 0).toFixed(1)}%` },
+          { header: "Interacción", accessor: "engagement_rate_pct", render: (r) => (r.engagement_rate_pct === null || r.engagement_rate_pct === undefined ? "—" : `${parseFloat(r.engagement_rate_pct).toFixed(1)}%`) },
         ]}
         data={data?.topPosts || []}
         searchPlaceholder="Buscar publicación..."
@@ -276,7 +276,7 @@ export default function ContentTab() {
             },
             { header: "Posts", accessor: "posts" },
             { header: "Lecturas", accessor: "total_views", render: (r) => <span className="font-semibold text-fx-accent">{parseInt(r.total_views || 0).toLocaleString()}</span> },
-            { header: "Likes", accessor: "total_likes" },
+            { header: "Likes del período", accessor: "total_likes" },
           ]}
           data={data?.topAuthors || []}
           searchPlaceholder="Buscar autor..."

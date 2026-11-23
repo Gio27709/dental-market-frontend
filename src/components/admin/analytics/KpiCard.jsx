@@ -17,6 +17,11 @@ export default function KpiCard({
   const formatValue = (val) => {
     if (val === null || val === undefined || status === "no_data") return "—";
     if (typeof val === "object" && val.value !== undefined) val = val.value;
+    if (val === null || val === undefined || val === "") return "—";
+    // Un texto ya formateado por la pestaña («$1,234.00», «3 / 10», «2 · $878.84») se pinta tal
+    // cual. Antes pasaba por parseFloat: «$…» daba NaN → 0 y «3 / 10» se quedaba en «3».
+    // Los números que llegan como texto desde Postgres (`numeric` → "12.50") se siguen formateando.
+    if (typeof val === "string" && Number.isNaN(Number(val.trim()))) return val;
     if (typeof val !== "number") val = parseFloat(val) || 0;
     if (format === "currency") return `$${val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     if (format === "percent") return `${val.toLocaleString("en-US", { maximumFractionDigits: 2 })}%`;

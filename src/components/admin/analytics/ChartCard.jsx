@@ -8,8 +8,10 @@ const CHART_TYPES = [
   { key: "line", label: "Líneas", icon: LineChart },
 ];
 
-export default function ChartCard({ title, subtitle, children, onTypeChange, actions }) {
-  const [chartType, setChartType] = useState("area");
+// `initialType` debe coincidir con el modo con que la pestaña pinta su gráfica al cargar: si no,
+// el selector marcaba «Área» mientras se veía una de líneas (Finanzas arranca en «line»).
+export default function ChartCard({ title, subtitle, children, onTypeChange, actions, initialType = "area" }) {
+  const [chartType, setChartType] = useState(initialType);
 
   const handleTypeSwitch = (type) => {
     setChartType(type);
@@ -69,5 +71,6 @@ ChartCard.propTypes = {
   subtitle: PropTypes.string,
   children: PropTypes.node.isRequired,
   onTypeChange: PropTypes.func,
-  actions: PropTypes.node
+  actions: PropTypes.node,
+  initialType: PropTypes.oneOf(["area", "bar", "line"])
 };

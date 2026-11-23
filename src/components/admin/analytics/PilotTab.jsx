@@ -122,7 +122,7 @@ export default function PilotTab() {
             <KpiCard title="Tiendas reales" value={num(k.realStores)} tooltip={`${num(k.storesWithCatalog)} con catálogo activo`} />
             <KpiCard title="Pedidos reales" value={num(k.realOrders)} tooltip="Pedidos creados en el período a tiendas reales" />
             <KpiCard title="Pedidos completos" value={`${num(k.completedOrders)} / ${goal.min}`} tooltip="Entregados y con el escrow liberado. La meta mínima es 10." />
-            <KpiCard title="Ventas reales" value={usd(k.gmvUsd)} tooltip="Suma de pedidos con pago aprobado" />
+            <KpiCard title="Ventas reales" value={usd(k.gmvUsd)} tooltip="Total cobrado (incluye la tarifa del comprador) de los pedidos con pago aprobado y no cancelados" />
             <KpiCard title="Retiros pagados" value={`${num(k.payoutsPaid)} · ${usd(k.payoutsPaidUsd)}`} tooltip={`${num(k.payoutsOpen)} abiertos por ${usd(k.payoutsOpenUsd)}`} />
             <KpiCard title="Incidentes de dinero" value={num(k.incidents)} tooltip="Reversiones de escrow, reembolsos y retiros rechazados. La meta es 0." />
           </div>

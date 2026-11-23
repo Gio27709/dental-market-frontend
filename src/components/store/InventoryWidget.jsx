@@ -87,7 +87,7 @@ export default function InventoryWidget({ inventory = {}, loading = false }) {
             <div className="flex items-start gap-2 px-2.5 py-2 rounded-lg" style={{ background: "rgba(245,158,11,0.05)" }}>
               <span className="text-xs mt-0.5">⚠️</span>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-amber-600">{lowStockCount} stock bajo (≤5)</p>
+                <p className="text-xs font-semibold text-amber-600">{lowStockCount} stock bajo (&lt;5)</p>
                 {lowStockProducts.slice(0, 2).map((p) => (
                   <p key={p.id} className="text-[10px] text-amber-500 truncate">{p.name} ({p.stock} uds)</p>
                 ))}

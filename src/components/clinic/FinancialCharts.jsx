@@ -32,7 +32,8 @@ export default function FinancialCharts({ monthlyHistory, categoryBreakdown }) {
           </div>
         </div>
 
-        {monthlyHistory.length === 0 ? (
+        {/* El backend rellena los 12 meses con 0: vacío = ningún mes con gasto. */}
+        {!monthlyHistory.some((m) => m.totalSpent > 0) ? (
           <div className="h-64 flex items-center justify-center text-xs text-[#4b4452]">
             No hay compras registradas para graficar tendencias.
           </div>

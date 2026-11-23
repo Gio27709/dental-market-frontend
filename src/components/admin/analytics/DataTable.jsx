@@ -14,9 +14,11 @@ export default function DataTable({
   const [page, setPage] = useState(1);
   const pageSize = 8;
 
+  // Sin término de búsqueda se muestran todas las filas: antes se filtraba igual, y una fila
+  // cuyas columnas con `accessor` valían 0/null/"" desaparecía de la tabla sin buscar nada.
   const filteredData = useMemo(
     () =>
-      data.filter((row) =>
+      !searchTerm.trim() ? data : data.filter((row) =>
         columns.some((col) => {
           const val = row[col.accessor];
           return val ? String(val).toLowerCase().includes(searchTerm.toLowerCase()) : false;

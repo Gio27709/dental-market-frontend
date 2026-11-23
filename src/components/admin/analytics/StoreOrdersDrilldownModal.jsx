@@ -84,7 +84,10 @@ export default function StoreOrdersDrilldownModal({ isOpen, onClose, storeId, pe
             <div>
               <h3 className="text-lg font-bold text-fx-text">Desglose de Órdenes de {storeName}</h3>
               <p className="text-fx-muted text-xs">
-                {orders.length} historial de intentos y pedidos en el período seleccionado
+                {orders.length} intentos y pedidos en el período seleccionado
+                {" · "}
+                {orders.filter((o) => o.counts_as_sale).length} cuentan como venta
+                (${orders.reduce((acc, o) => acc + parseFloat(o.sale_total_usd || 0), 0).toFixed(2)})
               </p>
             </div>
           </div>
@@ -148,7 +151,8 @@ export default function StoreOrdersDrilldownModal({ isOpen, onClose, storeId, pe
                       ${parseFloat(ord.store_total_usd || 0).toFixed(2)}
                     </td>
                     <td className="py-3 px-3 text-center">
-                      {renderStatusBadge(ord.payment_status)}
+                      {/* Un pedido pagado y luego cancelado salía con un «✓ approved» verde. */}
+                      {renderStatusBadge(ord.order_status === "cancelled" ? "cancelled" : ord.payment_status)}
                     </td>
                     <td className="py-3 px-3 text-right">
                       <button

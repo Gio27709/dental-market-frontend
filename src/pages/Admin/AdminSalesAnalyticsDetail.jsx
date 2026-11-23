@@ -37,8 +37,14 @@ export default function AdminSalesAnalyticsDetail() {
   // State management for filters
   const initialPeriod = searchParams.get("period") || "30d";
   const [period, setPeriod] = useState(initialPeriod);
+  // Lo que se escribe en los campos de fecha (borrador) y el rango APLICADO con «Aplicar».
+  // Antes los datos se pedían con lo tecleado en cada cambio del campo, sin pulsar «Aplicar» y
+  // con el período rápido aún activo (p. ej. «desde» sin «hasta»).
   const [fromDate, setFromDate] = useState(searchParams.get("from") || "");
   const [toDate, setToDate] = useState(searchParams.get("to") || "");
+  const rangoInicial = initialPeriod === "custom" && searchParams.get("from") && searchParams.get("to");
+  const [appliedFrom, setAppliedFrom] = useState(rangoInicial ? searchParams.get("from") : "");
+  const [appliedTo, setAppliedTo] = useState(rangoInicial ? searchParams.get("to") : "");
   const [selectedStoreIds, setSelectedStoreIds] = useState([]);
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [storeList, setStoreList] = useState([]);
@@ -74,8 +80,8 @@ export default function AdminSalesAnalyticsDetail() {
     setError(null);
     try {
       const params = { period };
-      if (fromDate) params.from = fromDate;
-      if (toDate) params.to = toDate;
+      if (appliedFrom) params.from = appliedFrom;
+      if (appliedTo) params.to = appliedTo;
       if (selectedStoreIds.length > 0) params.store_ids = selectedStoreIds.join(",");
       if (isRefresh) params.refresh = "true";
 
@@ -92,7 +98,7 @@ export default function AdminSalesAnalyticsDetail() {
     } finally {
       setLoading(false);
     }
-  }, [period, fromDate, toDate, selectedStoreIds]);
+  }, [period, appliedFrom, appliedTo, selectedStoreIds]);
 
   useEffect(() => {
     fetchData();
@@ -103,13 +109,21 @@ export default function AdminSalesAnalyticsDetail() {
     setPeriod(newPeriod);
     setFromDate("");
     setToDate("");
+    setAppliedFrom("");
+    setAppliedTo("");
     setSearchParams({ period: newPeriod });
   };
 
   // Handle Custom Date Filter Apply
   const handleApplyCustomDates = () => {
     if (!fromDate || !toDate) return;
+    if (fromDate > toDate) {
+      setError("La fecha «Desde» no puede ser posterior a «Hasta».");
+      return;
+    }
     setPeriod("custom");
+    setAppliedFrom(fromDate);
+    setAppliedTo(toDate);
     setSearchParams({ period: "custom", from: fromDate, to: toDate });
   };
 
@@ -162,7 +176,7 @@ export default function AdminSalesAnalyticsDetail() {
       const storeOrdersPromises = storePerformance.map((st) => {
         const storeId = st.store_id || st.user_id;
         if (!storeId) return Promise.resolve([]);
-        return getStoreOrdersDetailAPI({ store_id: storeId, period, from: fromDate, to: toDate })
+        return getStoreOrdersDetailAPI({ store_id: storeId, period, from: appliedFrom || undefined, to: appliedTo || undefined })
           .then((res) => {
             const orders = res.data?.data?.orders || [];
             const storeName = res.data?.data?.storeName || st.business_name || st.store_name || "Comercio";
@@ -174,7 +188,11 @@ export default function AdminSalesAnalyticsDetail() {
               "Email Cliente": o.client_email,
               "Método Pago": o.payment_method?.toUpperCase(),
               "Monto Facturado ($ USD)": `$${parseFloat(o.store_total_usd || 0).toFixed(2)}`,
-              "Estado Pago": o.payment_status?.toUpperCase()
+              "Estado Pago": o.payment_status?.toUpperCase(),
+              // El listado incluye intentos rechazados y pedidos cancelados: se marca cuáles suman al GMV.
+              "Estado Pedido": o.order_status?.toUpperCase(),
+              "Cuenta como venta": o.counts_as_sale ? "Sí" : "No",
+              "Monto vendido ($ USD)": `$${parseFloat(o.sale_total_usd || 0).toFixed(2)}`
             }));
           })
           .catch(() => []);
@@ -184,7 +202,13 @@ export default function AdminSalesAnalyticsDetail() {
       const categoryProductsPromises = salesByCategory.map((cat) => {
         const catName = cat.category_name;
         if (!catName) return Promise.resolve([]);
-        return getCategoryProductsDetailAPI({ category_name: catName, period, from: fromDate, to: toDate })
+        return getCategoryProductsDetailAPI({
+          category_name: catName,
+          period,
+          from: appliedFrom || undefined,
+          to: appliedTo || undefined,
+          ...(selectedStoreIds.length ? { store_ids: selectedStoreIds.join(",") } : {})
+        })
           .then((res) => {
             const products = res.data?.data?.products || [];
             const catTotalRev = parseFloat(res.data?.data?.totalRevenueUsd || 0);
@@ -424,7 +448,7 @@ export default function AdminSalesAnalyticsDetail() {
 
           {period === "custom" && (
             <span className="text-[11px] font-semibold text-fx-accent bg-fx-accent/10 px-2.5 py-1 rounded-md">
-              {fromDate || "Inicio"} → {toDate || "Hoy"}
+              {appliedFrom || "Inicio"} → {appliedTo || "Hoy"}
             </span>
           )}
         </div>
@@ -745,7 +769,7 @@ export default function AdminSalesAnalyticsDetail() {
                     <span className="text-xs text-fx-muted block">{r.category_name || "Insumos"}</span>
                     <span className="inline-flex items-center gap-1 text-fx-warn font-semibold text-[11px] fx-num">
                       <Star className="w-3 h-3 fill-current" aria-hidden="true" />
-                      {parseFloat(r.rating || 0).toFixed(1)}
+                      {r.rating != null ? parseFloat(r.rating).toFixed(1) : "N/A"}
                     </span>
                   </div>
                 )
@@ -794,8 +818,8 @@ export default function AdminSalesAnalyticsDetail() {
         onClose={() => setIsStoreModalOpen(false)}
         storeId={selectedStoreForModal}
         period={period}
-        fromDate={fromDate}
-        toDate={toDate}
+        fromDate={appliedFrom}
+        toDate={appliedTo}
       />
 
       {/* Modal Interactivo de Desglose de Ventas por Producto */}
@@ -804,8 +828,8 @@ export default function AdminSalesAnalyticsDetail() {
         onClose={() => setIsProductModalOpen(false)}
         productId={selectedProductForModal}
         period={period}
-        fromDate={fromDate}
-        toDate={toDate}
+        fromDate={appliedFrom}
+        toDate={appliedTo}
       />
 
       {/* Modal Interactivo de Desglose de Productos por Categoría */}
@@ -814,8 +838,9 @@ export default function AdminSalesAnalyticsDetail() {
         onClose={() => setIsCategoryModalOpen(false)}
         categoryName={selectedCategoryForModal}
         period={period}
-        fromDate={fromDate}
-        toDate={toDate}
+        fromDate={appliedFrom}
+        toDate={appliedTo}
+        storeIds={selectedStoreIds}
         onSelectProduct={handleOpenProductSalesModal}
       />
     </div>

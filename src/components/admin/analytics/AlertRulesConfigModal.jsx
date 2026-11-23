@@ -4,6 +4,9 @@ import { getAlertRulesAPI, updateAlertRuleAPI } from "../../../services/api";
 import toast from "react-hot-toast";
 import ModalOverlay from "./ModalOverlay";
 
+// Unidad de cada umbral: no todos son porcentajes (la retención en escrow se mide en días).
+const unidadDe = (ruleKey) => (ruleKey === "escrow_max_days" ? "días" : "%");
+
 export default function AlertRulesConfigModal({ isOpen, onClose }) {
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -128,7 +131,7 @@ export default function AlertRulesConfigModal({ isOpen, onClose }) {
                     </span>
                   </div>
                   <p className="text-fx-muted text-xs">
-                    El sistema disparará un banner preventivo si esta métrica supera el {rule.threshold_value}%
+                    El Resumen ejecutivo mostrará un aviso si esta métrica supera {rule.threshold_value} {unidadDe(rule.rule_key)}
                   </p>
                 </div>
 
@@ -140,7 +143,7 @@ export default function AlertRulesConfigModal({ isOpen, onClose }) {
                       onChange={(e) => handleThresholdChange(rule.rule_key, e.target.value)}
                       className="w-16 bg-transparent text-center font-bold text-fx-accent text-sm outline-none"
                     />
-                    <span className="text-fx-muted text-xs font-bold">%</span>
+                    <span className="text-fx-muted text-xs font-bold">{unidadDe(rule.rule_key)}</span>
                     <button
                       onClick={() => handleSaveThreshold(rule.rule_key)}
                       disabled={savingRuleKey === rule.rule_key}

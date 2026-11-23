@@ -19,6 +19,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 export default function ExecutiveOverviewTab({ onNavigateTab }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [storeList, setStoreList] = useState([]);
   const [isGmvModalOpen, setIsGmvModalOpen] = useState(false);
 
@@ -38,6 +39,7 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
 
   const fetchExecutiveData = useCallback(async (isRefresh = false) => {
     setLoading(true);
+    setError(null);
     try {
       const params = { period };
       if (selectedStoreIds.length > 0) params.store_ids = selectedStoreIds.join(",");
@@ -49,7 +51,10 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
         setData(res.data.data);
       }
     } catch (err) {
+      // Antes el error solo iba a la consola y la pestaña pintaba todo en $0.00 / 0, como si
+      // de verdad no hubiera ventas.
       console.error("Error cargando Executive Overview:", err);
+      setError(err.response?.data?.error || err.message || "Error obteniendo el resumen ejecutivo.");
     } finally {
       setLoading(false);
     }
@@ -61,9 +66,26 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
 
   if (loading && !data) return <SkeletonLoader type="kpiRow" />;
 
+  if (error) {
+    return (
+      <div className="fx-card-danger text-center my-6">
+        <h3 className="text-lg font-bold text-fx-text mb-1">Error al cargar el Resumen ejecutivo</h3>
+        <p className="text-fx-muted text-xs mb-4">{error}</p>
+        <button
+          onClick={() => fetchExecutiveData(true)}
+          className="px-4 py-2 bg-[#6b1e96] hover:bg-[#531575] text-white rounded-xl text-xs font-bold transition-all shadow-lg"
+        >
+          Reintentar
+        </button>
+      </div>
+    );
+  }
+
   const kpis = data?.kpis || {};
   const backlog = data?.backlog || {};
-  const alerts = data?.activeAlertRules || [];
+  // Solo las reglas que de verdad superan su umbral en el período (las evalúa el backend);
+  // antes se listaban todas las reglas activas como «anomalías detectadas».
+  const alerts = data?.triggeredAlerts || [];
   const feed = data?.recentActivityFeed || [];
   const revenueChart = data?.revenueChart || [];
   const topStores = data?.topStores || [];
@@ -83,7 +105,7 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
             onStoreChange={setSelectedStoreIds}
           />
           <CompareToggle isComparing={isComparing} onToggle={setIsComparing} />
-          <AnalyticsExportButton activeArea="executive" period={period} />
+          <AnalyticsExportButton activeArea="executive" period={period} data={data} />
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -153,7 +175,7 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
           value={kpis.marketLiquidityRatio || 0}
           format="number"
           suffix=" comp/tienda"
-          tooltip="Mapeado en M06: Promedio de compradores activos por cada tienda registrada."
+          tooltip="Mapeado en M06: compradores con al menos una compra en el período por cada tienda que vendió en el período."
           onDrilldown={() => onNavigateTab && onNavigateTab("sales")}
         />
 
@@ -169,7 +191,7 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
           title="Riesgo Concentración Top 10"
           value={kpis.top10RiskConcentrationPct || 0}
           format="percent"
-          tooltip="Mapeado en M08: Haz clic para analizar riesgo de concentración en Growth."
+          tooltip={`Mapeado en M08: parte del GMV que se llevan las 10 tiendas que más venden. ${kpis.storesWithSales != null && kpis.storesWithSales <= 10 ? `Con ${kpis.storesWithSales} tienda(s) vendiendo es 100% por construcción. ` : ""}Haz clic para analizar riesgo de concentración en Growth.`}
           onDrilldown={() => onNavigateTab && onNavigateTab("growth")}
         />
       </div>
@@ -275,7 +297,7 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
                     drilldown.open("order_items", {
                       title: `Ventas de "${r.name}"`,
                       subtitle: "Ítems vendidos por esta tienda en el período",
-                      filters: { store_id: r.id, not_cancelled: true }
+                      filters: { store_id: r.id, sold: true }
                     })
                   }
                   className="font-bold text-fx-accent hover:underline text-left"
@@ -301,7 +323,7 @@ export default function ExecutiveOverviewTab({ onNavigateTab }) {
                     drilldown.open("order_items", {
                       title: `Ventas de "${r.name}"`,
                       subtitle: "Cada línea de pedido que compone este total",
-                      filters: { product_id: r.id, not_cancelled: true }
+                      filters: { product_id: r.id, sold: true }
                     })
                   }
                   className="font-semibold text-fx-accent hover:underline text-left"

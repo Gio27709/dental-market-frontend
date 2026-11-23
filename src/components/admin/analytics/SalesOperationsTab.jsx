@@ -6,7 +6,6 @@ import DataTable from "./DataTable";
 import SkeletonLoader from "./SkeletonLoader";
 import FreshnessBadge from "./FreshnessBadge";
 import DateRangePicker from "./DateRangePicker";
-import CompareToggle from "./CompareToggle";
 import AnalyticsStoreFilter from "./AnalyticsStoreFilter";
 import AnalyticsExportButton from "./AnalyticsExportButton";
 import StoreActivationFunnel from "./StoreActivationFunnel";
@@ -15,6 +14,8 @@ import useDrilldown from "../../../hooks/useDrilldown";
 import DrilldownModal from "./DrilldownModal";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, LineChart, Line } from "recharts";
 
+const PERIOD_LABELS = { "7d": "7D", "15d": "15D", "30d": "30D", "90d": "90D", "365d": "1 año" };
+
 export default function SalesOperationsTab() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +23,6 @@ export default function SalesOperationsTab() {
   const [storeList, setStoreList] = useState([]);
 
   const [period, setPeriod] = useState("30d");
-  const [isComparing, setIsComparing] = useState(false);
   const [selectedStoreIds, setSelectedStoreIds] = useState([]);
   const [chartMode, setChartMode] = useState("area");
   const drilldown = useDrilldown();
@@ -50,7 +50,7 @@ export default function SalesOperationsTab() {
       }
     } catch (err) {
       console.error("Error cargando analíticas de ventas:", err);
-      setError(err.response?.data?.message || err.message || "Error obteniendo datos de ventas.");
+      setError(err.response?.data?.error || err.response?.data?.message || err.message || "Error obteniendo datos de ventas.");
     } finally {
       setLoading(false);
     }
@@ -102,8 +102,7 @@ export default function SalesOperationsTab() {
             selectedStoreIds={selectedStoreIds}
             onStoreChange={setSelectedStoreIds}
           />
-          <CompareToggle isComparing={isComparing} onToggle={setIsComparing} />
-          <AnalyticsExportButton activeArea="sales" period={period} />
+          <AnalyticsExportButton activeArea="sales" period={period} data={data} />
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -119,11 +118,12 @@ export default function SalesOperationsTab() {
       {/* Grid de 4 Tarjetas KPI de Estado Operativo */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
         <KpiCard
-          title="Tiendas Dormidas (30D)"
+          // El backend mide el período elegido, no 30 días fijos: el rótulo lo dice.
+          title={`Tiendas Dormidas (${PERIOD_LABELS[period] || period})`}
           value={dormantCount}
           format="number"
           suffix=" tiendas"
-          tooltip="Mapeado en M24: Cantidad de comercios aprobados que no han registrado ninguna venta en los últimos 30 días."
+          tooltip="Mapeado en M24: Cantidad de comercios aprobados que no han registrado ninguna venta pagada en el período elegido."
           drilldownUrl="/admin/store-applications"
         />
         <KpiCard
@@ -136,10 +136,11 @@ export default function SalesOperationsTab() {
         />
         <KpiCard
           title="Tiempo Prom. Aprobación"
-          value={parseFloat(moderation.avg_approval_hours || 0)}
+          // null = ningún producto tiene la moderación sellada (moderated_at): «—», no 0 h.
+          value={moderation.avg_approval_hours != null ? parseFloat(moderation.avg_approval_hours) : null}
           format="number"
-          suffix=" hrs"
-          tooltip="Mapeado en M25: Tiempo medio en horas que tarda el equipo en moderar un producto nuevo."
+          suffix={moderation.avg_approval_hours != null ? " hrs" : ""}
+          tooltip={`Mapeado en M25: Tiempo medio en horas desde que se crea un producto hasta que un admin lo modera (${parseInt(moderation.approved_measured || 0, 10)} producto(s) con la moderación registrada).`}
           drilldownUrl="/admin/product-moderation"
         />
         <KpiCard
@@ -147,7 +148,7 @@ export default function SalesOperationsTab() {
           value={deadStockCount}
           format="number"
           suffix=" prod."
-          tooltip="Mapeado en M27: Productos sin ningún movimiento de inventario o venta en más de 60 días."
+          tooltip="Mapeado en M27: Productos sin ningún movimiento de inventario (ventas incluidas) en los últimos 60 días, sea cual sea el período elegido."
           drilldownUrl="/admin/product-moderation"
         />
       </div>
@@ -207,8 +208,8 @@ export default function SalesOperationsTab() {
                 onClick={() =>
                   drilldown.open("order_items", {
                     title: `Ventas de "${r.business_name}"`,
-                    subtitle: "Ítems de pedido de esta tienda en el período",
-                    filters: { store_id: r.store_id }
+                    subtitle: "Ítems vendidos (pagados y sin cancelar) de esta tienda en el período",
+                    filters: { store_id: r.store_id, sold: true }
                   })
                 }
                 className="font-bold text-fx-accent hover:underline text-left"
@@ -248,7 +249,7 @@ export default function SalesOperationsTab() {
           columns={[
             { header: "Categoría", accessor: "category_name", render: (r) => <span className="font-bold text-fx-text">{r.category_name}</span> },
             { header: "Unidades Vendidas", accessor: "units_sold", render: (r) => parseInt(r.units_sold || 0).toLocaleString() },
-            { header: "Índice Rotación", accessor: "rotation_rate", render: (r) => <span className="text-fx-accent font-bold">{parseFloat(r.rotation_rate || 0).toFixed(2)}x</span> },
+            { header: "Índice Rotación", accessor: "rotation_rate", render: (r) => <span className="text-fx-accent font-bold">{r.rotation_rate != null ? `${parseFloat(r.rotation_rate).toFixed(2)}x` : "— sin stock"}</span> },
           ]}
           data={inventoryRotation}
         />
@@ -268,7 +269,7 @@ export default function SalesOperationsTab() {
                     drilldown.open("order_items", {
                       title: `Ventas de "${r.name}"`,
                       subtitle: "Cada línea de pedido que compone este total",
-                      filters: { product_id: r.id }
+                      filters: { product_id: r.id, sold: true }
                     })
                   }
                   className="font-bold text-fx-accent hover:underline text-left"

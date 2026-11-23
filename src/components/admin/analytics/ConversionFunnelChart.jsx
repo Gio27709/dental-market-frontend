@@ -11,7 +11,7 @@ export default function ConversionFunnelChart({ steps = [] }) {
   return (
     <div className="fx-card">
       <h3 className="text-base font-bold text-fx-text mb-1">Embudo de Conversión</h3>
-      <p className="text-xs text-fx-muted mb-6">Sesiones que alcanzaron cada etapa del recorrido de compra</p>
+      <p className="text-xs text-fx-muted mb-6">Sesiones que llegaron al menos hasta cada etapa del recorrido de compra</p>
 
       <div className="space-y-3">
         {steps.map((step, index) => {
@@ -19,6 +19,11 @@ export default function ConversionFunnelChart({ steps = [] }) {
           const widthPct = top > 0 ? (sessions / top) * 100 : 0;
           const prev = index > 0 ? Number(steps[index - 1].sessions) || 0 : null;
           const dropped = prev !== null ? prev - sessions : 0;
+          // Sesiones que llegaron más lejos sin disparar este paso (p. ej. agregar al carrito
+          // desde la tarjeta sin abrir la ficha). El backend las cuenta en el paso para que el
+          // embudo no se invierta; aquí se declaran.
+          const direct = step.direct_sessions === undefined ? null : Number(step.direct_sessions) || 0;
+          const skipped = direct !== null ? sessions - direct : 0;
 
           return (
             <div key={step.step_key}>
@@ -40,6 +45,12 @@ export default function ConversionFunnelChart({ steps = [] }) {
                 />
               </div>
 
+              {skipped > 0 && (
+                <p className="text-[10px] text-fx-muted mt-1 ml-1">
+                  {skipped.toLocaleString()} de estas sesiones saltaron este paso y siguieron avanzando
+                </p>
+              )}
+
               {dropped > 0 && (
                 <p className="text-[10px] text-fx-neg/90 mt-1 ml-1">
                   ↓ {dropped.toLocaleString()} sesiones se perdieron aquí
@@ -60,6 +71,7 @@ ConversionFunnelChart.propTypes = {
       step_key: PropTypes.string,
       step_label: PropTypes.string,
       sessions: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+      direct_sessions: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
       pct_of_top: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
       pct_of_previous: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     })

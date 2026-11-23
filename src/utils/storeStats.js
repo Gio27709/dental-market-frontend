@@ -246,6 +246,8 @@ const median = (nums) => {
 export function computeTotals(stores) {
   const gmv = stores.reduce((a, s) => a + s.gmv, 0);
   const orders = stores.reduce((a, s) => a + s.orders, 0);
+  // Ticket = GMV entre pedidos con algo vendido (los cancelados enteros no aportan GMV).
+  const soldOrders = stores.reduce((a, s) => a + (s.soldOrders ?? s.orders), 0);
   const cancelled = stores.reduce((a, s) => a + s.cancelledOrders, 0);
   const rated = stores.filter((s) => s.ratingAvg !== null);
   const slaOk = stores.filter((s) => s.slaPct !== null);
@@ -257,7 +259,7 @@ export function computeTotals(stores) {
     orders,
     cancelledOrders: cancelled,
     cancelRatePct: orders ? (cancelled / orders) * 100 : null,
-    avgTicket: orders ? gmv / orders : null,
+    avgTicket: soldOrders ? gmv / soldOrders : null,
     medianInactiveDays: median(stores.filter((s) => s.activity.days !== null).map((s) => s.activity.days)),
     avgMinutes: withActivity.length
       ? withActivity.reduce((a, s) => a + s.avgMinutesPerActiveDay, 0) / withActivity.length

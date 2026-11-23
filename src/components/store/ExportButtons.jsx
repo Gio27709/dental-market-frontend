@@ -8,7 +8,9 @@ function exportToCSV(analytics, period) {
   if (!analytics) return;
 
   const rows = [];
-  const dateLabel = analytics.period === "custom" ? "Rango personalizado" : period;
+  const dateLabel = analytics.period === "custom"
+    ? `Rango personalizado (${analytics.dateRange?.from?.slice(0, 10) || "?"} a ${analytics.dateRange?.to?.slice(0, 10) || "?"})`
+    : (analytics.period || period);
 
   // Header section
   rows.push(["Reporte de Estadísticas - Forcepx"]);
@@ -34,10 +36,13 @@ function exportToCSV(analytics, period) {
   rows.push([]);
 
   // Top Products
-  if (analytics.topProducts?.length > 0) {
-    rows.push(["--- Top Productos ---"]);
+  // topProducts es un objeto { byRevenue, byUnits, byRating }, no un arreglo: con
+  // `topProducts.length` esta sección nunca salía en el CSV.
+  const topByRevenue = analytics.topProducts?.byRevenue || [];
+  if (topByRevenue.length > 0) {
+    rows.push(["--- Top Productos (por ventas) ---"]);
     rows.push(["#", "Producto", "Revenue (USD)", "Unidades", "Órdenes", "Rating"]);
-    analytics.topProducts.forEach((p, i) => {
+    topByRevenue.forEach((p, i) => {
       rows.push([i + 1, `"${p.name}"`, p.revenue, p.units, p.orders, p.rating || "—"]);
     });
     rows.push([]);
@@ -65,7 +70,7 @@ function exportToCSV(analytics, period) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `reporte-tienda-${period}-${new Date().toISOString().split("T")[0]}.csv`;
+  link.download = `reporte-tienda-${analytics.period || period}-${new Date().toISOString().split("T")[0]}.csv`;
   link.click();
   URL.revokeObjectURL(url);
   toast.success("Reporte CSV descargado");

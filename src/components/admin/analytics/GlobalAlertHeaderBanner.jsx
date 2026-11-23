@@ -2,10 +2,42 @@ import { useState } from "react";
 import PropTypes from "prop-types";
 import AlertRulesConfigModal from "./AlertRulesConfigModal";
 
+const fmt = (v) => Number(v).toLocaleString("es-VE", { maximumFractionDigits: 2 });
+
+/**
+ * Banner de alertas del Resumen ejecutivo.
+ *
+ * Recibe SOLO las reglas que el backend ya midió y que superan su umbral en el período
+ * (`triggeredAlerts`). Antes recibía todas las reglas activas y las anunciaba como
+ * «anomalías detectadas» sin haber medido nada, así que siempre había 5 alertas.
+ */
 export default function GlobalAlertHeaderBanner({ alerts = [] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  if (!alerts || alerts.length === 0) return null;
+  const modal = (
+    <AlertRulesConfigModal
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+    />
+  );
+
+  if (!alerts || alerts.length === 0) {
+    // Sin alertas que mostrar, pero la configuración de umbrales sigue a mano.
+    return (
+      <>
+        <div className="flex items-center justify-end gap-2 text-[11px] text-fx-faint -mb-2">
+          <span>Ninguna regla de alerta supera su umbral en este período.</span>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="font-semibold text-fx-muted hover:text-fx-accent transition-colors"
+          >
+            Configurar alertas
+          </button>
+        </div>
+        {modal}
+      </>
+    );
+  }
 
   return (
     <>
@@ -24,7 +56,7 @@ export default function GlobalAlertHeaderBanner({ alerts = [] }) {
               Alertas de Anomalías Detectadas ({alerts.length})
             </h4>
             <p className="text-[11px] text-fx-muted">
-              Se han detectado variaciones o umbrales críticos en la plataforma.
+              Métricas del período que superan el umbral configurado.
             </p>
           </div>
         </div>
@@ -34,8 +66,13 @@ export default function GlobalAlertHeaderBanner({ alerts = [] }) {
             <span
               key={rule.rule_key || idx}
               className="text-[11px] font-bold bg-fx-warn/20 text-fx-warn border border-fx-warn/40 rounded-lg px-2.5 py-1"
+              title={`Umbral: ${fmt(rule.threshold_value)} ${rule.unit || ""}`}
             >
-              {rule.rule_name}: <span className="font-semibold text-fx-text">{rule.threshold_value}%</span>
+              {rule.rule_name}:{" "}
+              <span className="font-semibold text-fx-text">
+                {fmt(rule.value)} {rule.unit}
+              </span>{" "}
+              <span className="font-normal text-fx-muted">(umbral {fmt(rule.threshold_value)})</span>
             </span>
           ))}
 
@@ -49,10 +86,7 @@ export default function GlobalAlertHeaderBanner({ alerts = [] }) {
         </div>
       </div>
 
-      <AlertRulesConfigModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+      {modal}
     </>
   );
 }
@@ -62,7 +96,9 @@ GlobalAlertHeaderBanner.propTypes = {
     PropTypes.shape({
       rule_key: PropTypes.string,
       rule_name: PropTypes.string,
-      threshold_value: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+      threshold_value: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+      value: PropTypes.number,
+      unit: PropTypes.string
     })
   )
 };

@@ -14,6 +14,9 @@ import ReputationWidget from "../../components/store/ReputationWidget";
 import RecentOrdersTable from "../../components/store/RecentOrdersTable";
 import ExportButtons from "../../components/store/ExportButtons";
 
+// Una variación null significa «sin período anterior con qué comparar»: no se pinta flecha.
+const hasTrend = (t) => t !== null && t !== undefined && t !== 0;
+
 export default function StoreDashboard() {
   const { user } = useAuth();
   const { storeProfile, updateProfile } = useStore();
@@ -379,7 +382,7 @@ export default function StoreDashboard() {
               <span className="text-[10px] font-bold text-[#059669] uppercase tracking-wider block mb-1">Utilidad Neta Real</span>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-black text-[#059669]">${(analytics.kpis.netProfit || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                {analytics.trends.netProfit !== 0 && (
+                {hasTrend(analytics.trends.netProfit) && (
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     analytics.trends.netProfit > 0 ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"
                   }`}>
@@ -435,7 +438,7 @@ export default function StoreDashboard() {
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Ahorro Otorgado</span>
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-extrabold text-gray-800">${(analytics.discounts.totalSavings || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    {analytics.discounts.trends?.savings !== 0 && (
+                    {hasTrend(analytics.discounts.trends?.savings) && (
                       <span className={`text-[10px] font-bold ${analytics.discounts.trends?.savings > 0 ? "text-emerald-600" : "text-red-500"}`}>
                         {analytics.discounts.trends?.savings > 0 ? "▲" : "▼"} {Math.abs(analytics.discounts.trends?.savings)}%
                       </span>
@@ -451,7 +454,7 @@ export default function StoreDashboard() {
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Ventas con Descuento</span>
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-extrabold text-gray-800">${(analytics.discounts.totalDiscountedRevenue || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    {analytics.discounts.trends?.revenue !== 0 && (
+                    {hasTrend(analytics.discounts.trends?.revenue) && (
                       <span className={`text-[10px] font-bold ${analytics.discounts.trends?.revenue > 0 ? "text-emerald-600" : "text-red-500"}`}>
                         {analytics.discounts.trends?.revenue > 0 ? "▲" : "▼"} {Math.abs(analytics.discounts.trends?.revenue)}%
                       </span>
@@ -467,7 +470,7 @@ export default function StoreDashboard() {
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Órdenes Afectadas</span>
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-extrabold text-gray-800">{analytics.discounts.discountedOrdersCount || 0}</span>
-                    {analytics.discounts.trends?.orders !== 0 && (
+                    {hasTrend(analytics.discounts.trends?.orders) && (
                       <span className={`text-[10px] font-bold ${analytics.discounts.trends?.orders > 0 ? "text-emerald-600" : "text-red-500"}`}>
                         {analytics.discounts.trends?.orders > 0 ? "▲" : "▼"} {Math.abs(analytics.discounts.trends?.orders)}%
                       </span>

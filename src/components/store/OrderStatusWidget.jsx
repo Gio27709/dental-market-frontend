@@ -2,8 +2,8 @@ import PropTypes from "prop-types";
 
 const STATUS_CONFIG = {
   pending: { label: "Pendiente", color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
-  processing: { label: "Procesando", color: "#6b1e96", bg: "rgba(107,30,150,0.08)" },
-  shipped: { label: "Enviado", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
+  shipped: { label: "Enviado / en ruta", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
+  failed: { label: "Entrega fallida", color: "#6b1e96", bg: "rgba(107,30,150,0.08)" },
   delivered: { label: "Entregado", color: "#10b981", bg: "rgba(16,185,129,0.1)" },
   cancelled: { label: "Cancelado", color: "#ef4444", bg: "rgba(239,68,68,0.08)" },
 };
@@ -41,7 +41,7 @@ export default function OrderStatusWidget({ statusCounts = {}, loading = false }
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-blue-400">
             <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
           </svg>
-          <h3 className="text-sm font-bold text-gray-700">Pedidos por Estado</h3>
+          <h3 className="text-sm font-bold text-gray-700">Pedidos por Estado <span className="font-normal text-gray-400">(por artículo)</span></h3>
         </div>
         <span className="text-xs font-bold text-gray-400">{total} total</span>
       </div>

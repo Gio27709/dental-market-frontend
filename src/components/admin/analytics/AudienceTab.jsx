@@ -42,6 +42,21 @@ export default function AudienceTab() {
   if (error) return <AnalyticsErrorPanel title="Error al Cargar Audiencia & Tráfico" message={error} onRetry={() => reload(true)} />;
 
   const hasTraffic = kpis.totalSessions > 0;
+  const excluded = data?.excludedTraffic || {};
+  const excludedTotal =
+    (excluded.botSessions || 0) + (excluded.suspectSessions || 0) + (excluded.internalSessions || 0);
+  // Las cifras de la pestaña son de tráfico humano y externo: el detalle de sesiones se abre
+  // sin robots ni sospechosas (filtro is_human). El detalle todavía no puede separar los
+  // dispositivos del equipo interno, así que se avisa en el subtítulo.
+  const internalNote = excluded.internalSessions
+    ? "Incluye sesiones del equipo interno, que las cifras de arriba no cuentan"
+    : undefined;
+  const openSessions = (title, filters = {}, subtitle) =>
+    drilldown.open("analytics_sessions", {
+      title,
+      subtitle: [subtitle, internalNote].filter(Boolean).join(" · ") || undefined,
+      filters: { is_human: true, ...filters },
+    });
 
   return (
     <div className="space-y-6">
@@ -57,18 +72,26 @@ export default function AudienceTab() {
         </div>
       </div>
 
+      {excludedTotal > 0 && (
+        <p className="text-[11px] text-fx-muted fx-card-sm">
+          Cifras de visitantes reales. Se excluyeron {excluded.botSessions || 0} sesiones de robots
+          (buscadores, vistas previas de enlaces de WhatsApp/Facebook, navegadores automatizados)
+          {excluded.suspectSessions ? `, ${excluded.suspectSessions} sospechosas (sin navegador ni sistema reconocibles)` : ""}
+          {excluded.internalSessions
+            ? ` y ${excluded.internalSessions} del equipo interno (navegadores donde alguna vez entró un owner o admin)`
+            : ""}.
+        </p>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
         <KpiCard
           title="Visitantes Únicos"
           value={kpis.uniqueVisitors || 0}
           format="number"
-          suffix=" personas"
-          tooltip="Dispositivos distintos que visitaron la plataforma en el período, identificados de forma anónima."
+          suffix=" dispositivos"
+          tooltip="Navegadores distintos que visitaron la plataforma en el período, identificados de forma anónima. Una persona que entra desde el teléfono y desde la computadora cuenta dos veces."
           onDrilldown={() =>
-            drilldown.open("analytics_sessions", {
-              title: "Sesiones del período",
-              subtitle: "Un mismo visitante puede abrir varias sesiones"
-            })
+            openSessions("Sesiones del período", {}, "Un mismo visitante puede abrir varias sesiones")
           }
         />
         <KpiCard
@@ -76,10 +99,8 @@ export default function AudienceTab() {
           value={kpis.totalSessions || 0}
           format="number"
           suffix=" sesiones"
-          tooltip="Una sesión agrupa toda la actividad de una visita. Se cierra tras 30 minutos de inactividad."
-          onDrilldown={() =>
-            drilldown.open("analytics_sessions", { title: "Sesiones del período" })
-          }
+          tooltip="Una sesión agrupa la actividad de una visita en una pestaña. Tras 30 minutos sin actividad, la siguiente visita cuenta como sesión nueva."
+          onDrilldown={() => openSessions("Sesiones del período")}
         />
         <KpiCard
           title="Páginas Vistas"
@@ -99,75 +120,63 @@ export default function AudienceTab() {
           format="number"
           suffix=" con sesión"
           tooltip="Visitantes que navegaron con la sesión iniciada. El resto navegó de forma anónima."
-          onDrilldown={() =>
-            drilldown.open("analytics_sessions", {
-              title: "Sesiones con usuario identificado",
-              filters: { has_user: true }
-            })
-          }
+          onDrilldown={() => openSessions("Sesiones con usuario identificado", { has_user: true })}
         />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
         <KpiCard
-          title="Usuarios Activos Diarios"
+          title="Activos Diarios"
           value={kpis.dau || 0}
           format="number"
           suffix=" DAU"
-          tooltip="Usuarios registrados con actividad en las últimas 24 horas."
+          tooltip="Personas con actividad en las últimas 24 horas (ventana fija, no depende del período). Cuenta visitantes anónimos y registrados; si un visitante anónimo inició sesión alguna vez, se cuenta como ese usuario."
         />
         <KpiCard
-          title="Usuarios Activos Mensuales"
+          title="Activos Mensuales"
           value={kpis.mau || 0}
           format="number"
           suffix=" MAU"
-          tooltip="Usuarios registrados con actividad en los últimos 30 días."
+          tooltip="Personas con actividad en los últimos 30 días (ventana fija, no depende del período). Incluye visitantes anónimos; los robots quedan fuera."
         />
         <KpiCard
           title="Adherencia (DAU/MAU)"
-          value={kpis.stickinessPct || 0}
+          value={kpis.stickinessPct}
           format="percent"
-          tooltip="Qué proporción de los usuarios del mes entra cada día. Por encima de 20% indica un hábito de uso sólido."
+          tooltip="Qué proporción de las personas activas del mes entró en las últimas 24 horas. Por encima de 20% indica un hábito de uso sólido."
         />
         <KpiCard
           title="Tasa de Rebote"
-          value={kpis.bounceRatePct || 0}
+          value={kpis.bounceRatePct}
           format="percent"
           tooltip="Sesiones que vieron una sola página y se fueron. Cuanto más baja, mejor engancha la portada."
-          onDrilldown={() =>
-            drilldown.open("analytics_sessions", {
-              title: "Sesiones que rebotaron",
-              filters: { is_bounce: true }
-            })
-          }
+          onDrilldown={() => openSessions("Sesiones que rebotaron", { is_bounce: true })}
         />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
         <KpiCard
-          title="Duración Media de Sesión"
-          value={kpis.avgSessionSeconds || 0}
+          title="Duración Típica de Sesión"
+          value={kpis.medianSessionSeconds}
           format="number"
-          suffix=" segundos"
-          tooltip="Tiempo promedio entre el primer y el último evento de cada sesión."
+          suffix={
+            kpis.avgSessionSeconds !== null && kpis.avgSessionSeconds !== undefined
+              ? ` s (mediana) · media ${Math.round(kpis.avgSessionSeconds).toLocaleString("es-VE")} s`
+              : " s (mediana)"
+          }
+          tooltip={`Mediana del tiempo entre el primer y el último evento de cada sesión, sobre ${kpis.totalSessions || 0} sesiones. Se muestra la mediana porque unas pocas pestañas olvidadas abiertas durante horas disparan el promedio; las sesiones de una sola página cuentan 0 s.`}
           onDrilldown={() =>
-            drilldown.open("analytics_sessions", {
-              title: "Sesiones y su duración",
-              subtitle: "La duración de cada sesión aparece en su columna"
-            })
+            openSessions("Sesiones y su duración", {}, "La duración de cada sesión aparece en su columna")
           }
         />
         <KpiCard
           title="Páginas por Sesión"
-          value={kpis.pagesPerSession || 0}
+          value={kpis.pagesPerSession}
           format="number"
           suffix=" págs."
           tooltip="Profundidad media de navegación por visita."
           onDrilldown={() =>
-            drilldown.open("analytics_sessions", {
-              title: "Sesiones y sus páginas vistas",
-              subtitle: "Las páginas vistas de cada sesión aparecen en su columna"
-            })
+            openSessions("Sesiones y sus páginas vistas", {}, "Las páginas vistas de cada sesión aparecen en su columna")
           }
         />
       </div>
@@ -303,7 +312,7 @@ export default function AudienceTab() {
                         onClick={() =>
                           drilldown.open("analytics_sessions", {
                             title: `Sesiones llegadas desde "${r.source}"`,
-                            filters: { referrer_host: r.source }
+                            filters: { is_human: true, referrer_host: r.source }
                           })
                         }
                         className="font-bold text-fx-accent hover:underline text-left"
@@ -331,7 +340,7 @@ export default function AudienceTab() {
                       onClick={() =>
                         drilldown.open("analytics_sessions", {
                           title: `Sesiones de la fuente UTM "${r.utm_source}"`,
-                          filters: { utm_source: r.utm_source }
+                          filters: { is_human: true, utm_source: r.utm_source }
                         })
                       }
                       className="font-bold text-fx-accent hover:underline text-left"
@@ -369,7 +378,7 @@ export default function AudienceTab() {
                     onClick={() =>
                       drilldown.open("analytics_sessions", {
                         title: `Sesiones con ${r.browser}`,
-                        filters: { browser: r.browser }
+                        filters: { is_human: true, browser: r.browser }
                       })
                     }
                     className="font-bold text-fx-accent hover:underline text-left"

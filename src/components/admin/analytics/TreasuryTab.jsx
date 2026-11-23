@@ -26,7 +26,9 @@ const TYPE_LABELS = {
   sale: "Venta acreditada",
   payout: "Retiro",
   refund: "Reembolso",
-  fine_deduction: "Multa descontada"
+  fine_deduction: "Multa descontada",
+  // Abonos manuales del admin (p. ej. la apertura que liquidó el legado pre-escrow).
+  credit: "Abono / ajuste"
 };
 
 // Verde entra, rojo sale, ámbar son ajustes punitivos.
@@ -34,7 +36,8 @@ const TYPE_COLORS = {
   sale: "#6b1e96",
   refund: "#3f7794",
   payout: "#b8482f",
-  fine_deduction: "#9a6a10"
+  fine_deduction: "#9a6a10",
+  credit: "#2f7d5b"
 };
 
 // La tasa se juzga por antigüedad, no por su valor: una tasa vieja es un error que
@@ -219,7 +222,7 @@ export default function TreasuryTab() {
           suffix={` en ${kpis.completedPayoutRequests || 0} solicitudes`}
           tooltip="Suma de los retiros completados históricamente."
           onDrilldown={() =>
-            drilldown.open("payout_requests", { title: "Todas las solicitudes de retiro", filters: { allTime: true } })
+            drilldown.open("payout_requests", { title: "Retiros ya pagados", filters: { status: "completed", allTime: true } })
           }
         />
         <KpiCard

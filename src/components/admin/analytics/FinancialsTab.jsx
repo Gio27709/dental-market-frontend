@@ -53,7 +53,7 @@ export default function FinancialsTab() {
       }
     } catch (err) {
       console.error("Error cargando analíticas financieras:", err);
-      setError(err.response?.data?.message || err.message || "Error obteniendo datos financieros.");
+      setError(err.response?.data?.error || err.response?.data?.message || err.message || "Error obteniendo datos financieros.");
     } finally {
       setLoading(false);
     }
@@ -101,7 +101,7 @@ export default function FinancialsTab() {
             selectedStoreIds={selectedStoreIds}
             onStoreChange={setSelectedStoreIds}
           />
-          <AnalyticsExportButton activeArea="financials" period={period} />
+          <AnalyticsExportButton activeArea="financials" period={period} data={data} />
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -145,9 +145,10 @@ export default function FinancialsTab() {
         />
         <KpiCard
           title="Tiempo Prom. Procesamiento"
-          value={payouts.avgProcessingTimeHours || 0}
+          // null = ningún retiro liquidado en el período: se pinta «—», no «0 hrs».
+          value={payouts.avgProcessingTimeHours ?? null}
           format="number"
-          suffix=" hrs"
+          suffix={payouts.avgProcessingTimeHours != null ? " hrs" : ""}
           tooltip="Mapeado en M16: Horas promedio transcurridas desde la solicitud hasta el pago del retiro."
           drilldownUrl="/admin/payouts"
         />
@@ -327,6 +328,7 @@ export default function FinancialsTab() {
         title="Tendencia de Take Rate Neto Semanal (%)"
         subtitle="Comportamiento porcentual del margen de comisión retenido por Forcepx"
         onTypeChange={setChartMode}
+        initialType="line"
       >
         <ResponsiveContainer width="100%" height={260}>
           {chartMode === "bar" ? (
@@ -376,7 +378,8 @@ export default function FinancialsTab() {
                   onClick={() =>
                     drilldown.open("orders", {
                       title: `Pedidos pagados con "${r.payment_method}"`,
-                      filters: { payment_method: r.payment_method, not_cancelled: true }
+                      // `sold`: el mismo conjunto que cuenta la fila (pagado y no cancelado).
+                      filters: { payment_method: r.payment_method, sold: true }
                     })
                   }
                   className="font-bold uppercase text-fx-accent hover:underline text-left"

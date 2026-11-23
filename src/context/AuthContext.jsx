@@ -9,7 +9,7 @@ import {
   signUpWithEmail,
   signOut as authSignOut,
 } from "../lib/supabaseClient";
-import { track } from "../services/tracking";
+import { trackLogin } from "../services/tracking";
 
 const AuthContext = createContext();
 
@@ -70,9 +70,10 @@ export const AuthProvider = ({ children }) => {
         setToken(session.access_token);
       }
 
-      // Solo SIGNED_IN es una autenticación real. INITIAL_SESSION (sesión restaurada al
-      // abrir la pestaña) y TOKEN_REFRESHED se excluyen para no inflar los inicios de sesión.
-      if (event === "SIGNED_IN") track("login");
+      // Solo SIGNED_IN puede ser una autenticación real. INITIAL_SESSION (sesión restaurada al
+      // abrir la pestaña) y TOKEN_REFRESHED se excluyen; y como supabase-js repite SIGNED_IN
+      // al volver a la pestaña, trackLogin lo cuenta una sola vez por inicio de sesión.
+      if (event === "SIGNED_IN") trackLogin(session?.user);
 
       if (
         event === "INITIAL_SESSION" ||

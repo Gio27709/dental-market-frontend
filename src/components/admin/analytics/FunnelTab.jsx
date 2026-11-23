@@ -37,7 +37,8 @@ export default function FunnelTab() {
     <div className="space-y-6">
       <div className="relative z-30 flex flex-col md:flex-row md:items-center justify-between gap-4 fx-card-sm">
         <p className="text-[11px] text-fx-muted max-w-lg">
-          Recorrido real desde que alguien entra hasta que compra. Cada paso se cuenta por sesión, no por evento.
+          Recorrido real desde que alguien entra hasta que compra. Cada paso se cuenta por sesión, no por evento,
+          y sin robots ni dispositivos del equipo interno (sus compras de prueba no cuentan como conversión).
         </p>
         <div className="flex items-center gap-3 flex-wrap">
           <DateRangePicker selectedPeriod={period} onPeriodChange={setPeriod} />
@@ -48,9 +49,9 @@ export default function FunnelTab() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
         <KpiCard
           title="Tasa de Conversión Real"
-          value={kpis.conversionRatePct || 0}
+          value={kpis.conversionRatePct}
           format="percent"
-          tooltip="Porcentaje de sesiones que terminaron en una compra. Se calcula sobre el tráfico medido, no sobre una estimación."
+          tooltip={`Porcentaje de sesiones que terminaron en una compra: ${kpis.purchaseSessions || 0} de ${kpis.visitSessions || 0}. Sin robots ni dispositivos del equipo interno. El detalle lista todos los eventos de compra, incluidos los del equipo.`}
           onDrilldown={() =>
             drilldown.open("analytics_events", {
               title: "Compras registradas por el tracking",
@@ -65,7 +66,7 @@ export default function FunnelTab() {
           suffix=" sesiones"
           tooltip="Punto de entrada del embudo: sesiones que cargaron al menos una página."
           onDrilldown={() =>
-            drilldown.open("analytics_sessions", { title: "Sesiones del período" })
+            drilldown.open("analytics_sessions", { title: "Sesiones del período", filters: { is_human: true } })
           }
         />
         <KpiCard
@@ -78,9 +79,9 @@ export default function FunnelTab() {
         />
         <KpiCard
           title="Abandono en Checkout"
-          value={kpis.checkoutAbandonmentPct || 0}
+          value={kpis.checkoutAbandonmentPct}
           format="percent"
-          tooltip="De quienes llegaron a la pantalla de pago, cuántos se fueron sin comprar. Es la fuga más cara del embudo."
+          tooltip={`De las ${kpis.checkoutSessions || 0} sesiones que llegaron a la pantalla de pago, cuántas se fueron sin comprar. Es la fuga más cara del embudo.`}
           onDrilldown={() =>
             drilldown.open("analytics_events", {
               title: "Quiénes llegaron a la pantalla de pago",

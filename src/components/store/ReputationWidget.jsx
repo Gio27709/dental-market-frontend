@@ -69,7 +69,7 @@ export default function ReputationWidget({ reputation = {}, loading = false }) {
           </span>
         </div>
         <div className="flex items-center justify-between px-2">
-          <span className="text-xs text-gray-500">Cancelaciones (mes)</span>
+          <span className="text-xs text-gray-500">Cancelaciones (período)</span>
           <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${cancellationsThisMonth >= 5 ? "bg-red-50 text-red-600" : cancellationsThisMonth > 0 ? "bg-amber-50 text-amber-600" : "text-gray-400"}`}>
             {cancellationsThisMonth}
           </span>

@@ -17,7 +17,13 @@ import {
 
 const num = (v) => Number(v || 0).toLocaleString("en-US");
 const usd = (v) => "$" + Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const fecha = (v) => (v ? new Date(v).toLocaleDateString("es-VE") : "—");
+// Un día suelto ("2026-04-09", la serie diaria) se lee como día local: new Date() lo
+// tomaría como medianoche UTC y en Caracas se pintaría el día anterior.
+const fecha = (v) => {
+  if (!v) return "—";
+  const s = String(v);
+  return new Date(/^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s}T12:00:00` : s).toLocaleDateString("es-VE");
+};
 
 const APPROVAL_STYLES = {
   approved: "bg-fx-pos/15 text-fx-pos border-fx-pos/30",
@@ -52,6 +58,11 @@ const stockBadge = (estado) => {
     </span>
   );
 };
+
+// Los KPIs de cupón solo cuentan pedidos que fueron venta (pago aprobado y no cancelados);
+// el detalle debe listar ese mismo conjunto. 'approved' es el único estado de pago aprobado
+// que existe hoy en la base.
+const VENTA = { not_cancelled: true, payment_status: "approved" };
 
 const siNo = (v, tonoSi = "text-fx-pos", tonoNo = "text-gray-500") =>
   v ? <span className={`font-bold ${tonoSi}`}>Sí</span> : <span className={tonoNo}>No</span>;
@@ -187,9 +198,9 @@ export default function PromotionsTab() {
             value={ck.redemptions}
             format="number"
             suffix={` · ${num(ck.distinctUsers)} usuarios`}
-            tooltip="Pedidos del período que llegaron con un código aplicado. No hay tabla de cupones: la única huella es el texto guardado en el pedido."
+            tooltip={`Pedidos del período con un código aplicado que fueron venta (pago aprobado y no cancelados). ${num(ck.excludedWithCoupon)} pedido(s) más usaron cupón pero se cancelaron o su pago no se aprobó, y no cuentan. No hay tabla de cupones: la única huella es el texto guardado en el pedido.`}
             onDrilldown={() =>
-              drilldown.open("orders", { title: "Pedidos con cupón", filters: { has_coupon: true } })
+              drilldown.open("orders", { title: "Pedidos con cupón", filters: { has_coupon: true, ...VENTA } })
             }
           />
           <KpiCard
@@ -201,7 +212,7 @@ export default function PromotionsTab() {
               drilldown.open("orders", {
                 title: "Pedidos con cupón",
                 subtitle: "De estos pedidos salió lo cedido",
-                filters: { has_coupon: true }
+                filters: { has_coupon: true, ...VENTA }
               })
             }
           />
@@ -212,7 +223,7 @@ export default function PromotionsTab() {
             suffix={` · nominal hoy ${ck.nominalDiscountPct}%`}
             tooltip="Lo cedido sobre lo que el pedido habría costado sin cupón. Queda por debajo del nominal porque en checkout el descuento se aplica solo al ítem más caro, no a la factura completa."
             onDrilldown={() =>
-              drilldown.open("orders", { title: "Pedidos con cupón", filters: { has_coupon: true } })
+              drilldown.open("orders", { title: "Pedidos con cupón", filters: { has_coupon: true, ...VENTA } })
             }
           />
           <KpiCard
@@ -227,7 +238,7 @@ export default function PromotionsTab() {
                     drilldown.open("orders", {
                       title: `Pedidos con cupón de ${topCouponUser.fullName}`,
                       subtitle: "El usuario que más redenciones concentra",
-                      filters: { has_coupon: true, user_id: topCouponUser.userId }
+                      filters: { has_coupon: true, ...VENTA, user_id: topCouponUser.userId }
                     })
                 : undefined
             }
@@ -239,7 +250,7 @@ export default function PromotionsTab() {
             suffix=" antes de descuento"
             tooltip="Lo que esos pedidos habrían costado sin cupón. El total guardado en el pedido ya viene descontado, así que este es el denominador honesto."
             onDrilldown={() =>
-              drilldown.open("orders", { title: "Pedidos con cupón", filters: { has_coupon: true } })
+              drilldown.open("orders", { title: "Pedidos con cupón", filters: { has_coupon: true, ...VENTA } })
             }
           />
           <KpiCard
@@ -251,7 +262,7 @@ export default function PromotionsTab() {
             onDrilldown={() =>
               drilldown.open("orders", {
                 title: "Órdenes con cupón y su ticket",
-                filters: { has_coupon: true }
+                filters: { has_coupon: true, ...VENTA }
               })
             }
           />
@@ -265,7 +276,7 @@ export default function PromotionsTab() {
               drilldown.open("orders", {
                 title: "Pedidos con cupón sin suscripción al boletín",
                 subtitle: "Redimieron el cupón 'de boletín' sin estar suscritos",
-                filters: { has_coupon: true, coupon_without_subscription: true }
+                filters: { has_coupon: true, ...VENTA, coupon_without_subscription: true }
               })
             }
           />
@@ -358,7 +369,8 @@ export default function PromotionsTab() {
                 <span className="font-bold text-fx-neg">No · huérfano</span>
               )
           },
-          { header: "Redenciones", accessor: "redemptions", render: (r) => num(r.redemptions) },
+          // Aquí cuentan todos los usos del código, también los de pedidos cancelados o sin pago aprobado (lo que importa es si el código circuló); Cedido y Facturado son solo de los que fueron venta.
+          { header: "Usos (incl. caídos)", accessor: "redemptions", render: (r) => num(r.redemptions) },
           { header: "Usuarios", accessor: "distinctUsers", render: (r) => num(r.distinctUsers) },
           {
             header: "Nominal vs Efectivo",
@@ -383,6 +395,7 @@ export default function PromotionsTab() {
         title="Redenciones por Día"
         subtitle="Cuándo se usa el cupón y cuánto margen se cede en cada jornada"
         onTypeChange={setChartMode}
+        initialType="bar"
       >
         <ResponsiveContainer width="100%" height={260}>
           {chartMode === "line" ? (
@@ -428,7 +441,7 @@ export default function PromotionsTab() {
                   onClick={() =>
                     drilldown.open("orders", {
                       title: `Pedidos con cupón de ${r.fullName}`,
-                      filters: { has_coupon: true, user_id: r.userId }
+                      filters: { has_coupon: true, ...VENTA, user_id: r.userId }
                     })
                   }
                   className="font-bold text-fx-accent hover:underline text-left"

@@ -101,7 +101,12 @@ export default function ClinicProfitability() {
             ${currentMonthSpent.toFixed(2)}
           </p>
           <div className="mt-3 text-xs flex items-center gap-1 font-semibold">
-            {monthOverMonthChange >= 0 ? (
+            {monthOverMonthChange === null ? (
+              // Sin gasto el mes anterior no hay porcentaje con qué comparar.
+              <span className="text-[#4b4452] bg-gray-100 px-2 py-0.5 rounded-full">
+                Sin compras el mes anterior
+              </span>
+            ) : monthOverMonthChange >= 0 ? (
               <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
                 ▲ +{monthOverMonthChange}%<span className="hidden sm:inline"> vs mes anterior</span>
               </span>

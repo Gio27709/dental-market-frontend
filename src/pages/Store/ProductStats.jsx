@@ -250,7 +250,7 @@ export default function ProductStats() {
           { title: "Ventas Totales", value: `$${fmt(salesStats.totalRevenue)}`, icon: "💰", accent: "#6b1e96" },
           { title: "Unidades Vendidas", value: fmtInt(salesStats.totalUnitsSold), icon: "📦", accent: "#059669" },
           { title: "Stock Actual", value: fmtInt(stockSummary.currentTotal), icon: "🏪", accent: "#2563eb" },
-          { title: "Restocks", value: fmtInt(stockSummary.totalRestocks), icon: "🔄", accent: "#f59e0b" },
+          { title: "Restocks (histórico)", value: fmtInt(stockSummary.totalRestocks), icon: "🔄", accent: "#f59e0b" },
         ].map((kpi, i) => (
           <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-2">
@@ -267,7 +267,7 @@ export default function ProductStats() {
       ══════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl p-4 border border-purple-100/50">
-          <p className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">Ticket Promedio</p>
+          <p className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">Precio Promedio / ud</p>
           <p className="text-lg font-extrabold text-purple-900 mt-1">${fmt(salesStats.avgPricePerUnit)}</p>
         </div>
         <div className="bg-gradient-to-br from-pink-50 to-white rounded-xl p-4 border border-pink-100/50">

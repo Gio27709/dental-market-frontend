@@ -46,10 +46,11 @@ export default function RiderStats() {
     },
     { 
       label: "Tasa Éxito", 
-      value: `${stats.success_rate}%`, 
+      // null = aún no hay entregas cerradas: no hay tasa que mostrar.
+      value: stats.success_rate === null || stats.success_rate === undefined ? "—" : `${stats.success_rate}%`, 
       icon: "trending_up", 
-      color: stats.success_rate >= 80 ? "text-green-600" : "text-amber-500", 
-      bg: stats.success_rate >= 80 ? "bg-green-50" : "bg-amber-50" 
+      color: stats.success_rate === null || stats.success_rate >= 80 ? "text-green-600" : "text-amber-500", 
+      bg: stats.success_rate === null || stats.success_rate >= 80 ? "bg-green-50" : "bg-amber-50" 
     },
   ];
 

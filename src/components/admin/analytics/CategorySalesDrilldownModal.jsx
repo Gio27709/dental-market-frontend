@@ -3,10 +3,12 @@ import PropTypes from "prop-types";
 import { getCategoryProductsDetailAPI } from "../../../services/api";
 import ModalOverlay from "./ModalOverlay";
 
-export default function CategorySalesDrilldownModal({ isOpen, onClose, categoryName, period = "30d", fromDate, toDate, onSelectProduct }) {
+export default function CategorySalesDrilldownModal({ isOpen, onClose, categoryName, period = "30d", fromDate, toDate, storeIds = [], onSelectProduct }) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  // Mismo filtro de tiendas que la fila que abre el modal; sin él los totales no cuadraban.
+  const storeIdsKey = storeIds.join(",");
 
   const fetchCategoryProducts = useCallback(async () => {
     setLoading(true);
@@ -14,6 +16,7 @@ export default function CategorySalesDrilldownModal({ isOpen, onClose, categoryN
       const params = { category_name: categoryName, period };
       if (fromDate) params.from = fromDate;
       if (toDate) params.to = toDate;
+      if (storeIdsKey) params.store_ids = storeIdsKey;
 
       const res = await getCategoryProductsDetailAPI(params);
       if (res.data?.success) {
@@ -24,7 +27,7 @@ export default function CategorySalesDrilldownModal({ isOpen, onClose, categoryN
     } finally {
       setLoading(false);
     }
-  }, [categoryName, period, fromDate, toDate]);
+  }, [categoryName, period, fromDate, toDate, storeIdsKey]);
 
   useEffect(() => {
     if (isOpen && categoryName) {
@@ -189,5 +192,6 @@ CategorySalesDrilldownModal.propTypes = {
   period: PropTypes.string,
   fromDate: PropTypes.string,
   toDate: PropTypes.string,
+  storeIds: PropTypes.arrayOf(PropTypes.string),
   onSelectProduct: PropTypes.func
 };
