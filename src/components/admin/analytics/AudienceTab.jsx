@@ -45,16 +45,13 @@ export default function AudienceTab() {
   const excluded = data?.excludedTraffic || {};
   const excludedTotal =
     (excluded.botSessions || 0) + (excluded.suspectSessions || 0) + (excluded.internalSessions || 0);
-  // Las cifras de la pestaña son de tráfico humano y externo: el detalle de sesiones se abre
-  // sin robots ni sospechosas (filtro is_human). El detalle todavía no puede separar los
-  // dispositivos del equipo interno, así que se avisa en el subtítulo.
-  const internalNote = excluded.internalSessions
-    ? "Incluye sesiones del equipo interno, que las cifras de arriba no cuentan"
-    : undefined;
+  // Las cifras de la pestaña son de tráfico humano y externo: todo detalle se abre con el
+  // filtro is_human, que en el backend es la misma regla de las tarjetas (sin robots, sin
+  // sesiones sospechosas y sin los dispositivos del equipo), así lista las mismas filas.
   const openSessions = (title, filters = {}, subtitle) =>
     drilldown.open("analytics_sessions", {
       title,
-      subtitle: [subtitle, internalNote].filter(Boolean).join(" · ") || undefined,
+      subtitle,
       filters: { is_human: true, ...filters },
     });
 
@@ -110,7 +107,7 @@ export default function AudienceTab() {
           onDrilldown={() =>
             drilldown.open("analytics_events", {
               title: "Páginas vistas del período",
-              filters: { event_name: "page_view" }
+              filters: { is_human: true, event_name: "page_view" }
             })
           }
         />
@@ -283,7 +280,7 @@ export default function AudienceTab() {
                       onClick={() =>
                         drilldown.open("analytics_events", {
                           title: `Vistas de "${r.path}"`,
-                          filters: { event_name: "page_view", path: r.path }
+                          filters: { is_human: true, event_name: "page_view", path: r.path }
                         })
                       }
                       className="font-mono text-fx-accent hover:underline text-left"
@@ -377,8 +374,8 @@ export default function AudienceTab() {
                   <button
                     onClick={() =>
                       drilldown.open("analytics_sessions", {
-                        title: `Sesiones con ${r.browser}`,
-                        filters: { is_human: true, browser: r.browser }
+                        title: `Sesiones con ${r.browser} en ${r.os}`,
+                        filters: { is_human: true, browser: r.browser, os: r.os }
                       })
                     }
                     className="font-bold text-fx-accent hover:underline text-left"

@@ -82,7 +82,7 @@ export default function SupportQualityTab() {
       {/* Header Controls Row */}
       <div className="relative z-30 flex flex-col md:flex-row md:items-center justify-between gap-4 fx-card-sm">
         <div className="flex items-center gap-3 flex-wrap">
-          <AnalyticsExportButton activeArea="support" period={period} />
+          <AnalyticsExportButton activeArea="support" period={period} data={data} />
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">

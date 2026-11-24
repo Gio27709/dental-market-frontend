@@ -10,6 +10,7 @@ import FreshnessBadge from "./FreshnessBadge";
 import DateRangePicker from "./DateRangePicker";
 import AnalyticsErrorPanel from "./AnalyticsErrorPanel";
 import DrilldownModal from "./DrilldownModal";
+import AnalyticsExportButton from "./AnalyticsExportButton";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
 const num = (v) => Number(v || 0).toLocaleString("en-US");
@@ -109,6 +110,7 @@ export default function SupportDeepTab() {
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          <AnalyticsExportButton activeArea="support-deep" period={period} data={data} />
           <DateRangePicker selectedPeriod={period} onPeriodChange={setPeriod} />
           <FreshnessBadge lastUpdated={data?.serverTimestamp} onRefresh={() => reload(true)} isLoading={loading} />
         </div>

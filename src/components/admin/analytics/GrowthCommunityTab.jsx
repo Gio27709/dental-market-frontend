@@ -85,7 +85,7 @@ export default function GrowthCommunityTab() {
         {/* Sin interruptor "Comparar": el backend de esta pestaña no calcula período previo
             y el interruptor no cambiaba nada en pantalla. */}
         <div className="flex items-center gap-3 flex-wrap">
-          <AnalyticsExportButton activeArea="growth" period={period} />
+          <AnalyticsExportButton activeArea="growth" period={period} data={data} />
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">

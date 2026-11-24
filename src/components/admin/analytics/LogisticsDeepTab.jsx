@@ -10,6 +10,7 @@ import FreshnessBadge from "./FreshnessBadge";
 import DateRangePicker from "./DateRangePicker";
 import AnalyticsErrorPanel from "./AnalyticsErrorPanel";
 import DrilldownModal from "./DrilldownModal";
+import AnalyticsExportButton from "./AnalyticsExportButton";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
 const num = (v) => Number(v || 0).toLocaleString("en-US");
@@ -130,6 +131,7 @@ export default function LogisticsDeepTab() {
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          <AnalyticsExportButton activeArea="logistics-deep" period={period} data={data} />
           <DateRangePicker selectedPeriod={period} onPeriodChange={setPeriod} />
           <FreshnessBadge lastUpdated={data?.serverTimestamp} onRefresh={() => reload(true)} isLoading={loading} />
         </div>
@@ -601,7 +603,20 @@ export default function LogisticsDeepTab() {
           )} pares, con un salto máximo de ${num(geo.distanceTable?.maxHop)}`}
           searchPlaceholder="Buscar estado..."
           columns={[
-            { header: "Estado", accessor: "state" },
+            {
+              header: "Estado",
+              accessor: "state",
+              // Agrupado sin tildes ni mayúsculas: si el estado se escribió de varias formas,
+              // se enseñan todas para que el problema de origen siga a la vista.
+              render: (r) =>
+                (r.spellings || []).length > 1 ? (
+                  <span>
+                    {r.state} <span className="text-[10px] text-fx-muted">({r.spellings.join(" / ")})</span>
+                  </span>
+                ) : (
+                  r.state
+                )
+            },
             { header: "Pedidos", accessor: "orders", render: (r) => num(r.orders) },
             { header: "GMV", accessor: "gmvUsd", render: (r) => usd(r.gmvUsd) },
             { header: "Fletes", accessor: "feesUsd", render: (r) => usd(r.feesUsd) },

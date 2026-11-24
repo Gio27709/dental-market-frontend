@@ -100,7 +100,7 @@ export default function LogisticsTab() {
             selectedStoreIds={selectedStoreIds}
             onStoreChange={setSelectedStoreIds}
           />
-          <AnalyticsExportButton activeArea="logistics" period={period} />
+          <AnalyticsExportButton activeArea="logistics" period={period} data={data} />
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
